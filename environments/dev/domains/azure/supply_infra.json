@@ -1,0 +1,49 @@
+{
+  "cloud": "AZURE",
+  "domain": "supply_chain",
+  "managed_storage_container": "databricks-project",
+  "managed_storage_root": "supply-chain/managed/",
+  "external_locations": [
+    {
+      "location_name": "loc_supply_raw", 
+      "container": "databricks-project",
+      "path": "supply-chain/raw/"
+    },
+    {
+      "location_name": "loc_supply_managed",
+      "container": "databricks-project", 
+      "path": "supply-chain/managed/"
+    }
+  ],
+  "catalogs": [
+    {
+      "catalog_name": "supplies_azure",
+      "type": "MANAGED",
+      "container": "databricks-project",
+      "storage_root": "supply-chain/managed/",
+      "schemas": [
+        {
+          "schema_name": "bronze",
+          "volumes": [{
+            "volume_name": "supplies_landing_zone", 
+            "container": "databricks-project",
+            "location_path": "supply-chain/raw/",
+            "volume_path": "landing/",
+            "volume_type": "EXTERNAL"
+            }]
+        },
+        {"schema_name": "silver"}
+      ]
+    },
+    {
+      "catalog_name": "supply_sql_master",
+      "type": "FEDERATED",
+      "connection_name": "azure_sql_conn",
+      "database_name": "sqldb-product-catalog",
+      "schemas": [
+        { "schema_name": "inventory" },
+        { "schema_name": "orders" }
+      ]
+    }
+  ]
+}

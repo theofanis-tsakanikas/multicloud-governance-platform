@@ -1,0 +1,40 @@
+{
+  "cloud": "AWS",
+  "domain": "sales",
+  "managed_storage_root": "databricks-project/sales/managed-zone/",
+  "external_locations": [
+    {"location_name": "loc_sales_raw", "path": "databricks-project/sales/raw-zone/"},
+    {"location_name": "loc_sales_managed", "path": "databricks-project/sales/managed-zone/"},
+    {"location_name": "loc_sales_gold", "path": "databricks-project/sales/gold-zone/"}
+  ],
+  "catalogs": [
+    {
+      "catalog_name": "sales_aws",
+      "type": "MANAGED",
+      "storage_root": "databricks-project/sales/managed-zone/",
+      "schemas": [
+        {
+          "schema_name": "bronze",
+          "volumes": [{
+            "volume_name": "sales_landing_zone",
+            "location_path": "databricks-project/sales/raw-zone/",
+            "volume_path": "landing/",
+            "volume_type": "EXTERNAL"
+          }]
+        },
+        {"schema_name": "silver"},
+        {"schema_name": "gold"}
+      ]
+    },
+    {
+      "catalog_name": "sales_rds_fed",
+      "type": "FEDERATED",
+      "connection_name": "rds_postgres_conn",
+      "database_name": "salesdb",
+      "schemas": [
+        { "schema_name": "crm" },
+        { "schema_name": "orders" }
+      ]
+    }
+  ]
+}

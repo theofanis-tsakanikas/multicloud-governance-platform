@@ -1,0 +1,73 @@
+name: DBX Platform — Validate
+
+on:
+  pull_request:
+    paths:
+      - "databricks-platform-v2/**"
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+env:
+  TF_VERSION: "1.10.0"
+  TERRAGRUNT_VERSION: "0.75.0"
+  WORKING_DIR: databricks-platform-v2
+
+jobs:
+  validate:
+    name: Validate (${{ matrix.cloud }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        cloud: [aws, azure, gcp]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.DBX_DEPLOY_ROLE_ARN }}
+          aws-region: eu-central-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Setup Terragrunt
+        run: |
+          wget -q "https://github.com/gruntwork-io/terragrunt/releases/download/v${TERRAGRUNT_VERSION}/terragrunt_linux_amd64" \
+            -O /usr/local/bin/terragrunt
+          chmod +x /usr/local/bin/terragrunt
+
+      - name: Terraform format check
+        working-directory: ${{ env.WORKING_DIR }}
+        run: terraform fmt -check -recursive
+
+      - name: Terragrunt HCL format check
+        working-directory: ${{ env.WORKING_DIR }}
+        run: terragrunt hclfmt --check --diff
+
+      - name: Terragrunt validate — ${{ matrix.cloud }}
+        working-directory: ${{ env.WORKING_DIR }}/environments/dev/${{ matrix.cloud }}
+        run: terragrunt run-all validate --terragrunt-non-interactive
+        env:
+          TERRAGRUNT_DOWNLOAD: /tmp/.terragrunt-cache
+
+      - name: Security scan — Checkov
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: ${{ env.WORKING_DIR }}/infra
+          framework: terraform
+          soft_fail: false
+          output_format: github_failed_only
+
+      - name: Security scan — tfsec
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          working_directory: ${{ env.WORKING_DIR }}/infra
+          soft_fail: false
