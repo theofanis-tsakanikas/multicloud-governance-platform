@@ -1,0 +1,19 @@
+variable "region" {
+  description = "The AWS region where the infrastructure will be deployed."
+  type        = string
+}
+
+variable "databricks_vpc_cidr" {
+  description = "The CIDR block for the Databricks Classic VPC."
+  type        = string
+}
+
+variable "gcp_vpc_cidr" {
+  description = "The CIDR block of the GCP for VPN routing purposes."
+  type        = list(string)
+}
+
+variable "databricks_subnets" {
+  description = "Map of subnet names to CIDR blocks"
+  type        = map(string)
+}

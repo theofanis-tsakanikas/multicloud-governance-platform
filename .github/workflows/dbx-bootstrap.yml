@@ -1,0 +1,100 @@
+name: DBX Platform — Bootstrap
+
+on:
+  workflow_dispatch:
+    inputs:
+      cloud:
+        description: "Cloud to bootstrap"
+        required: true
+        type: choice
+        options: [aws, gcp, both]
+      action:
+        description: "Action"
+        required: true
+        type: choice
+        options: [plan, apply, destroy]
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  TF_VERSION: "1.10.0"
+  TERRAGRUNT_VERSION: "0.75.0"
+  WORKING_DIR: databricks-platform-v2
+
+jobs:
+  bootstrap-aws:
+    name: Bootstrap AWS
+    runs-on: ubuntu-latest
+    if: inputs.cloud == 'aws' || inputs.cloud == 'both'
+    environment: dev
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.DBX_DEPLOY_ROLE_ARN }}
+          aws-region: eu-central-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Setup Terragrunt
+        run: |
+          wget -q "https://github.com/gruntwork-io/terragrunt/releases/download/v${{ env.TERRAGRUNT_VERSION }}/terragrunt_linux_amd64" \
+            -O /usr/local/bin/terragrunt
+          chmod +x /usr/local/bin/terragrunt
+
+      - name: Terragrunt ${{ inputs.action }} — AWS Bootstrap
+        working-directory: ${{ env.WORKING_DIR }}/environments/dev/bootstrap/aws
+        run: |
+          if [ "${{ inputs.action }}" = "plan" ]; then
+            terragrunt run-all plan --terragrunt-non-interactive
+          elif [ "${{ inputs.action }}" = "apply" ]; then
+            terragrunt run-all apply --terragrunt-non-interactive -auto-approve
+          elif [ "${{ inputs.action }}" = "destroy" ]; then
+            echo "::warning::Bootstrap destroy runs in reverse order"
+            terragrunt run-all destroy --terragrunt-non-interactive -auto-approve
+          fi
+
+  bootstrap-gcp:
+    name: Bootstrap GCP
+    runs-on: ubuntu-latest
+    if: inputs.cloud == 'gcp' || inputs.cloud == 'both'
+    environment: dev
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.DBX_DEPLOY_ROLE_ARN }}
+          aws-region: eu-central-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Setup Terragrunt
+        run: |
+          wget -q "https://github.com/gruntwork-io/terragrunt/releases/download/v${{ env.TERRAGRUNT_VERSION }}/terragrunt_linux_amd64" \
+            -O /usr/local/bin/terragrunt
+          chmod +x /usr/local/bin/terragrunt
+
+      - name: Terragrunt ${{ inputs.action }} — GCP Bootstrap
+        working-directory: ${{ env.WORKING_DIR }}/environments/dev/bootstrap/gcp
+        run: |
+          if [ "${{ inputs.action }}" = "plan" ]; then
+            terragrunt run-all plan --terragrunt-non-interactive
+          elif [ "${{ inputs.action }}" = "apply" ]; then
+            terragrunt run-all apply --terragrunt-non-interactive -auto-approve
+          elif [ "${{ inputs.action }}" = "destroy" ]; then
+            terragrunt run-all destroy --terragrunt-non-interactive -auto-approve
+          fi

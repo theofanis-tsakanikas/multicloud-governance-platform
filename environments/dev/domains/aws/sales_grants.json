@@ -1,0 +1,94 @@
+{
+  "external_location_grants": [
+    {
+      "location_name": "loc_sales_raw",
+      "grants": [
+        { "principal": "data_engineers", "privileges": ["ALL_PRIVILEGES"] },
+        { "principal": "data_scientists", "privileges": ["READ_FILES"] },
+        { "principal": "metastore_admins", "privileges": ["ALL_PRIVILEGES"] }
+      ]
+    },
+    {
+      "location_name": "loc_sales_managed",
+      "grants": [
+        { "principal": "data_engineers", "privileges": ["ALL_PRIVILEGES"] },
+        { "principal": "metastore_admins", "privileges": ["ALL_PRIVILEGES"] }
+      ]
+    },
+    {
+      "location_name": "loc_sales_gold",
+      "grants": [
+        { "principal": "data_engineers", "privileges": ["ALL_PRIVILEGES"] },
+        { "principal": "analysts", "privileges": ["READ_FILES"] },
+        { "principal": "business_users", "privileges": ["READ_FILES"] },
+        { "principal": "metastore_admins", "privileges": ["ALL_PRIVILEGES"] }
+      ]
+    }
+  ],
+  "catalog_grants": [
+    {
+      "catalog_name": "sales_aws",
+      "grants": [
+        { "principal": "data_engineers", "privileges": ["USE_CATALOG", "CREATE_SCHEMA"] },
+        { "principal": "metastore_admins", "privileges": ["ALL_PRIVILEGES"] }
+      ]
+    },
+    {
+      "catalog_name": "sales_rds_fed",
+      "grants": [
+        { "principal": "data_engineers", "privileges": ["USE_CATALOG"] },
+        { "principal": "metastore_admins", "privileges": ["ALL_PRIVILEGES"] }
+      ]
+    }
+  ],
+  "schema_grants": [
+    {
+      "schema": "sales_aws.bronze",
+      "grants": [
+        { "principal": "data_engineers", "privileges": ["USE_SCHEMA", "CREATE_TABLE", "SELECT", "MODIFY"] },
+        { "principal": "metastore_admins", "privileges": ["ALL_PRIVILEGES"] }
+      ]
+    },
+    {
+      "schema": "sales_aws.silver",
+      "grants": [
+        { "principal": "data_engineers", "privileges": ["USE_SCHEMA", "CREATE_TABLE", "SELECT", "MODIFY"] },
+        { "principal": "data_scientists", "privileges": ["USE_SCHEMA", "SELECT"] },
+        { "principal": "metastore_admins", "privileges": ["ALL_PRIVILEGES"] }
+      ]
+    },
+    {
+      "schema": "sales_aws.gold",
+      "grants": [
+        { "principal": "data_engineers", "privileges": ["USE_SCHEMA", "CREATE_TABLE", "SELECT", "MODIFY"] },
+        { "principal": "analysts", "privileges": ["USE_SCHEMA", "SELECT"] },
+        { "principal": "business_users", "privileges": ["USE_SCHEMA", "SELECT"] },
+        { "principal": "metastore_admins", "privileges": ["ALL_PRIVILEGES"] }
+      ]
+    },
+    {
+      "schema": "sales_rds_fed.orders",
+      "grants": [
+        { "principal": "analysts", "privileges": ["USE_SCHEMA", "SELECT"] },
+        { "principal": "data_engineers", "privileges": ["USE_SCHEMA", "SELECT"] },
+        { "principal": "metastore_admins", "privileges": ["ALL_PRIVILEGES"] }
+      ]
+    },
+    {
+      "schema": "sales_rds_fed.crm",
+      "grants": [
+        { "principal": "crm_managers", "privileges": ["USE_SCHEMA", "SELECT"] },
+        { "principal": "metastore_admins", "privileges": ["ALL_PRIVILEGES"] }
+      ]
+    }
+  ],
+  "volume_grants": [
+    {
+      "volume": "sales_aws.bronze.sales_landing_zone",
+      "grants": [
+        { "principal": "data_engineers", "privileges": ["READ_VOLUME", "WRITE_VOLUME"] },
+        { "principal": "metastore_admins", "privileges": ["ALL_PRIVILEGES"] }
+      ]
+    }
+  ]
+}

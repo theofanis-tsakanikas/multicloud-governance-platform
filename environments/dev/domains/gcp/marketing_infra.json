@@ -1,0 +1,45 @@
+{
+  "cloud": "GCP",
+  "domain": "marketing",
+  "managed_storage_root": "databricks-project/marketing/managed/",
+  "external_locations": [
+    {"location_name": "loc_mktg_managed", "path": "databricks-project/marketing/managed/"},
+    {"location_name": "loc_mktg_assets", "path": "databricks-project/marketing/assets-zone/"}
+  ],
+  "catalogs": [
+    {
+      "catalog_name": "marketing_gcp",
+      "type": "MANAGED",
+      "storage_root": "databricks-project/marketing/managed/",
+      "schemas": [
+        {
+          "schema_name": "intelligence",
+          "shared": false,
+          "volumes": [{
+            "volume_name": "campaign_assets", 
+            "location_path": "databricks-project/marketing/assets-zone/",
+            "volume_path": "campaigns/",
+            "volume_type": "EXTERNAL",
+            "shared": true
+          },
+          {
+            "volume_name": "ml_models_artifacts", 
+            "location_path": "databricks-project/marketing/assets-zone/",
+            "volume_path": "ml-models/",
+            "volume_type": "EXTERNAL",
+            "shared": true
+          }]
+        }
+      ]
+    },
+    {
+      "catalog_name": "marketing_bq_fed",
+      "type": "FEDERATED",
+      "connection_name": "bq_conn",
+      "schemas": [
+        { "schema_name": "analytics" },
+        { "schema_name": "web" }
+      ]
+    }
+  ]
+}

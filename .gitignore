@@ -1,0 +1,37 @@
+# Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.backup
+*.tfplan
+crash.log
+override.tf
+override.tf.json
+
+# Terragrunt
+.terragrunt-cache/
+
+# Sensitive files — NEVER commit
+*.pem
+*.key
+*.p12
+terraform.tfvars
+*.auto.tfvars
+secrets.hcl
+provider_key.json
+
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+*.egg-info/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
