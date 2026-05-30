@@ -27,7 +27,6 @@ permissions:
 env:
   TF_VERSION: "1.10.0"
   TERRAGRUNT_VERSION: "0.75.0"
-  WORKING_DIR: databricks-platform-v2
 
 jobs:
   deploy-aws:
@@ -54,7 +53,7 @@ jobs:
           chmod +x /usr/local/bin/terragrunt
 
       - name: Plan — AWS ${{ inputs.start_from_layer || 'full stack' }}
-        working-directory: ${{ env.WORKING_DIR }}/environments/dev/aws/${{ inputs.start_from_layer }}
+        working-directory: environments/dev/aws/${{ inputs.start_from_layer }}
         run: |
           if [ -n "${{ inputs.start_from_layer }}" ]; then
             terragrunt plan --terragrunt-non-interactive
@@ -65,7 +64,7 @@ jobs:
           TF_VAR_is_private_connection: ${{ inputs.connectivity == 'private' }}
 
       - name: Apply — AWS
-        working-directory: ${{ env.WORKING_DIR }}/environments/dev/aws/${{ inputs.start_from_layer }}
+        working-directory: environments/dev/aws/${{ inputs.start_from_layer }}
         run: |
           if [ -n "${{ inputs.start_from_layer }}" ]; then
             terragrunt apply --terragrunt-non-interactive -auto-approve
@@ -106,7 +105,7 @@ jobs:
           chmod +x /usr/local/bin/terragrunt
 
       - name: Plan + Apply — Azure
-        working-directory: ${{ env.WORKING_DIR }}/environments/dev/azure
+        working-directory: environments/dev/azure
         run: |
           terragrunt run-all plan  --terragrunt-non-interactive
           terragrunt run-all apply --terragrunt-non-interactive -auto-approve
@@ -140,7 +139,7 @@ jobs:
           chmod +x /usr/local/bin/terragrunt
 
       - name: Plan + Apply — GCP
-        working-directory: ${{ env.WORKING_DIR }}/environments/dev/gcp
+        working-directory: environments/dev/gcp
         run: |
           terragrunt run-all plan  --terragrunt-non-interactive
           terragrunt run-all apply --terragrunt-non-interactive -auto-approve

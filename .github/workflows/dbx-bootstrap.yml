@@ -21,7 +21,6 @@ permissions:
 env:
   TF_VERSION: "1.10.0"
   TERRAGRUNT_VERSION: "0.75.0"
-  WORKING_DIR: databricks-platform-v2
 
 jobs:
   bootstrap-aws:
@@ -51,7 +50,7 @@ jobs:
           chmod +x /usr/local/bin/terragrunt
 
       - name: Terragrunt ${{ inputs.action }} — AWS Bootstrap
-        working-directory: ${{ env.WORKING_DIR }}/environments/dev/bootstrap/aws
+        working-directory: environments/dev/bootstrap/aws
         run: |
           if [ "${{ inputs.action }}" = "plan" ]; then
             terragrunt run-all plan --terragrunt-non-interactive
@@ -89,7 +88,7 @@ jobs:
           chmod +x /usr/local/bin/terragrunt
 
       - name: Terragrunt ${{ inputs.action }} — GCP Bootstrap
-        working-directory: ${{ env.WORKING_DIR }}/environments/dev/bootstrap/gcp
+        working-directory: environments/dev/bootstrap/gcp
         run: |
           if [ "${{ inputs.action }}" = "plan" ]; then
             terragrunt run-all plan --terragrunt-non-interactive
