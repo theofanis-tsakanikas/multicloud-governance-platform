@@ -55,100 +55,112 @@ The previous version shipped a 913-line Python orchestrator that manually manage
 
 ### AWS
 
-```
-bootstrap/aws/foundation ──► bootstrap/aws/platform ──► bootstrap/aws/config
-         │
-         ▼
- aws/foundation
-         │
-         ├──► aws/security/secrets_manager
-         │
-         ├──► aws/security/iam ◄─────── foundation (bucket_arn)
-         │                     ◄─────── secrets_manager (rds_secret_arn)
-         │
-         ├──► aws/network
-         │
-         ├──► aws/storage/rds ◄──────── network (vpc/subnets)
-         │
-         ├──► aws/storage/rds_schemas ◄─ storage/rds
-         │                               (reads sales_infra.json natively)
-         │
-         ├──► aws/integration ◄────────── network + iam + secrets_manager
-         │                    ◄────────── bootstrap/aws/platform (ncc_id)
-         │
-         └──► aws/data_platform/
-               ├── dbx_creds ◄──── iam + bootstrap/platform
-               ├── dbx_governance ◄ foundation + dbx_creds + bootstrap/platform
-               │                    (reads sales_infra.json + sales_grants.json)
-               ├── dbx_rds_connector ◄ integration + storage/rds + bootstrap/platform
-               └── dbx_rds_grants ◄── bootstrap/platform
-                                       (reads sales_infra.json + sales_grants.json)
+```mermaid
+flowchart TD
+    subgraph BOOT["Bootstrap (run once per account)"]
+        BF["bootstrap/aws/foundation"] --> BP["bootstrap/aws/platform"]
+        BP --> BC["bootstrap/aws/config"]
+    end
+
+    F["foundation"]
+    SM["security/secrets_manager"]
+    NET["network"]
+
+    SM  --> IAM["security/iam"]
+    F   --> IAM
+    NET --> RDS["storage/rds"]
+    RDS --> RDSS["storage/rds_schemas"]
+    IAM --> INT["integration"]
+    SM  --> INT
+    NET --> INT
+    BP  --> INT
+    IAM --> CREDS["data_platform/dbx_creds"]
+    BP  --> CREDS
+    F   --> GOV["data_platform/dbx_governance"]
+    CREDS --> GOV
+    BP  --> GOV
+    INT --> CONN["data_platform/dbx_rds_connector"]
+    RDS --> CONN
+    BP  --> CONN
+    BP  --> GRANTS["data_platform/dbx_rds_grants"]
 ```
 
 ### Azure
 
-```
-bootstrap/aws/platform (shared identity store)
-         │
-         ▼
- azure/foundation
-         │
-         ├──► azure/security
-         │
-         ├──► azure/network
-         │
-         ├──► azure/storage/mssql ◄──── foundation + network
-         │
-         ├──► azure/storage/mssql_schemas ◄ foundation + mssql
-         │                                   (reads supply_infra.json natively)
-         │
-         ├──► azure/integration ◄─────── foundation + network
-         │
-         └──► azure/data_platform/
-               ├── dbx_creds ◄──────── foundation + security + bootstrap/platform
-               ├── dbx_governance ◄─── foundation + dbx_creds + bootstrap/platform
-               │                        (reads supply_infra.json + supply_grants.json)
-               ├── dbx_mssql_connector ◄ foundation + storage/mssql + bootstrap/platform
-               │                          (SQL password from Azure Key Vault)
-               ├── dbx_mssql_grants ◄── bootstrap/platform + dbx_mssql_connector
-               │                         (reads supply_infra.json + supply_grants.json)
-               ├── dbx_workspace* ◄──── network + bootstrap/platform
-               ├── managed_warehouse ◄─ bootstrap/platform
-               └── uc_federation ◄───── bootstrap/platform + dbx_governance
-                                          (reads supply_infra.json)
+```mermaid
+flowchart TD
+    ABP["bootstrap/aws/platform"]
+
+    F["azure/foundation"]
+    NET["azure/network"]
+
+    F   --> SEC["security"]
+    F   --> MSSQL["storage/mssql"]
+    F   --> MSSQLS["storage/mssql_schemas"]
+    MSSQL --> MSSQLS
+    F   --> INT["integration"]
+    NET --> INT
+    F   --> CREDS["data_platform/dbx_creds"]
+    SEC --> CREDS
+    ABP --> CREDS
+    F   --> GOV["data_platform/dbx_governance"]
+    CREDS --> GOV
+    ABP --> GOV
+    F   --> CONN["data_platform/dbx_mssql_connector"]
+    MSSQL --> CONN
+    ABP --> CONN
+    ABP --> GRANTS["data_platform/dbx_mssql_grants"]
+    CONN --> GRANTS
+    NET --> WS["data_platform/dbx_workspace ①"]
+    ABP --> WS
+    ABP --> WH["data_platform/managed_warehouse"]
+    ABP --> FED["data_platform/uc_federation"]
+    GOV --> FED
+
+    style ABP fill:#dde8ff,stroke:#4466aa
 ```
 
 ### GCP
 
-```
-bootstrap/gcp/foundation ──► bootstrap/gcp/platform ──► bootstrap/gcp/config
-         │
-         ▼
- gcp/foundation
-         │
-         ├──► gcp/security
-         │
-         ├──► gcp/network
-         │
-         ├──► gcp/storage
-         │
-         ├──► gcp/integration ◄──── foundation + network
-         │
-         └──► gcp/data_platform/
-               ├── dbx_creds ◄──────── bootstrap/platform + bootstrap/gcp/foundation + foundation
-               ├── dbx_governance ◄─── foundation + dbx_creds + bootstrap/gcp/platform
-               │                        (reads marketing_infra.json + marketing_grants.json)
-               ├── dbx_bq_connector ◄── bootstrap/gcp/platform + bootstrap/gcp/foundation
-               │                          (BQ SA key from GCP Secret Manager)
-               ├── dbx_bq_grants ◄──── bootstrap/gcp/platform + dbx_bq_connector
-               │                         (reads marketing_infra.json + marketing_grants.json)
-               ├── dbx_workspace* ◄─── network + bootstrap/gcp/platform
-               ├── managed_warehouse ◄─ bootstrap/gcp/platform
-               ├── uc_federation ◄───── bootstrap/gcp/platform + dbx_governance
-               │                          (reads marketing_infra.json)
-               └── dbx_delta_sharing ◄─ bootstrap/platform (AWS) + bootstrap/gcp/platform
-                                          + dbx_governance (GCP) + aws/dbx_governance
-                                          (reads marketing_infra.json for shared objects)
+```mermaid
+flowchart TD
+    subgraph GBOOT["GCP Bootstrap (run once)"]
+        GBF["bootstrap/gcp/foundation"] --> GBP["bootstrap/gcp/platform"]
+        GBP --> GBC["bootstrap/gcp/config"]
+    end
+
+    F["gcp/foundation"]
+    NET["gcp/network"]
+    ABP["bootstrap/aws/platform"]
+    AGOV["aws/data_platform/dbx_governance"]
+
+    F --> SEC["security"]
+    F --> STORE["storage"]
+    F --> INT["integration"]
+    NET --> INT
+
+    ABP --> CREDS["data_platform/dbx_creds"]
+    GBF --> CREDS
+    F   --> CREDS
+    F   --> GOV["data_platform/dbx_governance"]
+    CREDS --> GOV
+    GBP --> GOV
+    GBP --> BQ["data_platform/dbx_bq_connector"]
+    GBF --> BQ
+    GBP --> BQGR["data_platform/dbx_bq_grants"]
+    BQ  --> BQGR
+    NET --> WS["data_platform/dbx_workspace ①"]
+    GBP --> WS
+    GBP --> WH["data_platform/managed_warehouse"]
+    GBP --> FED["data_platform/uc_federation"]
+    GOV --> FED
+    ABP  --> DS["data_platform/dbx_delta_sharing"]
+    GBP  --> DS
+    GOV  --> DS
+    AGOV --> DS
+
+    style ABP  fill:#dde8ff,stroke:#4466aa
+    style AGOV fill:#dde8ff,stroke:#4466aa
 ```
 
 > `*` `dbx_workspace` creates a private managed workspace. When `is_private_connection = false` (default), it is a no-op — the module gates itself via `for_each = local.private_mode`. In public mode, `managed_warehouse` and `uc_federation` operate on the serverless workspace from bootstrap.

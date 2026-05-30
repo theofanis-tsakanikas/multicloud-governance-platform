@@ -3,7 +3,10 @@ name: DBX Platform — Validate
 on:
   pull_request:
     paths:
-      - "databricks-platform-v2/**"
+      - "infra/**"
+      - "environments/**"
+      - "terragrunt.hcl"
+      - ".github/workflows/dbx-validate.yml"
 
 permissions:
   id-token: write
@@ -13,7 +16,6 @@ permissions:
 env:
   TF_VERSION: "1.10.0"
   TERRAGRUNT_VERSION: "0.75.0"
-  WORKING_DIR: databricks-platform-v2
 
 jobs:
   validate:
@@ -45,15 +47,13 @@ jobs:
           chmod +x /usr/local/bin/terragrunt
 
       - name: Terraform format check
-        working-directory: ${{ env.WORKING_DIR }}
-        run: terraform fmt -check -recursive
+        run: terraform fmt -check -recursive infra/
 
       - name: Terragrunt HCL format check
-        working-directory: ${{ env.WORKING_DIR }}
         run: terragrunt hclfmt --check --diff
 
       - name: Terragrunt validate — ${{ matrix.cloud }}
-        working-directory: ${{ env.WORKING_DIR }}/environments/dev/${{ matrix.cloud }}
+        working-directory: environments/dev/${{ matrix.cloud }}
         run: terragrunt run-all validate --terragrunt-non-interactive
         env:
           TERRAGRUNT_DOWNLOAD: /tmp/.terragrunt-cache
@@ -61,7 +61,7 @@ jobs:
       - name: Security scan — Checkov
         uses: bridgecrewio/checkov-action@v12
         with:
-          directory: ${{ env.WORKING_DIR }}/infra
+          directory: infra
           framework: terraform
           soft_fail: false
           output_format: github_failed_only
@@ -69,5 +69,45 @@ jobs:
       - name: Security scan — tfsec
         uses: aquasecurity/tfsec-action@v1.0.3
         with:
-          working_directory: ${{ env.WORKING_DIR }}/infra
+          working_directory: infra
           soft_fail: false
+
+  infracost:
+    name: Cost estimate
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Infracost
+        uses: infracost/actions/setup@v3
+
+      - name: Generate cost estimate
+        run: |
+          infracost breakdown \
+            --path infra/aws/modules \
+            --recursive \
+            --format json \
+            --out-file /tmp/infracost.json \
+            --no-cache 2>&1 \
+          || echo "::warning::Infracost scan incomplete — some resources may be unpriced"
+
+      - name: Post cost estimate comment
+        if: hashFiles('/tmp/infracost.json') != ''
+        run: |
+          estimate=$(infracost output \
+            --path /tmp/infracost.json \
+            --format github-comment 2>/dev/null \
+            || echo "_Unable to render estimate — check workflow logs._")
+          body="## Cost estimate
+
+> **Scope:** \`infra/aws/modules\` only. Databricks, Azure, and GCP resources are not priced by Infracost.
+
+$estimate"
+          gh pr comment "${{ github.event.pull_request.number }}" \
+            --body "$body" --edit-last 2>/dev/null \
+          || gh pr comment "${{ github.event.pull_request.number }}" \
+            --body "$body" \
+          || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
