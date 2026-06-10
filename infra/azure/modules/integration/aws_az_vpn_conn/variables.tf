@@ -43,7 +43,7 @@ variable "shared_key" {
 }
 
 variable "sql_server_fqdn" {
-  type        = string
+  type = string
 }
 
 variable "vpc_id" {

@@ -34,7 +34,7 @@ variable "functional_group_ids" {
 }
 
 variable "workspace_pricing_tier" {
-  description = "Pricing tier (ENTERPRISE, BUSINESS_CRITICAL, κλπ)"
+  description = "Pricing tier (ENTERPRISE, BUSINESS_CRITICAL, etc.)"
   type        = string
   default     = "ENTERPRISE"
 }

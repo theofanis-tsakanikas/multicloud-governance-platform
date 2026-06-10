@@ -37,16 +37,16 @@ resource "aws_iam_role" "databricks_role" {
 
 data "aws_iam_policy_document" "s3_access" {
   statement {
-    sid     = "BucketLevel"
-    effect  = "Allow"
-    actions = ["s3:ListBucket", "s3:GetBucketLocation", "s3:ListBucketMultipartUploads"]
+    sid       = "BucketLevel"
+    effect    = "Allow"
+    actions   = ["s3:ListBucket", "s3:GetBucketLocation", "s3:ListBucketMultipartUploads"]
     resources = [var.data_bucket_arn]
   }
 
   statement {
-    sid     = "ObjectLevel"
-    effect  = "Allow"
-    actions = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:ListMultipartUploadParts", "s3:AbortMultipartUpload"]
+    sid       = "ObjectLevel"
+    effect    = "Allow"
+    actions   = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:ListMultipartUploadParts", "s3:AbortMultipartUpload"]
     resources = ["${var.data_bucket_arn}/*"]
   }
 
@@ -78,16 +78,16 @@ data "aws_iam_policy_document" "managed_file_events" {
   }
 
   statement {
-    sid     = "ManagedFileEventsList"
-    effect  = "Allow"
-    actions = ["sqs:ListQueues", "sqs:ListQueueTags", "sns:ListTopics"]
+    sid       = "ManagedFileEventsList"
+    effect    = "Allow"
+    actions   = ["sqs:ListQueues", "sqs:ListQueueTags", "sns:ListTopics"]
     resources = ["arn:aws:sqs:*:*:csms-*", "arn:aws:sns:*:*:csms-*"]
   }
 
   statement {
-    sid     = "ManagedFileEventsTeardown"
-    effect  = "Allow"
-    actions = ["sns:Unsubscribe", "sns:DeleteTopic", "sqs:DeleteQueue"]
+    sid       = "ManagedFileEventsTeardown"
+    effect    = "Allow"
+    actions   = ["sns:Unsubscribe", "sns:DeleteTopic", "sqs:DeleteQueue"]
     resources = ["arn:aws:sqs:*:*:csms-*", "arn:aws:sns:*:*:csms-*"]
   }
 }
@@ -99,8 +99,8 @@ resource "aws_iam_policy" "managed_file_events" {
 
 data "aws_iam_policy_document" "rds_secrets_access" {
   statement {
-    effect  = "Allow"
-    actions = ["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"]
+    effect    = "Allow"
+    actions   = ["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"]
     resources = [var.rds_secret_arn]
   }
 }
@@ -132,7 +132,7 @@ resource "aws_iam_role" "proxy_role" {
   name     = "rds-proxy-role-${var.environment}"
 
   assume_role_policy = jsonencode({
-    Version = "2012-10-17"
+    Version   = "2012-10-17"
     Statement = [{ Action = "sts:AssumeRole", Effect = "Allow", Principal = { Service = "rds.amazonaws.com" } }]
   })
 }
@@ -143,7 +143,7 @@ resource "aws_iam_role_policy" "proxy_policy" {
   role     = aws_iam_role.proxy_role["enabled"].id
 
   policy = jsonencode({
-    Version = "2012-10-17"
+    Version   = "2012-10-17"
     Statement = [{ Effect = "Allow", Action = ["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"], Resource = [var.rds_secret_arn] }]
   })
 }
@@ -155,7 +155,7 @@ resource "aws_iam_role" "ecs_exec_role" {
   name     = "ecs-exec-role-${var.environment}"
 
   assume_role_policy = jsonencode({
-    Version = "2012-10-17"
+    Version   = "2012-10-17"
     Statement = [{ Action = "sts:AssumeRole", Effect = "Allow", Principal = { Service = "ecs-tasks.amazonaws.com" } }]
   })
 }

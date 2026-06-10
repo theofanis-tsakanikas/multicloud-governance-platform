@@ -1,10 +1,12 @@
 SHELL := /bin/bash
-.PHONY: help validate fmt bootstrap-aws bootstrap-gcp \
+.PHONY: help validate validate-config test fmt bootstrap-aws bootstrap-gcp \
         plan-aws plan-azure plan-gcp apply-aws apply-azure apply-gcp \
         destroy-aws destroy-azure destroy-gcp \
         plan apply destroy clean
 
-ENV_DIR   := environments/dev
+# Target environment (dev | prod): `make plan-aws ENV=prod`
+ENV       ?= dev
+ENV_DIR   := environments/$(ENV)
 TG        := terragrunt
 TG_FLAGS  := --terragrunt-non-interactive
 
@@ -19,6 +21,8 @@ help:
 	@echo "  ─────────────────────────────────────────"
 	@echo "  $(YELLOW)Validation$(RESET)"
 	@echo "    make validate        — terraform fmt + terragrunt hclfmt + checkov + tfsec"
+	@echo "    make validate-config — offline domain JSON/HCL validation (no cloud creds)"
+	@echo "    make test            — ruff + pytest for the config validator"
 	@echo "    make fmt             — auto-fix formatting"
 	@echo ""
 	@echo "  $(YELLOW)Bootstrap (run once per account)$(RESET)"
@@ -63,6 +67,19 @@ validate:
 fmt:
 	terraform fmt -recursive infra/
 	$(TG) hclfmt
+
+# ─── Domain-config validation (offline — no cloud creds) ───────────────────────
+
+validate-config:
+	@echo "$(GREEN)▶ domain config validation (offline)$(RESET)"
+	python3 scripts/validate_domains.py
+
+test:
+	@echo "$(GREEN)▶ ruff$(RESET)"
+	ruff check scripts tests
+	ruff format --check scripts tests
+	@echo "$(GREEN)▶ pytest$(RESET)"
+	pytest -q
 
 # ─── Bootstrap ───────────────────────────────────────────────────────────────
 

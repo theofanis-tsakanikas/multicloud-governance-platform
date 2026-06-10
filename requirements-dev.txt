@@ -1,0 +1,4 @@
+# Dev/test-only tooling for the offline domain-config validator.
+# NOT required by the Terraform/Terragrunt apply path — see docs/TESTING.md.
+pytest>=7.4
+ruff>=0.5

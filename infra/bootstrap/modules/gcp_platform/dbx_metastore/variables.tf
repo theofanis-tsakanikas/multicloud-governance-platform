@@ -6,7 +6,7 @@ variable "metastore_name" {
 variable "metastore_storage_root" {
   description = "The GCS bucket path for the metastore (gs://bucket/path)"
   type        = string
-} 
+}
 
 variable "location" {
   description = "The GCP region for the metastore"
@@ -35,7 +35,7 @@ variable "metastore_bucket_name" {
 }
 
 variable "dbx_sa_id" {
-  type       = string
+  type        = string
   description = "The full resource ID of the created Google Service Account"
 }
 

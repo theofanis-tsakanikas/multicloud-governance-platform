@@ -14,7 +14,7 @@ module "dbx_metastore" {
   metastore_bucket_name        = var.metastore_bucket_name
   dbx_sa_id                    = var.dbx_sa_id
   gcp_delta_sharing_name       = var.gcp_delta_sharing_name
-  providers = { databricks = databricks.mws }
+  providers                    = { databricks = databricks.mws }
 }
 
 module "dbx_workspace" {
@@ -29,6 +29,6 @@ module "dbx_workspace" {
   workspace_pricing_tier = var.workspace_pricing_tier
   environment            = var.environment
   dbx_account_id         = var.gcp_dbx_account_id
-  providers = { databricks = databricks.mws }
-  depends_on = [time_sleep.wait_after_metastore]
+  providers              = { databricks = databricks.mws }
+  depends_on             = [time_sleep.wait_after_metastore]
 }

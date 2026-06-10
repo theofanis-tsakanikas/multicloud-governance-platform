@@ -14,7 +14,7 @@ locals {
       # 1. We clear the schemas list because in Lakehouse Federation, 
       # Databricks mirrors them automatically from the source.
       schemas = []
-      
+
       # 2. Ensure these keys exist even if missing from the JSON input
       # to prevent "type object" schema errors in the child module.
       database_name   = lookup(cat, "database_name", null)

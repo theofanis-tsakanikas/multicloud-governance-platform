@@ -32,8 +32,8 @@ variable "cross_account_role_arn" {
 }
 
 variable "metastore_bucket_name" {
-  description = "The name of the metastore bucket" 
-  type = string
+  description = "The name of the metastore bucket"
+  type        = string
 }
 
 # --- Unity Catalog / Metastore Variables ---
@@ -53,5 +53,5 @@ variable "admin_group_id" {
 variable "functional_group_ids" {
   description = "A map or set of Databricks Group IDs to be assigned as USERs"
   type        = map(string)
-  # Παράδειγμα: { "data-scientists" = "12345", "analysts" = "67890" }
+  # Example: { "data-scientists" = "12345", "analysts" = "67890" }
 }

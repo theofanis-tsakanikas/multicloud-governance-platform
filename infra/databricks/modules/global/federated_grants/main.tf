@@ -2,7 +2,7 @@
 resource "databricks_grants" "federated_schema_grants" {
   # Iterates through the schemas defined in the federated_catalog object
   for_each = { for s in var.federated_catalog.schemas : s.schema_name => s }
-  
+
   # Target format: <catalog_name>.<schema_name>
   schema = "${var.federated_catalog.catalog_name}.${each.key}"
 

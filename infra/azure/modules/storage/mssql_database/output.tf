@@ -14,13 +14,13 @@ output "sql_server_id" {
 }
 
 output "sql_server_name" {
-  value       = azurerm_mssql_server.example.name
+  value = azurerm_mssql_server.example.name
 }
 
 output "database_id" {
-  value       = azurerm_mssql_database.example.id
+  value = azurerm_mssql_database.example.id
 }
 
 output "aws_frankfurt_ips" {
-  value       = data.aws_ip_ranges.frankfurt_ec2.cidr_blocks
+  value = data.aws_ip_ranges.frankfurt_ec2.cidr_blocks
 }

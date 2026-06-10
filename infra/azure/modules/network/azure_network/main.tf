@@ -23,7 +23,7 @@ resource "azurerm_subnet" "data_subnet" {
 resource "azurerm_subnet" "endpoint_subnet" {
   name                 = "snet-endpoints"
   resource_group_name  = var.resource_group_name
-  virtual_network_name = azurerm_virtual_network.vnet.name 
+  virtual_network_name = azurerm_virtual_network.vnet.name
   address_prefixes     = var.endpoint_subnet_prefix
 
   # Mandatory setting for Private Endpoints to function correctly
@@ -36,7 +36,7 @@ resource "azurerm_subnet" "gateway_subnet" {
   name                 = "GatewaySubnet" # This name is reserved; do not change!
   resource_group_name  = var.resource_group_name
   virtual_network_name = azurerm_virtual_network.vnet.name
-  address_prefixes     = var.gateway_subnet_prefix 
+  address_prefixes     = var.gateway_subnet_prefix
 }
 
 # Network Security Group (NSG) for SQL
@@ -47,17 +47,17 @@ resource "azurerm_network_security_group" "sql_nsg" {
   resource_group_name = var.resource_group_name
 
   security_rule {
-    name                       = "AllowSQLInbound"
-    priority                   = 100
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "1433"
-    
+    name                   = "AllowSQLInbound"
+    priority               = 100
+    direction              = "Inbound"
+    access                 = "Allow"
+    protocol               = "Tcp"
+    source_port_range      = "*"
+    destination_port_range = "1433"
+
     # Merges AWS Databricks VPC and local VNet CIDRs to allow cross-cloud traffic
-    source_address_prefixes    = flatten([
-      [var.databricks_vpc_cidr], 
+    source_address_prefixes = flatten([
+      [var.databricks_vpc_cidr],
       var.azure_vnet_cidr
     ])
     destination_address_prefix = "*"

@@ -4,8 +4,8 @@ variable "adls_name" {
 }
 
 variable "azure_containers" {
-    description = "The azure containers"
-    type = list(string)
+  description = "The azure containers"
+  type        = list(string)
 }
 
 variable "resource_group_name" {

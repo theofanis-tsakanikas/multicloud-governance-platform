@@ -18,7 +18,7 @@ resource "databricks_service_principal_secret" "sp_secret" {
 
 # 3. Store Credentials in the AWS Secret created in the previous module
 resource "aws_secretsmanager_secret_version" "spn_creds_value" {
-  secret_id     = var.spn_secret_arn
+  secret_id = var.spn_secret_arn
   secret_string = jsonencode({
     spn_client_id     = databricks_service_principal.automation_sp.application_id
     spn_client_secret = databricks_service_principal_secret.sp_secret.secret
@@ -59,7 +59,7 @@ resource "databricks_group_member" "spn_admin_membership" {
   group_id  = databricks_group.admins.id
   member_id = databricks_service_principal.automation_sp.id
 }
- 
+
 # Elevate the Admin Group to Account Admins
 resource "databricks_group_role" "account_admin_group" {
   group_id = databricks_group.admins.id

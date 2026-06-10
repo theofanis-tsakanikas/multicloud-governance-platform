@@ -28,3 +28,13 @@ repos:
       - id: detect-private-key
       - id: check-json
         files: environments/dev/domains/
+
+  # Offline domain-config validation (stdlib-only — no cloud creds, no deps).
+  - repo: local
+    hooks:
+      - id: validate-domains
+        name: validate domain governance config
+        entry: python3 scripts/validate_domains.py
+        language: system
+        pass_filenames: false
+        files: ^(environments/dev/domains/|environments/dev/.*/data_platform/dbx_governance/terragrunt\.hcl$|scripts/validate_domains\.py$)

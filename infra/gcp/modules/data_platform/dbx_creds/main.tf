@@ -1,7 +1,7 @@
 # 1. Create the Storage Credential in Unity Catalog
 resource "databricks_storage_credential" "external" {
   name = "${var.gcp_storage_credential_name}_${var.deployment_id}"
-  
+
   # Uses the Databricks-managed Service Account (System Managed)
   databricks_gcp_service_account {
     # email = var.dbx_sa_email
@@ -25,9 +25,9 @@ resource "databricks_grants" "external_creds" {
 resource "google_service_account_iam_member" "external_creds_impersonation" {
   # The ID of your existing SA (the one created during bootstrap)
   service_account_id = var.dbx_sa_id
-  
-  role   = "roles/iam.serviceAccountTokenCreator"
-  
+
+  role = "roles/iam.serviceAccountTokenCreator"
+
   # The system-managed email created by the databricks_storage_credential resource
   member = "serviceAccount:${databricks_storage_credential.external.databricks_gcp_service_account[0].email}"
 }

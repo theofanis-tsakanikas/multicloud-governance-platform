@@ -10,7 +10,7 @@ locals {
     for loc in local.external_locations_data : loc.location_name => merge(loc, {
       # Path calculation for Azure: abfss://container@account.dfs.core.windows.net/path
       calculated_url = "abfss://${loc.container}@${var.azure_storage_account_name}.dfs.core.windows.net/${trim(loc.path, "/")}/${var.deployment_id_azure}/"
-      
+
       # Unique Name Calculation (Injecting the deployment_id_azure)
       # If loc.location_name is "sales_raw", the final result will be "sales_raw_a1b2c3d4"
       unique_name = "${loc.location_name}_${var.deployment_id_azure}"
@@ -18,7 +18,7 @@ locals {
   }
 
   # Decode Catalog and Governance (Grants) data structures
-  catalogs_data               = jsondecode(var.catalogs_json)
+  catalogs_data              = jsondecode(var.catalogs_json)
   catalog_grants_data        = jsondecode(var.catalog_grants_json)
   managed_schema_grants_data = jsondecode(var.managed_schema_grants_json)
   volume_grants_data         = jsondecode(var.volume_grants_json)

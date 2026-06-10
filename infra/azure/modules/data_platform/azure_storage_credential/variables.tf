@@ -1,16 +1,16 @@
 variable "azure_tenant_id" {
   description = "The id of the azure tenant"
-  type = string
+  type        = string
 }
 
 variable "az_spn_client_id" {
   description = "The id of the azure spn client"
-  type = string
+  type        = string
 }
 
 variable "az_spn_client_secret" {
   description = "The secret of the azure spn client"
-  type = string
+  type        = string
 }
 
 variable "azure_storage_credential_name" {

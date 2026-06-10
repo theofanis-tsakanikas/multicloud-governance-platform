@@ -1,0 +1,25 @@
+# Dev/test-only Python configuration.
+#
+# This project ships NO Python application logic — its behaviour lives in the
+# domain governance JSON under environments/dev/domains/. The Python here is a
+# pre-flight CONFIG VALIDATOR (scripts/validate_domains.py) and its tests only.
+# It is never invoked by the Terraform/Terragrunt apply path. See docs/TESTING.md.
+
+[project]
+name = "databricks-uc-domain-validator"
+version = "0.1.0"
+description = "Offline pre-flight validator for Databricks UC domain governance JSON config"
+requires-python = ">=3.9"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["scripts"]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 140
+target-version = "py39"
+src = ["scripts", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "W"]

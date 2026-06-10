@@ -1,19 +1,19 @@
 ### 1. Catalog Creation
 resource "databricks_catalog" "catalog" {
-  name             = var.catalog.catalog_name
+  name = var.catalog.catalog_name
   # For Federated: name of the databricks_connection
-  connection_name  = lookup(var.catalog, "connection_name", null)
+  connection_name = lookup(var.catalog, "connection_name", null)
   # If MANAGED, it takes storage_root. If FEDERATED, it's null.
-  storage_root     = var.catalog.calculated_storage_root
-  
+  storage_root = var.catalog.calculated_storage_root
+
   # ISOLATED mode is only supported in MANAGED catalogs
-  isolation_mode   = var.catalog.type == "MANAGED" ? "ISOLATED" : null
+  isolation_mode = var.catalog.type == "MANAGED" ? "ISOLATED" : null
 
   # Federated catalogs require the 'database' option to map the remote DB
-  options          = var.catalog.type == "FEDERATED" ? {"database" = lookup(var.catalog, "database_name", null)} : null
+  options = var.catalog.type == "FEDERATED" ? { "database" = lookup(var.catalog, "database_name", null) } : null
 
-  comment          = "Catalog managed by Terraform"
-  force_destroy    = true
+  comment       = "Catalog managed by Terraform"
+  force_destroy = true
 }
 
 ### 2. Catalog Grants
@@ -24,7 +24,7 @@ resource "databricks_grants" "catalog_grants" {
   count = length(flatten([
     for cg in var.catalog_grants : [for g in cg.grants : g]
   ])) > 0 ? 1 : 0
-  
+
   catalog = databricks_catalog.catalog.name
 
   dynamic "grant" {
@@ -83,11 +83,11 @@ resource "databricks_volume" "volume" {
     for volume_config in flatten([
       for s in var.catalog.schemas : [
         for v in lookup(s, "volumes", []) : {
-          key              = "${s.schema_name}.${v.volume_name}" 
-          schema_name      = s.schema_name
-          v_name           = v.volume_name
-          v_type           = v.volume_type
-          calculated_path  = v.calculated_storage_location # The prepared URI
+          key             = "${s.schema_name}.${v.volume_name}"
+          schema_name     = s.schema_name
+          v_name          = v.volume_name
+          v_type          = v.volume_type
+          calculated_path = v.calculated_storage_location # The prepared URI
         }
       ]
     ]) : volume_config.key => volume_config
@@ -118,7 +118,7 @@ resource "databricks_grants" "volume_grants" {
       if vg.volume == "${databricks_catalog.catalog.name}.${v.schema_name}.${v.name}"
     ])) > 0
   }
-  volume   = each.value.id
+  volume = each.value.id
 
   dynamic "grant" {
     for_each = flatten([

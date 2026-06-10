@@ -13,7 +13,7 @@ module "dbx_metastore" {
   metastore_iam_role_arn       = var.metastore_iam_role_arn
   admin_group_id               = var.admin_group_id
   delta_sharing_name           = var.delta_sharing_name
-  providers = { databricks = databricks.mws }
+  providers                    = { databricks = databricks.mws }
 }
 
 module "dbx_workspace" {
@@ -28,6 +28,6 @@ module "dbx_workspace" {
   admin_group_id         = var.admin_group_id
   functional_group_ids   = var.functional_group_ids
   metastore_id           = module.dbx_metastore.metastore_id
-  providers = { databricks = databricks.mws }
-  depends_on = [time_sleep.wait_after_metastore]
+  providers              = { databricks = databricks.mws }
+  depends_on             = [time_sleep.wait_after_metastore]
 }

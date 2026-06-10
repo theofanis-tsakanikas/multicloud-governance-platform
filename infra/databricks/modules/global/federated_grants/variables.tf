@@ -1,11 +1,11 @@
 variable "federated_catalog" {
   description = "The specific federated catalog object from the JSON"
   type = object({
-    catalog_name  = string
-    database_name = optional(string)
+    catalog_name    = string
+    database_name   = optional(string)
     connection_name = string
-    type          = string
-    schemas       = list(object({
+    type            = string
+    schemas = list(object({
       schema_name = string
     }))
   })

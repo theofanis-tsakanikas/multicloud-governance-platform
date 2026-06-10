@@ -5,7 +5,7 @@ variable "iam_role_arn" {
 }
 
 variable "environment" {
-      type        = string
+  type        = string
   description = "Deployment environment (dev, stage, prod)"
 }
 

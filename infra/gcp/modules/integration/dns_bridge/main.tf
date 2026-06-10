@@ -1,7 +1,7 @@
 # 1. Private Hosted Zone in AWS Route 53
 resource "aws_route53_zone" "gcp_dns_proxy" {
   name = "googleapis.com"
-  
+
   vpc {
     vpc_id = var.databricks_vpc_id
   }
@@ -12,10 +12,10 @@ resource "aws_route53_zone" "gcp_dns_proxy" {
 # 2. DNS Records for Google APIs (Restricted Range)
 resource "aws_route53_record" "google_apis_restricted" {
   zone_id = aws_route53_zone.gcp_dns_proxy.zone_id
-  name    = "*.googleapis.com" # Wildcard για όλα τα APIs (BigQuery, Storage, κτλ)
+  name    = "*.googleapis.com" # Wildcard covering every Google API (BigQuery, Storage, etc.)
   type    = "A"
   ttl     = "300"
-  
+
   # The IPs of the Restricted Google API
   records = [
     "199.36.153.4",

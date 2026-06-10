@@ -21,6 +21,12 @@ variable "gcp_spn_client_secret" {
   sensitive   = true
 }
 
+variable "provider_key" {
+  description = "GCP service-account key JSON used by the generated google provider block."
+  type        = string
+  sensitive   = true
+}
+
 # --- AWS & Workspace Config ---
 variable "region" {
   description = "The AWS region for deployment."
@@ -61,5 +67,5 @@ variable "metastore_id" {
 
 variable "is_private_connection" {
   type        = bool
-  description = "Controls whether the connection to the Azure SQL Server uses a Private Endpoint (NCC) or the public internet. Set to 'true' to route traffic through the private backbone."
+  description = "Controls whether cross-cloud connectivity uses the private backbone (dedicated workspace + NCC) or the public internet. Set to 'true' to deploy the private workspace."
 }

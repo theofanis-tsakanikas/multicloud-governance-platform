@@ -14,7 +14,7 @@ locals {
       # 1. We empty the schemas list because in Federation, 
       # Databricks mirrors them automatically from the source
       schemas = []
-      
+
       # 2. We ensure these keys exist, even if they are missing from the JSON,
       # so that the child module's object type does not throw an error
       database_name   = lookup(cat, "database_name", null)

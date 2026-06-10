@@ -10,5 +10,5 @@ output "azure_storage_account_name" {
 
 output "containers_map" {
   description = "A map of container keys to their actual names"
-  value = { for k, c in azurerm_storage_container.container : k => c.name }
+  value       = { for k, c in azurerm_storage_container.container : k => c.name }
 }

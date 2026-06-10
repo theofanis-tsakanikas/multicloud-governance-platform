@@ -13,7 +13,7 @@ resource "databricks_share" "this" {
     for_each = each.value.objects
     content {
       # The full three-level name (catalog.schema.table)
-      name             = object.value.full_name
+      name = object.value.full_name
       # Supports both 'TABLE' and 'VOLUME' types
       data_object_type = object.value.type
       # Volume sharing requires history data sharing to be enabled
@@ -24,7 +24,7 @@ resource "databricks_share" "this" {
 
 # Defines the external Databricks workspace (AWS side) as a Recipient
 resource "databricks_recipient" "aws_side" {
-  name                = var.aws_db_recipient 
+  name = var.aws_db_recipient
   # 'DATABRICKS' type allows for seamless sharing between Databricks accounts
   authentication_type = "DATABRICKS"
   # The unique global ID of the target AWS Metastore
@@ -38,7 +38,7 @@ resource "databricks_grants" "some" {
   for_each = databricks_share.this
   share    = each.value.name
   grant {
-    principal  = databricks_recipient.aws_side.name
+    principal = databricks_recipient.aws_side.name
     # 'SELECT' is the required privilege for a recipient to access shared data
     privileges = ["SELECT"]
   }

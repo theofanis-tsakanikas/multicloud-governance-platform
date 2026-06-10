@@ -10,7 +10,7 @@ locals {
     for loc in local.external_locations_data : loc.location_name => merge(loc, {
       # Path calculation for GCP: gs://bucket-name/path
       calculated_url = "gs://${var.bucket_name}/${trim(loc.path, "/")}/${var.deployment_id_gcp}/"
-      
+
       # Calculate the Unique Name (Injecting the deployment_id_gcp)
       # If loc.location_name is "sales_raw", the final name will be "sales_raw_a1b2c3d4"
       unique_name = "${loc.location_name}_${var.deployment_id_gcp}"
@@ -18,8 +18,8 @@ locals {
   }
 
   # Decode Catalog and Governance (Grants) data structures
-  catalogs_data               = jsondecode(var.catalogs_json)
-  catalog_grants_data         = jsondecode(var.catalog_grants_json)
+  catalogs_data              = jsondecode(var.catalogs_json)
+  catalog_grants_data        = jsondecode(var.catalog_grants_json)
   managed_schema_grants_data = jsondecode(var.managed_schema_grants_json)
   volume_grants_data         = jsondecode(var.volume_grants_json)
 

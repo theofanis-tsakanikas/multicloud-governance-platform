@@ -33,8 +33,8 @@ resource "aws_lb_target_group" "pgbouncer_tg" {
 # 4. Listener for the NLB
 resource "aws_lb_listener" "pgbouncer_listener" {
   load_balancer_arn = aws_lb.nlb.arn
-  port                = "5432"
-  protocol            = "TCP"
+  port              = "5432"
+  protocol          = "TCP"
 
   default_action {
     type             = "forward"
@@ -112,12 +112,12 @@ resource "aws_ecs_task_definition" "pgbouncer" {
       ]
       secrets = [
         {
-          name      = "DB_PASSWORD"
+          name = "DB_PASSWORD"
           # Extracting only the "password" field from the JSON Secret
-          valueFrom = "${var.rds_secret_arn}:password::" 
+          valueFrom = "${var.rds_secret_arn}:password::"
         }
       ]
-      
+
       logConfiguration = {
         logDriver = "awslogs"
         options = {
@@ -163,9 +163,9 @@ resource "aws_vpc_endpoint_service" "rds_ncc_service" {
 # Allowed Principal (Permissions for connection)
 resource "aws_vpc_endpoint_service_allowed_principal" "databricks" {
   vpc_endpoint_service_id = aws_vpc_endpoint_service.rds_ncc_service.id
-  
+
   # Set to "*" to allow any principal, or replace with specific ARNs for locking down security
-  principal_arn = "*" 
+  principal_arn = "*"
 }
 
 # Route 53 Private DNS Configuration

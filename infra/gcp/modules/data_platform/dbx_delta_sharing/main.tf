@@ -22,7 +22,7 @@ module "aws_catalog_mount" {
   delta_shares_map_json = var.delta_shares_map_json
   gcp_metastore_id      = var.gcp_metastore_id
   gcp_provider_name     = var.gcp_provider_name
-  
+
   # Ensure the GCP Share exists before attempting to mount it in AWS
-  depends_on            = [module.gcp_side]
+  depends_on = [module.gcp_side]
 }

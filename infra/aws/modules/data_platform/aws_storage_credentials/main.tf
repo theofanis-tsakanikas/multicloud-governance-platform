@@ -10,7 +10,7 @@ resource "databricks_storage_credential" "creds" {
 
   # Lifecycle rules to manage resource deletion behavior
   lifecycle {
-      # Set to false to allow Terraform to destroy/recreate this credential
-      prevent_destroy = false
+    # Set to false to allow Terraform to destroy/recreate this credential
+    prevent_destroy = false
   }
 }

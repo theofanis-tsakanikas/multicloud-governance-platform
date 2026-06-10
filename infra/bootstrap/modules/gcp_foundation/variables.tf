@@ -7,7 +7,7 @@ variable "location" {
   description = "The GCP region for the resources (e.g., europe-west3)"
   type        = string
 }
- 
+
 variable "environment" {
   description = "The deployment environment (e.g., dev, staging, prod)"
   type        = string

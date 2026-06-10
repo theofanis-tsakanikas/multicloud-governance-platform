@@ -1,6 +1,7 @@
 # Databricks Multicloud Data Platform
 
 [![CI](https://github.com/theofanis-tsakanikas/databricks-uc-multicloud-platform/actions/workflows/dbx-validate.yml/badge.svg)](https://github.com/theofanis-tsakanikas/databricks-uc-multicloud-platform/actions/workflows/dbx-validate.yml)
+[![Config Validation](https://github.com/theofanis-tsakanikas/databricks-uc-multicloud-platform/actions/workflows/dbx-config-validate.yml/badge.svg)](https://github.com/theofanis-tsakanikas/databricks-uc-multicloud-platform/actions/workflows/dbx-config-validate.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Terraform](https://img.shields.io/badge/Terraform-%E2%89%A51.10-7B42BC?logo=terraform&logoColor=white)](https://www.terraform.io/)
 [![Terragrunt](https://img.shields.io/badge/Terragrunt-%E2%89%A50.75-4CADE3)](https://terragrunt.gruntwork.io/)
@@ -67,6 +68,13 @@ Full architecture detail, dependency graphs, and design decisions are in [ARCHIT
 - AWS CLI configured (with access to `387229419515`)
 - Bootstrap completed (`make bootstrap-aws`)
 
+## Environments
+
+`environments/dev/` and `environments/prod/` are file-for-file mirrors — every layer
+reads its values from the nearest `config.hcl`, so promotion is a config diff, not an
+architecture change. Select with `make plan-aws ENV=prod` (default `dev`). See
+[environments/prod/README.md](environments/prod/README.md) for the production checklist.
+
 ## Quick start
 
 ```bash
@@ -97,6 +105,7 @@ GitHub Actions workflows in `.github/workflows/`:
 | `dbx-bootstrap.yml` | Manual: bootstrap AWS or GCP |
 | `dbx-deploy.yml` | Manual: deploy one or all clouds |
 | `dbx-destroy.yml` | Manual: destroy with "DESTROY" confirmation |
+| `dbx-drift.yml` | Weekly schedule: `terragrunt plan -detailed-exitcode` per cloud; opens a `drift` issue on differences |
 
 Required GitHub secrets: `DBX_DEPLOY_ROLE_ARN`, `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`
 

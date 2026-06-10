@@ -4,5 +4,5 @@ output "az_spn_client_id" {
 }
 output "databricks_application_id" {
   description = "The id of the application for the databricks connection"
-  value = msgraph_resource.databricks_app.output.object_id_export
+  value       = msgraph_resource.databricks_app.output.object_id_export
 }

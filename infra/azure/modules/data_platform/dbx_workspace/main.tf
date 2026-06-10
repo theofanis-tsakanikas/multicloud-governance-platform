@@ -1,20 +1,11 @@
-# Account Provider (Alias) - For Metastore, NCC, and Groups management
-
-
-
-
-
-
 locals {
-  # If true, we create a map with a single key "enabled".
-  # If false, the map is empty {}.
+  # When true, the map has a single "enabled" key and the private workspace is
+  # deployed; when false, the map is empty and the module is a no-op (the
+  # serverless workspace created during bootstrap is used instead).
   private_mode = var.is_private_connection ? { "enabled" = true } : {}
 }
 
-
-
 module "dbx_workspace" {
-  # Key logic: If the map is empty, the module is not deployed (count = 0 equivalent)
   for_each = local.private_mode
 
   source = "./dbx_workspace"
@@ -27,8 +18,8 @@ module "dbx_workspace" {
   private_subnet_ids     = var.private_subnet_ids
   security_group_id      = var.security_group_id
   metastore_id           = var.metastore_id
-  
-  # Passing the account-level alias to the module for identity/NCC operations
+
+  # Pass the account-level provider alias for workspace/credential operations.
   providers = {
     databricks = databricks.mws
   }

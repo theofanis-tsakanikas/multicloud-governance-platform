@@ -4,7 +4,7 @@ output "endpoint_service_name" {
 }
 
 output "endpoint_service_id" {
-  value       = aws_vpc_endpoint_service.rds_ncc_service.id
+  value = aws_vpc_endpoint_service.rds_ncc_service.id
 }
 
 output "custom_db_hostname" {

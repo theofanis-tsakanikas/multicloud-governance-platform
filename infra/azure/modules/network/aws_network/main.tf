@@ -17,9 +17,9 @@ resource "aws_vpc" "databricks_vpc" {
 
 # The Private Subnets
 resource "aws_subnet" "private_subnets" {
-  for_each = var.databricks_subnets
-  vpc_id            = aws_vpc.databricks_vpc.id
-  cidr_block        = each.value
+  for_each   = var.databricks_subnets
+  vpc_id     = aws_vpc.databricks_vpc.id
+  cidr_block = each.value
   # Determines the AZ based on the index of the current key in the map
   availability_zone = data.aws_availability_zones.available.names[
     index(keys(var.databricks_subnets), each.key)
@@ -28,14 +28,14 @@ resource "aws_subnet" "private_subnets" {
   tags = {
     Name = "databricks-${each.key}"
     # Required tag for Databricks to identify where to provision compute nodes
-    "kubernetes.io/role/internal-elb" = "1" 
+    "kubernetes.io/role/internal-elb" = "1"
   }
 }
- 
+
 # 2. Security Groups (The Firewall)
 resource "aws_security_group" "databricks_sg" {
-  name        = "databricks-worker-sg"
-  vpc_id      = aws_vpc.databricks_vpc.id
+  name   = "databricks-worker-sg"
+  vpc_id = aws_vpc.databricks_vpc.id
 
   # Allow all internal traffic (Inbound from self)
   ingress {
@@ -70,8 +70,8 @@ resource "aws_route_table_association" "private_assoc" {
 # 3. VPC Endpoints (Zero Internet Exposure for Core Services)
 # S3 Gateway Endpoint (For data access and root storage)
 resource "aws_vpc_endpoint" "s3" {
-  vpc_id       = aws_vpc.databricks_vpc.id
-  service_name = "com.amazonaws.${var.region}.s3"
+  vpc_id          = aws_vpc.databricks_vpc.id
+  service_name    = "com.amazonaws.${var.region}.s3"
   route_table_ids = [aws_route_table.private.id]
 }
 
@@ -82,7 +82,7 @@ resource "aws_vpc_endpoint" "sts" {
   vpc_id              = aws_vpc.databricks_vpc.id
   service_name        = "com.amazonaws.${var.region}.sts"
   vpc_endpoint_type   = "Interface"
-  subnet_ids = [for s in aws_subnet.private_subnets : s.id]
+  subnet_ids          = [for s in aws_subnet.private_subnets : s.id]
   security_group_ids  = [aws_security_group.databricks_sg.id]
   private_dns_enabled = true
 }
@@ -92,7 +92,7 @@ resource "aws_vpc_endpoint" "kinesis" {
   vpc_id              = aws_vpc.databricks_vpc.id
   service_name        = "com.amazonaws.${var.region}.kinesis-streams"
   vpc_endpoint_type   = "Interface"
-  subnet_ids = [for s in aws_subnet.private_subnets : s.id]
+  subnet_ids          = [for s in aws_subnet.private_subnets : s.id]
   security_group_ids  = [aws_security_group.databricks_sg.id]
   private_dns_enabled = true
 }
@@ -109,7 +109,7 @@ resource "aws_route" "to_azure" {
   for_each = toset(var.azure_vnet_cidr)
 
   route_table_id         = aws_route_table.private.id
-  destination_cidr_block = each.value 
+  destination_cidr_block = each.value
   gateway_id             = aws_vpn_gateway.vpn_gw.id
 }
 
@@ -122,7 +122,7 @@ resource "aws_internet_gateway" "igw" {
 # Small Public Subnet exclusively for the NAT Gateway
 resource "aws_subnet" "public_nat_subnet" {
   vpc_id            = aws_vpc.databricks_vpc.id
-  cidr_block        = "10.10.100.0/24" 
+  cidr_block        = "10.10.100.0/24"
   availability_zone = data.aws_availability_zones.available.names[0]
   tags              = { Name = "databricks-public-nat-subnet" }
 }

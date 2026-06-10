@@ -1,0 +1,51 @@
+name: DBX Config — Validate (offline)
+
+# Pre-flight validation of the domain governance JSON config.
+#
+# This COMPLEMENTS dbx-validate.yml (which is OIDC-gated and runs Terraform /
+# Terragrunt / Checkov / tfsec). This job needs NO cloud credentials — it only
+# parses JSON + HCL and runs pytest, so it gives fast, free feedback on the
+# config that drives the whole platform.
+
+on:
+  pull_request:
+    paths:
+      - "environments/dev/domains/**"
+      - "environments/dev/**/data_platform/dbx_governance/terragrunt.hcl"
+      - "scripts/validate_domains.py"
+      - "tests/**"
+      - "requirements-dev.txt"
+      - "pyproject.toml"
+      - ".github/workflows/dbx-config-validate.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-config:
+    name: Validate domain config
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dev dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Ruff lint
+        run: ruff check scripts tests
+
+      - name: Ruff format check
+        run: ruff format --check scripts tests
+
+      - name: Validate domain config (offline)
+        run: python scripts/validate_domains.py
+
+      - name: Run validator test suite
+        run: pytest -q

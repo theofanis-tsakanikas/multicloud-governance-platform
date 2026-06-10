@@ -1,6 +1,6 @@
 output "managed_workspace_url" {
   description = "The login URL of the newly created Databricks Workspace."
-  # Το one() μετατρέπει τη λίστα/map σε ένα στοιχείο ή ""
+  # Empty string when the private workspace is disabled (is_private_connection = false).
   value = var.is_private_connection ? module.dbx_workspace["enabled"].managed_workspace_url : ""
 }
 

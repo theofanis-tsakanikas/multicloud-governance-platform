@@ -6,14 +6,14 @@
 # Necessary delay to ensure IAM roles and trust relationships have 
 # fully propagated across AWS and Databricks global APIs.
 resource "time_sleep" "iam_propagation" {
-  create_duration = "60s" 
+  create_duration = "60s"
 }
 
 locals {
   # Decode raw JSON strings provided by Python into Terraform-native structures
   external_locations_data    = jsondecode(var.external_locations_json)
   ext_loc_grants_data        = jsondecode(var.ext_loc_grants_json)
-  catalogs_data               = jsondecode(var.catalogs_json)
+  catalogs_data              = jsondecode(var.catalogs_json)
   catalog_grants_data        = jsondecode(var.catalog_grants_json)
   managed_schema_grants_data = jsondecode(var.managed_schema_grants_json)
   volume_grants_data         = jsondecode(var.volume_grants_json)
@@ -24,7 +24,7 @@ locals {
     for loc in local.external_locations_data : loc.location_name => merge(loc, {
       # Remove trailing slashes and append exactly one for a clean S3 URI
       calculated_url = "s3://${var.bucket_name}/${trim(loc.path, "/")}/${var.deployment_id_aws}/"
-      
+
       # Calculate a Unique Name (Injecting the deployment_id_aws)
       # If loc.location_name is "sales_raw", the final name will be "sales_raw_a1b2c3d4"
       unique_name = "${loc.location_name}_${var.deployment_id_aws}"
@@ -84,9 +84,9 @@ module "external_locations" {
 
 ### 2. AWS Managed Catalog Module
 module "aws_catalog" {
-  source   = "../../../../databricks/modules/global/catalog"
+  source = "../../../../databricks/modules/global/catalog"
   # Using the enriched map to provide computed S3 paths
-  for_each = local.enriched_catalogs 
+  for_each = local.enriched_catalogs
 
   catalog              = each.value
   managed_storage_root = var.managed_storage_root

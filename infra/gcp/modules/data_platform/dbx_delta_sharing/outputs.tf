@@ -7,6 +7,6 @@ output "share_names" {
 // }
 
 output "shares" {
-  # Επιστρέφουμε ένα map με τα ονόματα των shares για το επόμενο module
+  # Return a map of share names consumed by the downstream module
   value = module.gcp_side.shares
 }

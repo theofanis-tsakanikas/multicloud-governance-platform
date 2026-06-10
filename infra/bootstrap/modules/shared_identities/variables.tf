@@ -21,7 +21,7 @@ variable "dbx_account_id" {
 variable "spn_secret_arn" {
   description = "The ARN of the AWS Secrets Manager secret where the SPN credentials will be stored."
   type        = string
-} 
+}
 
 # --- Databricks Identity Management ---
 

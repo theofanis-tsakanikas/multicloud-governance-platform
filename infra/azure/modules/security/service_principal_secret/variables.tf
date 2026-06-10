@@ -4,8 +4,8 @@ variable "environment" {
 }
 
 variable "databricks_application_id" {
-    description = "The id of the application for the databricks connection"
-    type = string 
+  description = "The id of the application for the databricks connection"
+  type        = string
 }
 
 variable "key_vault_id" {

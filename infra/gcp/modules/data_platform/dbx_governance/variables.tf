@@ -21,7 +21,7 @@ variable "gcp_spn_client_secret" {
 }
 
 # --- JSON Strings from Python Orchestrator ---
-# Αυτές οι μεταβλητές δέχονται τα json.dumps() από την Python
+# These variables receive JSON-encoded strings from the Terragrunt inputs
 variable "external_locations_json" {
   description = "JSON string containing external locations definitions"
   type        = string
