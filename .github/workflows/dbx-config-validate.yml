@@ -1,18 +1,21 @@
 name: DBX Config — Validate (offline)
 
-# Pre-flight validation of the domain governance JSON config.
+# Pre-flight validation of the domain governance JSON config + the deterministic
+# access-policy gate.
 #
 # This COMPLEMENTS dbx-validate.yml (which is OIDC-gated and runs Terraform /
 # Terragrunt / Checkov / tfsec). This job needs NO cloud credentials — it only
-# parses JSON + HCL and runs pytest, so it gives fast, free feedback on the
-# config that drives the whole platform.
+# parses JSON + HCL, analyzes the access policy, and runs pytest, so it gives
+# fast, free feedback on the config that drives the whole platform.
 
 on:
   pull_request:
     paths:
       - "environments/dev/domains/**"
+      - "environments/dev/policy_exceptions.json"
       - "environments/dev/**/data_platform/dbx_governance/terragrunt.hcl"
-      - "scripts/validate_domains.py"
+      - "scripts/**"
+      - "docs/governance/**"
       - "tests/**"
       - "requirements-dev.txt"
       - "pyproject.toml"
@@ -47,5 +50,14 @@ jobs:
       - name: Validate domain config (offline)
         run: python scripts/validate_domains.py
 
-      - name: Run validator test suite
+      - name: Access-policy analysis (deterministic gate — fails on unacknowledged HIGH)
+        run: python scripts/policy_analyzer.py
+
+      - name: Governance docs are in sync with the config
+        run: python scripts/governance_report.py --check
+
+      - name: Genie copilot artifacts are in sync with the config
+        run: python scripts/genie_space.py --check
+
+      - name: Run test suite
         run: pytest -q

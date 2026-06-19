@@ -25,6 +25,11 @@ help:
 	@echo "    make test            — ruff + pytest for the config validator"
 	@echo "    make fmt             — auto-fix formatting"
 	@echo ""
+	@echo "  $(YELLOW)Governance copilot (offline, no cloud creds)$(RESET)"
+	@echo "    make policy-scan      — deterministic least-privilege/PII access analysis (CI gate)"
+	@echo "    make governance-report — regenerate docs/governance (report + grounding pack)"
+	@echo "    make genie-space      — regenerate the Genie governance-copilot artifacts"
+	@echo ""
 	@echo "  $(YELLOW)Bootstrap (run once per account)$(RESET)"
 	@echo "    make bootstrap-aws   — apply AWS bootstrap (foundation → platform → config)"
 	@echo "    make bootstrap-gcp   — apply GCP bootstrap"
@@ -73,6 +78,8 @@ fmt:
 validate-config:
 	@echo "$(GREEN)▶ domain config validation (offline)$(RESET)"
 	python3 scripts/validate_domains.py
+	@echo "$(GREEN)▶ access-policy analysis (offline)$(RESET)"
+	python3 scripts/policy_analyzer.py
 
 test:
 	@echo "$(GREEN)▶ ruff$(RESET)"
@@ -80,6 +87,23 @@ test:
 	ruff format --check scripts tests
 	@echo "$(GREEN)▶ pytest$(RESET)"
 	pytest -q
+
+# ─── Governance copilot ──────────────────────────────────────────────────────
+
+.PHONY: policy-scan governance-report genie-space
+
+policy-scan:
+	@echo "$(GREEN)▶ access-policy analysis (deterministic, CI gate)$(RESET)"
+	python3 scripts/policy_analyzer.py
+
+governance-report:
+	@echo "$(GREEN)▶ regenerating governance report + grounding pack$(RESET)"
+	python3 scripts/governance_report.py
+	python3 scripts/genie_space.py
+
+genie-space:
+	@echo "$(GREEN)▶ regenerating Genie governance-copilot artifacts$(RESET)"
+	python3 scripts/genie_space.py
 
 # ─── Bootstrap ───────────────────────────────────────────────────────────────
 

@@ -10,20 +10,22 @@
     {
       "catalog_name": "marketing_gcp",
       "type": "MANAGED",
+      "owner": "marketing_scientists",
       "storage_root": "databricks-project/marketing/managed/",
       "schemas": [
         {
           "schema_name": "intelligence",
+          "classification": "confidential",
           "shared": false,
           "volumes": [{
-            "volume_name": "campaign_assets", 
+            "volume_name": "campaign_assets",
             "location_path": "databricks-project/marketing/assets-zone/",
             "volume_path": "campaigns/",
             "volume_type": "EXTERNAL",
             "shared": true
           },
           {
-            "volume_name": "ml_models_artifacts", 
+            "volume_name": "ml_models_artifacts",
             "location_path": "databricks-project/marketing/assets-zone/",
             "volume_path": "ml-models/",
             "volume_type": "EXTERNAL",
@@ -35,10 +37,11 @@
     {
       "catalog_name": "marketing_bq_fed",
       "type": "FEDERATED",
+      "owner": "marketing_scientists",
       "connection_name": "bq_conn",
       "schemas": [
-        { "schema_name": "analytics" },
-        { "schema_name": "web" }
+        { "schema_name": "analytics", "classification": "internal" },
+        { "schema_name": "web", "classification": "pii" }
       ]
     }
   ]

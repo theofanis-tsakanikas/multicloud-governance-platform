@@ -1,0 +1,1248 @@
+{
+  "generated_at": "2026-06-19",
+  "summary": {
+    "clouds": [
+      "AWS",
+      "AZURE",
+      "GCP"
+    ],
+    "domains": [
+      "sales",
+      "supply_chain",
+      "marketing"
+    ],
+    "object_count": 29,
+    "grant_count": 66,
+    "pii_objects": 2,
+    "policy_counts": {
+      "HIGH": 0,
+      "MEDIUM": 6,
+      "LOW": 0,
+      "INFO": 2,
+      "ACCEPTED": 2
+    }
+  },
+  "objects": [
+    {
+      "cloud": "AWS",
+      "domain": "sales",
+      "object_type": "external_location",
+      "name": "loc_sales_raw",
+      "classification": null,
+      "owner": null,
+      "catalog_type": null
+    },
+    {
+      "cloud": "AWS",
+      "domain": "sales",
+      "object_type": "external_location",
+      "name": "loc_sales_managed",
+      "classification": null,
+      "owner": null,
+      "catalog_type": null
+    },
+    {
+      "cloud": "AWS",
+      "domain": "sales",
+      "object_type": "external_location",
+      "name": "loc_sales_gold",
+      "classification": null,
+      "owner": null,
+      "catalog_type": null
+    },
+    {
+      "cloud": "AWS",
+      "domain": "sales",
+      "object_type": "catalog",
+      "name": "sales_aws",
+      "classification": null,
+      "owner": "data_engineers",
+      "catalog_type": "MANAGED"
+    },
+    {
+      "cloud": "AWS",
+      "domain": "sales",
+      "object_type": "schema",
+      "name": "sales_aws.bronze",
+      "classification": "confidential",
+      "owner": null,
+      "catalog_type": "MANAGED"
+    },
+    {
+      "cloud": "AWS",
+      "domain": "sales",
+      "object_type": "volume",
+      "name": "sales_aws.bronze.sales_landing_zone",
+      "classification": "confidential",
+      "owner": null,
+      "catalog_type": "MANAGED"
+    },
+    {
+      "cloud": "AWS",
+      "domain": "sales",
+      "object_type": "schema",
+      "name": "sales_aws.silver",
+      "classification": "confidential",
+      "owner": null,
+      "catalog_type": "MANAGED"
+    },
+    {
+      "cloud": "AWS",
+      "domain": "sales",
+      "object_type": "schema",
+      "name": "sales_aws.gold",
+      "classification": "internal",
+      "owner": null,
+      "catalog_type": "MANAGED"
+    },
+    {
+      "cloud": "AWS",
+      "domain": "sales",
+      "object_type": "catalog",
+      "name": "sales_rds_fed",
+      "classification": null,
+      "owner": "data_engineers",
+      "catalog_type": "FEDERATED"
+    },
+    {
+      "cloud": "AWS",
+      "domain": "sales",
+      "object_type": "schema",
+      "name": "sales_rds_fed.crm",
+      "classification": "pii",
+      "owner": null,
+      "catalog_type": "FEDERATED"
+    },
+    {
+      "cloud": "AWS",
+      "domain": "sales",
+      "object_type": "schema",
+      "name": "sales_rds_fed.orders",
+      "classification": "confidential",
+      "owner": null,
+      "catalog_type": "FEDERATED"
+    },
+    {
+      "cloud": "AZURE",
+      "domain": "supply_chain",
+      "object_type": "external_location",
+      "name": "loc_supply_raw",
+      "classification": null,
+      "owner": null,
+      "catalog_type": null
+    },
+    {
+      "cloud": "AZURE",
+      "domain": "supply_chain",
+      "object_type": "external_location",
+      "name": "loc_supply_managed",
+      "classification": null,
+      "owner": null,
+      "catalog_type": null
+    },
+    {
+      "cloud": "AZURE",
+      "domain": "supply_chain",
+      "object_type": "catalog",
+      "name": "supplies_azure",
+      "classification": null,
+      "owner": "data_engineers",
+      "catalog_type": "MANAGED"
+    },
+    {
+      "cloud": "AZURE",
+      "domain": "supply_chain",
+      "object_type": "schema",
+      "name": "supplies_azure.bronze",
+      "classification": "confidential",
+      "owner": null,
+      "catalog_type": "MANAGED"
+    },
+    {
+      "cloud": "AZURE",
+      "domain": "supply_chain",
+      "object_type": "volume",
+      "name": "supplies_azure.bronze.supplies_landing_zone",
+      "classification": "confidential",
+      "owner": null,
+      "catalog_type": "MANAGED"
+    },
+    {
+      "cloud": "AZURE",
+      "domain": "supply_chain",
+      "object_type": "schema",
+      "name": "supplies_azure.silver",
+      "classification": "confidential",
+      "owner": null,
+      "catalog_type": "MANAGED"
+    },
+    {
+      "cloud": "AZURE",
+      "domain": "supply_chain",
+      "object_type": "catalog",
+      "name": "supply_sql_master",
+      "classification": null,
+      "owner": "data_engineers",
+      "catalog_type": "FEDERATED"
+    },
+    {
+      "cloud": "AZURE",
+      "domain": "supply_chain",
+      "object_type": "schema",
+      "name": "supply_sql_master.inventory",
+      "classification": "confidential",
+      "owner": null,
+      "catalog_type": "FEDERATED"
+    },
+    {
+      "cloud": "AZURE",
+      "domain": "supply_chain",
+      "object_type": "schema",
+      "name": "supply_sql_master.orders",
+      "classification": "confidential",
+      "owner": null,
+      "catalog_type": "FEDERATED"
+    },
+    {
+      "cloud": "GCP",
+      "domain": "marketing",
+      "object_type": "external_location",
+      "name": "loc_mktg_managed",
+      "classification": null,
+      "owner": null,
+      "catalog_type": null
+    },
+    {
+      "cloud": "GCP",
+      "domain": "marketing",
+      "object_type": "external_location",
+      "name": "loc_mktg_assets",
+      "classification": null,
+      "owner": null,
+      "catalog_type": null
+    },
+    {
+      "cloud": "GCP",
+      "domain": "marketing",
+      "object_type": "catalog",
+      "name": "marketing_gcp",
+      "classification": null,
+      "owner": "marketing_scientists",
+      "catalog_type": "MANAGED"
+    },
+    {
+      "cloud": "GCP",
+      "domain": "marketing",
+      "object_type": "schema",
+      "name": "marketing_gcp.intelligence",
+      "classification": "confidential",
+      "owner": null,
+      "catalog_type": "MANAGED"
+    },
+    {
+      "cloud": "GCP",
+      "domain": "marketing",
+      "object_type": "volume",
+      "name": "marketing_gcp.intelligence.campaign_assets",
+      "classification": "confidential",
+      "owner": null,
+      "catalog_type": "MANAGED"
+    },
+    {
+      "cloud": "GCP",
+      "domain": "marketing",
+      "object_type": "volume",
+      "name": "marketing_gcp.intelligence.ml_models_artifacts",
+      "classification": "confidential",
+      "owner": null,
+      "catalog_type": "MANAGED"
+    },
+    {
+      "cloud": "GCP",
+      "domain": "marketing",
+      "object_type": "catalog",
+      "name": "marketing_bq_fed",
+      "classification": null,
+      "owner": "marketing_scientists",
+      "catalog_type": "FEDERATED"
+    },
+    {
+      "cloud": "GCP",
+      "domain": "marketing",
+      "object_type": "schema",
+      "name": "marketing_bq_fed.analytics",
+      "classification": "internal",
+      "owner": null,
+      "catalog_type": "FEDERATED"
+    },
+    {
+      "cloud": "GCP",
+      "domain": "marketing",
+      "object_type": "schema",
+      "name": "marketing_bq_fed.web",
+      "classification": "pii",
+      "owner": null,
+      "catalog_type": "FEDERATED"
+    }
+  ],
+  "access_matrix": [
+    {
+      "cloud": "AWS",
+      "domain": "sales",
+      "object_type": "external_location",
+      "object": "loc_sales_raw",
+      "principal": "data_engineers",
+      "privileges": [
+        "ALL_PRIVILEGES"
+      ],
+      "classification": null,
+      "reads_data": false
+    },
+    {
+      "cloud": "AWS",
+      "domain": "sales",
+      "object_type": "external_location",
+      "object": "loc_sales_raw",
+      "principal": "data_scientists",
+      "privileges": [
+        "READ_FILES"
+      ],
+      "classification": null,
+      "reads_data": true
+    },
+    {
+      "cloud": "AWS",
+      "domain": "sales",
+      "object_type": "external_location",
+      "object": "loc_sales_raw",
+      "principal": "metastore_admins",
+      "privileges": [
+        "ALL_PRIVILEGES"
+      ],
+      "classification": null,
+      "reads_data": false
+    },
+    {
+      "cloud": "AWS",
+      "domain": "sales",
+      "object_type": "external_location",
+      "object": "loc_sales_managed",
+      "principal": "data_engineers",
+      "privileges": [
+        "ALL_PRIVILEGES"
+      ],
+      "classification": null,
+      "reads_data": false
+    },
+    {
+      "cloud": "AWS",
+      "domain": "sales",
+      "object_type": "external_location",
+      "object": "loc_sales_managed",
+      "principal": "metastore_admins",
+      "privileges": [
+        "ALL_PRIVILEGES"
+      ],
+      "classification": null,
+      "reads_data": false
+    },
+    {
+      "cloud": "AWS",
+      "domain": "sales",
+      "object_type": "external_location",
+      "object": "loc_sales_gold",
+      "principal": "data_engineers",
+      "privileges": [
+        "ALL_PRIVILEGES"
+      ],
+      "classification": null,
+      "reads_data": false
+    },
+    {
+      "cloud": "AWS",
+      "domain": "sales",
+      "object_type": "external_location",
+      "object": "loc_sales_gold",
+      "principal": "analysts",
+      "privileges": [
+        "READ_FILES"
+      ],
+      "classification": null,
+      "reads_data": true
+    },
+    {
+      "cloud": "AWS",
+      "domain": "sales",
+      "object_type": "external_location",
+      "object": "loc_sales_gold",
+      "principal": "business_users",
+      "privileges": [
+        "READ_FILES"
+      ],
+      "classification": null,
+      "reads_data": true
+    },
+    {
+      "cloud": "AWS",
+      "domain": "sales",
+      "object_type": "external_location",
+      "object": "loc_sales_gold",
+      "principal": "metastore_admins",
+      "privileges": [
+        "ALL_PRIVILEGES"
+      ],
+      "classification": null,
+      "reads_data": false
+    },
+    {
+      "cloud": "AWS",
+      "domain": "sales",
+      "object_type": "catalog",
+      "object": "sales_aws",
+      "principal": "data_engineers",
+      "privileges": [
+        "USE_CATALOG",
+        "CREATE_SCHEMA"
+      ],
+      "classification": null,
+      "reads_data": false
+    },
+    {
+      "cloud": "AWS",
+      "domain": "sales",
+      "object_type": "catalog",
+      "object": "sales_aws",
+      "principal": "metastore_admins",
+      "privileges": [
+        "ALL_PRIVILEGES"
+      ],
+      "classification": null,
+      "reads_data": false
+    },
+    {
+      "cloud": "AWS",
+      "domain": "sales",
+      "object_type": "catalog",
+      "object": "sales_rds_fed",
+      "principal": "data_engineers",
+      "privileges": [
+        "USE_CATALOG"
+      ],
+      "classification": null,
+      "reads_data": false
+    },
+    {
+      "cloud": "AWS",
+      "domain": "sales",
+      "object_type": "catalog",
+      "object": "sales_rds_fed",
+      "principal": "metastore_admins",
+      "privileges": [
+        "ALL_PRIVILEGES"
+      ],
+      "classification": null,
+      "reads_data": false
+    },
+    {
+      "cloud": "AWS",
+      "domain": "sales",
+      "object_type": "schema",
+      "object": "sales_aws.bronze",
+      "principal": "data_engineers",
+      "privileges": [
+        "USE_SCHEMA",
+        "CREATE_TABLE",
+        "SELECT",
+        "MODIFY"
+      ],
+      "classification": "confidential",
+      "reads_data": true
+    },
+    {
+      "cloud": "AWS",
+      "domain": "sales",
+      "object_type": "schema",
+      "object": "sales_aws.bronze",
+      "principal": "metastore_admins",
+      "privileges": [
+        "ALL_PRIVILEGES"
+      ],
+      "classification": "confidential",
+      "reads_data": false
+    },
+    {
+      "cloud": "AWS",
+      "domain": "sales",
+      "object_type": "schema",
+      "object": "sales_aws.silver",
+      "principal": "data_engineers",
+      "privileges": [
+        "USE_SCHEMA",
+        "CREATE_TABLE",
+        "SELECT",
+        "MODIFY"
+      ],
+      "classification": "confidential",
+      "reads_data": true
+    },
+    {
+      "cloud": "AWS",
+      "domain": "sales",
+      "object_type": "schema",
+      "object": "sales_aws.silver",
+      "principal": "data_scientists",
+      "privileges": [
+        "USE_SCHEMA",
+        "SELECT"
+      ],
+      "classification": "confidential",
+      "reads_data": true
+    },
+    {
+      "cloud": "AWS",
+      "domain": "sales",
+      "object_type": "schema",
+      "object": "sales_aws.silver",
+      "principal": "metastore_admins",
+      "privileges": [
+        "ALL_PRIVILEGES"
+      ],
+      "classification": "confidential",
+      "reads_data": false
+    },
+    {
+      "cloud": "AWS",
+      "domain": "sales",
+      "object_type": "schema",
+      "object": "sales_aws.gold",
+      "principal": "data_engineers",
+      "privileges": [
+        "USE_SCHEMA",
+        "CREATE_TABLE",
+        "SELECT",
+        "MODIFY"
+      ],
+      "classification": "internal",
+      "reads_data": true
+    },
+    {
+      "cloud": "AWS",
+      "domain": "sales",
+      "object_type": "schema",
+      "object": "sales_aws.gold",
+      "principal": "analysts",
+      "privileges": [
+        "USE_SCHEMA",
+        "SELECT"
+      ],
+      "classification": "internal",
+      "reads_data": true
+    },
+    {
+      "cloud": "AWS",
+      "domain": "sales",
+      "object_type": "schema",
+      "object": "sales_aws.gold",
+      "principal": "business_users",
+      "privileges": [
+        "USE_SCHEMA",
+        "SELECT"
+      ],
+      "classification": "internal",
+      "reads_data": true
+    },
+    {
+      "cloud": "AWS",
+      "domain": "sales",
+      "object_type": "schema",
+      "object": "sales_aws.gold",
+      "principal": "metastore_admins",
+      "privileges": [
+        "ALL_PRIVILEGES"
+      ],
+      "classification": "internal",
+      "reads_data": false
+    },
+    {
+      "cloud": "AWS",
+      "domain": "sales",
+      "object_type": "schema",
+      "object": "sales_rds_fed.orders",
+      "principal": "analysts",
+      "privileges": [
+        "USE_SCHEMA",
+        "SELECT"
+      ],
+      "classification": "confidential",
+      "reads_data": true
+    },
+    {
+      "cloud": "AWS",
+      "domain": "sales",
+      "object_type": "schema",
+      "object": "sales_rds_fed.orders",
+      "principal": "data_engineers",
+      "privileges": [
+        "USE_SCHEMA",
+        "SELECT"
+      ],
+      "classification": "confidential",
+      "reads_data": true
+    },
+    {
+      "cloud": "AWS",
+      "domain": "sales",
+      "object_type": "schema",
+      "object": "sales_rds_fed.orders",
+      "principal": "metastore_admins",
+      "privileges": [
+        "ALL_PRIVILEGES"
+      ],
+      "classification": "confidential",
+      "reads_data": false
+    },
+    {
+      "cloud": "AWS",
+      "domain": "sales",
+      "object_type": "schema",
+      "object": "sales_rds_fed.crm",
+      "principal": "crm_managers",
+      "privileges": [
+        "USE_SCHEMA",
+        "SELECT"
+      ],
+      "classification": "pii",
+      "reads_data": true
+    },
+    {
+      "cloud": "AWS",
+      "domain": "sales",
+      "object_type": "schema",
+      "object": "sales_rds_fed.crm",
+      "principal": "metastore_admins",
+      "privileges": [
+        "ALL_PRIVILEGES"
+      ],
+      "classification": "pii",
+      "reads_data": false
+    },
+    {
+      "cloud": "AWS",
+      "domain": "sales",
+      "object_type": "volume",
+      "object": "sales_aws.bronze.sales_landing_zone",
+      "principal": "data_engineers",
+      "privileges": [
+        "READ_VOLUME",
+        "WRITE_VOLUME"
+      ],
+      "classification": "confidential",
+      "reads_data": true
+    },
+    {
+      "cloud": "AWS",
+      "domain": "sales",
+      "object_type": "volume",
+      "object": "sales_aws.bronze.sales_landing_zone",
+      "principal": "metastore_admins",
+      "privileges": [
+        "ALL_PRIVILEGES"
+      ],
+      "classification": "confidential",
+      "reads_data": false
+    },
+    {
+      "cloud": "AZURE",
+      "domain": "supply_chain",
+      "object_type": "external_location",
+      "object": "loc_supply_raw",
+      "principal": "data_engineers",
+      "privileges": [
+        "CREATE_EXTERNAL_TABLE",
+        "CREATE_EXTERNAL_VOLUME"
+      ],
+      "classification": null,
+      "reads_data": false
+    },
+    {
+      "cloud": "AZURE",
+      "domain": "supply_chain",
+      "object_type": "external_location",
+      "object": "loc_supply_raw",
+      "principal": "metastore_admins",
+      "privileges": [
+        "ALL_PRIVILEGES"
+      ],
+      "classification": null,
+      "reads_data": false
+    },
+    {
+      "cloud": "AZURE",
+      "domain": "supply_chain",
+      "object_type": "external_location",
+      "object": "loc_supply_managed",
+      "principal": "data_engineers",
+      "privileges": [
+        "ALL_PRIVILEGES"
+      ],
+      "classification": null,
+      "reads_data": false
+    },
+    {
+      "cloud": "AZURE",
+      "domain": "supply_chain",
+      "object_type": "external_location",
+      "object": "loc_supply_managed",
+      "principal": "metastore_admins",
+      "privileges": [
+        "ALL_PRIVILEGES"
+      ],
+      "classification": null,
+      "reads_data": false
+    },
+    {
+      "cloud": "AZURE",
+      "domain": "supply_chain",
+      "object_type": "catalog",
+      "object": "supplies_azure",
+      "principal": "data_engineers",
+      "privileges": [
+        "USE_CATALOG",
+        "CREATE_SCHEMA"
+      ],
+      "classification": null,
+      "reads_data": false
+    },
+    {
+      "cloud": "AZURE",
+      "domain": "supply_chain",
+      "object_type": "catalog",
+      "object": "supplies_azure",
+      "principal": "metastore_admins",
+      "privileges": [
+        "ALL_PRIVILEGES"
+      ],
+      "classification": null,
+      "reads_data": false
+    },
+    {
+      "cloud": "AZURE",
+      "domain": "supply_chain",
+      "object_type": "catalog",
+      "object": "supply_sql_master",
+      "principal": "data_engineers",
+      "privileges": [
+        "USE_CATALOG"
+      ],
+      "classification": null,
+      "reads_data": false
+    },
+    {
+      "cloud": "AZURE",
+      "domain": "supply_chain",
+      "object_type": "catalog",
+      "object": "supply_sql_master",
+      "principal": "metastore_admins",
+      "privileges": [
+        "ALL_PRIVILEGES"
+      ],
+      "classification": null,
+      "reads_data": false
+    },
+    {
+      "cloud": "AZURE",
+      "domain": "supply_chain",
+      "object_type": "schema",
+      "object": "supplies_azure.bronze",
+      "principal": "data_engineers",
+      "privileges": [
+        "USE_SCHEMA",
+        "CREATE_TABLE",
+        "SELECT",
+        "MODIFY"
+      ],
+      "classification": "confidential",
+      "reads_data": true
+    },
+    {
+      "cloud": "AZURE",
+      "domain": "supply_chain",
+      "object_type": "schema",
+      "object": "supplies_azure.bronze",
+      "principal": "metastore_admins",
+      "privileges": [
+        "ALL_PRIVILEGES"
+      ],
+      "classification": "confidential",
+      "reads_data": false
+    },
+    {
+      "cloud": "AZURE",
+      "domain": "supply_chain",
+      "object_type": "schema",
+      "object": "supplies_azure.silver",
+      "principal": "data_engineers",
+      "privileges": [
+        "USE_SCHEMA",
+        "CREATE_TABLE",
+        "SELECT",
+        "MODIFY"
+      ],
+      "classification": "confidential",
+      "reads_data": true
+    },
+    {
+      "cloud": "AZURE",
+      "domain": "supply_chain",
+      "object_type": "schema",
+      "object": "supplies_azure.silver",
+      "principal": "data_scientists",
+      "privileges": [
+        "USE_SCHEMA",
+        "SELECT"
+      ],
+      "classification": "confidential",
+      "reads_data": true
+    },
+    {
+      "cloud": "AZURE",
+      "domain": "supply_chain",
+      "object_type": "schema",
+      "object": "supplies_azure.silver",
+      "principal": "metastore_admins",
+      "privileges": [
+        "ALL_PRIVILEGES"
+      ],
+      "classification": "confidential",
+      "reads_data": false
+    },
+    {
+      "cloud": "AZURE",
+      "domain": "supply_chain",
+      "object_type": "schema",
+      "object": "supply_sql_master.inventory",
+      "principal": "data_scientists",
+      "privileges": [
+        "USE_SCHEMA",
+        "SELECT"
+      ],
+      "classification": "confidential",
+      "reads_data": true
+    },
+    {
+      "cloud": "AZURE",
+      "domain": "supply_chain",
+      "object_type": "schema",
+      "object": "supply_sql_master.inventory",
+      "principal": "metastore_admins",
+      "privileges": [
+        "ALL_PRIVILEGES"
+      ],
+      "classification": "confidential",
+      "reads_data": false
+    },
+    {
+      "cloud": "AZURE",
+      "domain": "supply_chain",
+      "object_type": "schema",
+      "object": "supply_sql_master.orders",
+      "principal": "analysts",
+      "privileges": [
+        "USE_SCHEMA",
+        "SELECT"
+      ],
+      "classification": "confidential",
+      "reads_data": true
+    },
+    {
+      "cloud": "AZURE",
+      "domain": "supply_chain",
+      "object_type": "schema",
+      "object": "supply_sql_master.orders",
+      "principal": "metastore_admins",
+      "privileges": [
+        "ALL_PRIVILEGES"
+      ],
+      "classification": "confidential",
+      "reads_data": false
+    },
+    {
+      "cloud": "AZURE",
+      "domain": "supply_chain",
+      "object_type": "volume",
+      "object": "supplies_azure.bronze.supplies_landing_zone",
+      "principal": "data_engineers",
+      "privileges": [
+        "READ_VOLUME",
+        "WRITE_VOLUME"
+      ],
+      "classification": "confidential",
+      "reads_data": true
+    },
+    {
+      "cloud": "AZURE",
+      "domain": "supply_chain",
+      "object_type": "volume",
+      "object": "supplies_azure.bronze.supplies_landing_zone",
+      "principal": "metastore_admins",
+      "privileges": [
+        "ALL_PRIVILEGES"
+      ],
+      "classification": "confidential",
+      "reads_data": false
+    },
+    {
+      "cloud": "GCP",
+      "domain": "marketing",
+      "object_type": "external_location",
+      "object": "loc_mktg_managed",
+      "principal": "data_engineers",
+      "privileges": [
+        "ALL_PRIVILEGES"
+      ],
+      "classification": null,
+      "reads_data": false
+    },
+    {
+      "cloud": "GCP",
+      "domain": "marketing",
+      "object_type": "external_location",
+      "object": "loc_mktg_managed",
+      "principal": "metastore_admins",
+      "privileges": [
+        "ALL_PRIVILEGES"
+      ],
+      "classification": null,
+      "reads_data": false
+    },
+    {
+      "cloud": "GCP",
+      "domain": "marketing",
+      "object_type": "external_location",
+      "object": "loc_mktg_assets",
+      "principal": "data_engineers",
+      "privileges": [
+        "ALL_PRIVILEGES"
+      ],
+      "classification": null,
+      "reads_data": false
+    },
+    {
+      "cloud": "GCP",
+      "domain": "marketing",
+      "object_type": "external_location",
+      "object": "loc_mktg_assets",
+      "principal": "metastore_admins",
+      "privileges": [
+        "ALL_PRIVILEGES"
+      ],
+      "classification": null,
+      "reads_data": false
+    },
+    {
+      "cloud": "GCP",
+      "domain": "marketing",
+      "object_type": "catalog",
+      "object": "marketing_gcp",
+      "principal": "data_engineers",
+      "privileges": [
+        "USE_CATALOG",
+        "CREATE_SCHEMA"
+      ],
+      "classification": null,
+      "reads_data": false
+    },
+    {
+      "cloud": "GCP",
+      "domain": "marketing",
+      "object_type": "catalog",
+      "object": "marketing_gcp",
+      "principal": "metastore_admins",
+      "privileges": [
+        "ALL_PRIVILEGES"
+      ],
+      "classification": null,
+      "reads_data": false
+    },
+    {
+      "cloud": "GCP",
+      "domain": "marketing",
+      "object_type": "catalog",
+      "object": "marketing_bq_fed",
+      "principal": "data_engineers",
+      "privileges": [
+        "USE_CATALOG"
+      ],
+      "classification": null,
+      "reads_data": false
+    },
+    {
+      "cloud": "GCP",
+      "domain": "marketing",
+      "object_type": "catalog",
+      "object": "marketing_bq_fed",
+      "principal": "metastore_admins",
+      "privileges": [
+        "ALL_PRIVILEGES"
+      ],
+      "classification": null,
+      "reads_data": false
+    },
+    {
+      "cloud": "GCP",
+      "domain": "marketing",
+      "object_type": "schema",
+      "object": "marketing_gcp.intelligence",
+      "principal": "marketing_analysts",
+      "privileges": [
+        "USE_SCHEMA",
+        "SELECT"
+      ],
+      "classification": "confidential",
+      "reads_data": true
+    },
+    {
+      "cloud": "GCP",
+      "domain": "marketing",
+      "object_type": "schema",
+      "object": "marketing_gcp.intelligence",
+      "principal": "metastore_admins",
+      "privileges": [
+        "ALL_PRIVILEGES"
+      ],
+      "classification": "confidential",
+      "reads_data": false
+    },
+    {
+      "cloud": "GCP",
+      "domain": "marketing",
+      "object_type": "schema",
+      "object": "marketing_bq_fed.analytics",
+      "principal": "marketing_analysts",
+      "privileges": [
+        "USE_SCHEMA",
+        "SELECT"
+      ],
+      "classification": "internal",
+      "reads_data": true
+    },
+    {
+      "cloud": "GCP",
+      "domain": "marketing",
+      "object_type": "schema",
+      "object": "marketing_bq_fed.analytics",
+      "principal": "metastore_admins",
+      "privileges": [
+        "ALL_PRIVILEGES"
+      ],
+      "classification": "internal",
+      "reads_data": false
+    },
+    {
+      "cloud": "GCP",
+      "domain": "marketing",
+      "object_type": "schema",
+      "object": "marketing_bq_fed.web",
+      "principal": "data_scientists",
+      "privileges": [
+        "USE_SCHEMA",
+        "SELECT"
+      ],
+      "classification": "pii",
+      "reads_data": true
+    },
+    {
+      "cloud": "GCP",
+      "domain": "marketing",
+      "object_type": "schema",
+      "object": "marketing_bq_fed.web",
+      "principal": "metastore_admins",
+      "privileges": [
+        "ALL_PRIVILEGES"
+      ],
+      "classification": "pii",
+      "reads_data": false
+    },
+    {
+      "cloud": "GCP",
+      "domain": "marketing",
+      "object_type": "volume",
+      "object": "marketing_gcp.intelligence.campaign_assets",
+      "principal": "marketing_analysts",
+      "privileges": [
+        "READ_VOLUME"
+      ],
+      "classification": "confidential",
+      "reads_data": true
+    },
+    {
+      "cloud": "GCP",
+      "domain": "marketing",
+      "object_type": "volume",
+      "object": "marketing_gcp.intelligence.campaign_assets",
+      "principal": "metastore_admins",
+      "privileges": [
+        "ALL_PRIVILEGES"
+      ],
+      "classification": "confidential",
+      "reads_data": false
+    },
+    {
+      "cloud": "GCP",
+      "domain": "marketing",
+      "object_type": "volume",
+      "object": "marketing_gcp.intelligence.ml_models_artifacts",
+      "principal": "marketing_scientists",
+      "privileges": [
+        "READ_VOLUME",
+        "WRITE_VOLUME"
+      ],
+      "classification": "confidential",
+      "reads_data": true
+    },
+    {
+      "cloud": "GCP",
+      "domain": "marketing",
+      "object_type": "volume",
+      "object": "marketing_gcp.intelligence.ml_models_artifacts",
+      "principal": "metastore_admins",
+      "privileges": [
+        "ALL_PRIVILEGES"
+      ],
+      "classification": "confidential",
+      "reads_data": false
+    }
+  ],
+  "pii_map": [
+    {
+      "cloud": "AWS",
+      "domain": "sales",
+      "object": "sales_rds_fed.crm",
+      "storage": "federated",
+      "readers": [
+        "crm_managers"
+      ]
+    },
+    {
+      "cloud": "GCP",
+      "domain": "marketing",
+      "object": "marketing_bq_fed.web",
+      "storage": "federated",
+      "readers": [
+        "data_scientists"
+      ]
+    }
+  ],
+  "policy_findings": [
+    {
+      "rule": "PII_BROAD_READ",
+      "severity": "HIGH",
+      "cloud": "AWS",
+      "object": "schema:sales_rds_fed.crm",
+      "principal": "crm_managers",
+      "message": "PII is readable by a non-admin principal not on the PII allowlist",
+      "dimension": "Data quality & lineage",
+      "accepted": true,
+      "justification": "CRM operations team requires read access to customer records to service accounts. Access is read-only (SELECT), scoped to the crm_managers group, and covered by DPIA-2026-014."
+    },
+    {
+      "rule": "PII_BROAD_READ",
+      "severity": "HIGH",
+      "cloud": "GCP",
+      "object": "schema:marketing_bq_fed.web",
+      "principal": "data_scientists",
+      "message": "PII is readable by a non-admin principal not on the PII allowlist",
+      "dimension": "Data quality & lineage",
+      "accepted": true,
+      "justification": "Web analytics PII is pseudonymised at source; data scientists use it for aggregate modelling only. Accepted risk pending the migration to a fully anonymised feature view (tracked in DPIA-2026-021)."
+    },
+    {
+      "rule": "ALL_PRIVILEGES_NONADMIN",
+      "severity": "MEDIUM",
+      "cloud": "AWS",
+      "object": "external_location:loc_sales_gold",
+      "principal": "data_engineers",
+      "message": "ALL_PRIVILEGES granted to a non-admin, non-owner principal",
+      "dimension": "Governance as code",
+      "accepted": false,
+      "justification": ""
+    },
+    {
+      "rule": "ALL_PRIVILEGES_NONADMIN",
+      "severity": "MEDIUM",
+      "cloud": "AWS",
+      "object": "external_location:loc_sales_managed",
+      "principal": "data_engineers",
+      "message": "ALL_PRIVILEGES granted to a non-admin, non-owner principal",
+      "dimension": "Governance as code",
+      "accepted": false,
+      "justification": ""
+    },
+    {
+      "rule": "ALL_PRIVILEGES_NONADMIN",
+      "severity": "MEDIUM",
+      "cloud": "AWS",
+      "object": "external_location:loc_sales_raw",
+      "principal": "data_engineers",
+      "message": "ALL_PRIVILEGES granted to a non-admin, non-owner principal",
+      "dimension": "Governance as code",
+      "accepted": false,
+      "justification": ""
+    },
+    {
+      "rule": "ALL_PRIVILEGES_NONADMIN",
+      "severity": "MEDIUM",
+      "cloud": "AZURE",
+      "object": "external_location:loc_supply_managed",
+      "principal": "data_engineers",
+      "message": "ALL_PRIVILEGES granted to a non-admin, non-owner principal",
+      "dimension": "Governance as code",
+      "accepted": false,
+      "justification": ""
+    },
+    {
+      "rule": "ALL_PRIVILEGES_NONADMIN",
+      "severity": "MEDIUM",
+      "cloud": "GCP",
+      "object": "external_location:loc_mktg_assets",
+      "principal": "data_engineers",
+      "message": "ALL_PRIVILEGES granted to a non-admin, non-owner principal",
+      "dimension": "Governance as code",
+      "accepted": false,
+      "justification": ""
+    },
+    {
+      "rule": "ALL_PRIVILEGES_NONADMIN",
+      "severity": "MEDIUM",
+      "cloud": "GCP",
+      "object": "external_location:loc_mktg_managed",
+      "principal": "data_engineers",
+      "message": "ALL_PRIVILEGES granted to a non-admin, non-owner principal",
+      "dimension": "Governance as code",
+      "accepted": false,
+      "justification": ""
+    },
+    {
+      "rule": "FEDERATED_PII",
+      "severity": "INFO",
+      "cloud": "AWS",
+      "object": "schema:sales_rds_fed.crm",
+      "principal": "",
+      "message": "PII resides in a federated source (outside Unity Catalog managed storage)",
+      "dimension": "Data quality & lineage",
+      "accepted": false,
+      "justification": ""
+    },
+    {
+      "rule": "FEDERATED_PII",
+      "severity": "INFO",
+      "cloud": "GCP",
+      "object": "schema:marketing_bq_fed.web",
+      "principal": "",
+      "message": "PII resides in a federated source (outside Unity Catalog managed storage)",
+      "dimension": "Data quality & lineage",
+      "accepted": false,
+      "justification": ""
+    }
+  ]
+}

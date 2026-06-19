@@ -11,10 +11,12 @@
     {
       "catalog_name": "sales_aws",
       "type": "MANAGED",
+      "owner": "data_engineers",
       "storage_root": "databricks-project/sales/managed-zone/",
       "schemas": [
         {
           "schema_name": "bronze",
+          "classification": "confidential",
           "volumes": [{
             "volume_name": "sales_landing_zone",
             "location_path": "databricks-project/sales/raw-zone/",
@@ -22,18 +24,19 @@
             "volume_type": "EXTERNAL"
           }]
         },
-        {"schema_name": "silver"},
-        {"schema_name": "gold"}
+        {"schema_name": "silver", "classification": "confidential"},
+        {"schema_name": "gold", "classification": "internal"}
       ]
     },
     {
       "catalog_name": "sales_rds_fed",
       "type": "FEDERATED",
+      "owner": "data_engineers",
       "connection_name": "rds_postgres_conn",
       "database_name": "salesdb",
       "schemas": [
-        { "schema_name": "crm" },
-        { "schema_name": "orders" }
+        { "schema_name": "crm", "classification": "pii" },
+        { "schema_name": "orders", "classification": "confidential" }
       ]
     }
   ]
