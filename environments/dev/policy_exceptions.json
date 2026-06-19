@@ -1,0 +1,28 @@
+{
+  "_comment": [
+    "Documented, reviewed deviations from the default access policy enforced by",
+    "scripts/policy_analyzer.py. A matching, UNEXPIRED entry downgrades a finding",
+    "from a gating violation to an 'accepted risk' (still reported, not blocking).",
+    "An expired entry stops suppressing — the risk re-surfaces for re-review.",
+    "This is the auditable who/what/why/until handed to a regulator: every PII",
+    "access path beyond the admin group is justified, approved, and time-bound."
+  ],
+  "exceptions": [
+    {
+      "rule": "PII_BROAD_READ",
+      "object": "schema:sales_rds_fed.crm",
+      "principal": "crm_managers",
+      "justification": "CRM operations team requires read access to customer records to service accounts. Access is read-only (SELECT), scoped to the crm_managers group, and covered by DPIA-2026-014.",
+      "approved_by": "data-protection-officer",
+      "expires": "2026-12-31"
+    },
+    {
+      "rule": "PII_BROAD_READ",
+      "object": "schema:marketing_bq_fed.web",
+      "principal": "data_scientists",
+      "justification": "Web analytics PII is pseudonymised at source; data scientists use it for aggregate modelling only. Accepted risk pending the migration to a fully anonymised feature view (tracked in DPIA-2026-021).",
+      "approved_by": "data-protection-officer",
+      "expires": "2026-09-30"
+    }
+  ]
+}

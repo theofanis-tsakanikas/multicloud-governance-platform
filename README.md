@@ -36,6 +36,7 @@ This project is a reference implementation of production-grade, multi-cloud data
 | **Secrets never in code** | `run_cmd` fetches all secrets from AWS Secrets Manager at plan time; no secrets in state, no env var injection |
 | **OIDC-based CI with no long-lived credentials** | GitHub Actions assumes an AWS IAM role via OIDC; Azure uses federated identity; GCP seeds from AWS Secrets Manager |
 | **Cross-cloud Delta Sharing** | GCP marketing catalog is shared to the AWS metastore using dual Databricks provider aliases and native HCL logic |
+| **Responsible-AI governance copilot** | A deterministic least-privilege / PII analyzer gates CI, generates EU-AI-Act / GDPR documentation from the config, and grounds a single cross-cloud Genie NL layer — trust-first, LLM bounded ([docs/governance/](docs/governance/README.md)) |
 | **Security scanning in CI** | Checkov and tfsec run on every PR against `infra/`; pre-commit hooks enforce the same checks locally |
 | **Cost estimation in CI** | Infracost posts an AWS infrastructure cost breakdown as a PR comment on every change |
 
@@ -111,10 +112,20 @@ Required GitHub secrets: `DBX_DEPLOY_ROLE_ARN`, `AZURE_CLIENT_ID`, `AZURE_TENANT
 
 ## Adding a new domain
 
-1. Add `environments/dev/domains/<cloud>/<domain>_infra.json`
+1. Add `environments/dev/domains/<cloud>/<domain>_infra.json` (classify schemas with `classification`, set the catalog `owner`)
 2. Add `environments/dev/domains/<cloud>/<domain>_grants.json`
 3. Update the `domain_path` locals in the relevant `data_platform/dbx_governance/terragrunt.hcl`
-4. Run `make apply LAYER=<cloud>/data_platform/dbx_governance`
+4. Run `make policy-scan` to check the new grants against the least-privilege / PII rules, then `make governance-report`
+5. Run `make apply LAYER=<cloud>/data_platform/dbx_governance`
+
+## Governance copilot
+
+The platform ships a Responsible-AI governance layer over the catalog — a deterministic access-policy analyzer (CI gate), auto-generated EU-AI-Act / GDPR documentation, and a single cross-cloud Genie NL interface grounded on that analysis. All offline and credential-free. See [docs/governance/](docs/governance/README.md) and the generated [REPORT.md](docs/governance/REPORT.md).
+
+```bash
+make policy-scan          # least-privilege / PII analysis (fails on unacknowledged HIGH)
+make governance-report    # regenerate the governance docs + Genie grounding pack
+```
 
 ## After a full destroy
 

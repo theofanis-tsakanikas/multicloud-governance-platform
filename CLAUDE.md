@@ -210,3 +210,25 @@ Workflow files and some commit messages reference `databricks-platform-v2` as a 
 ### 7. Checkov and tfsec scan `infra/` only
 
 Both security scanners (in `dbx-validate.yml` and `.pre-commit-config.yaml`) target `infra/`. The `environments/dev/` Terragrunt configs are not scanned — they contain no Terraform resource definitions, only wiring (provider generation, dependency declarations, input passing). This is correct and intentional.
+
+### 8. Governance copilot — deterministic-first, LLM bounded
+
+The `scripts/governance_*.py` + `scripts/genie_space.py` layer is a Responsible-AI
+governance copilot over the catalog (see [docs/governance/](docs/governance/README.md)).
+Operational notes:
+
+- **The analyzer is the source of truth, not Genie.** `policy_analyzer.py` runs in
+  the offline `dbx-config-validate.yml` workflow and **fails the PR on any
+  unacknowledged HIGH** finding. Genie only restates the analyzer's output.
+- **Classification is an additive convention.** Schemas may carry
+  `"classification"` (`public`|`internal`|`confidential`|`pii`) and catalogs an
+  `"owner"`. Terraform ignores both — the modules consume the JSON via
+  `jsondecode` + `merge`/`lookup`, so unknown keys pass through untouched. Adding
+  them does **not** change any `apply`.
+- **`docs/governance/` is generated, not hand-written.** `governance_report.py` and
+  `genie_space.py` regenerate it; CI asserts it is in sync (`--check`). After
+  editing any domain JSON, run `make governance-report` and commit the result, or
+  the `--check` step fails.
+- **Exceptions are time-bound.** `environments/dev/policy_exceptions.json` entries
+  have an `expires` date. An expired exception stops suppressing its finding, which
+  will then fail CI — that is intentional (it forces re-review), not a bug.

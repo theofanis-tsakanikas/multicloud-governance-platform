@@ -19,30 +19,33 @@
     {
       "catalog_name": "supplies_azure",
       "type": "MANAGED",
+      "owner": "data_engineers",
       "container": "databricks-project",
       "storage_root": "supply-chain/managed/",
       "schemas": [
         {
           "schema_name": "bronze",
+          "classification": "confidential",
           "volumes": [{
-            "volume_name": "supplies_landing_zone", 
+            "volume_name": "supplies_landing_zone",
             "container": "databricks-project",
             "location_path": "supply-chain/raw/",
             "volume_path": "landing/",
             "volume_type": "EXTERNAL"
             }]
         },
-        {"schema_name": "silver"}
+        {"schema_name": "silver", "classification": "confidential"}
       ]
     },
     {
       "catalog_name": "supply_sql_master",
       "type": "FEDERATED",
+      "owner": "data_engineers",
       "connection_name": "azure_sql_conn",
       "database_name": "sqldb-product-catalog",
       "schemas": [
-        { "schema_name": "inventory" },
-        { "schema_name": "orders" }
+        { "schema_name": "inventory", "classification": "confidential" },
+        { "schema_name": "orders", "classification": "confidential" }
       ]
     }
   ]
