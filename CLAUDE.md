@@ -11,13 +11,20 @@ Full architecture detail and dependency graphs are in [ARCHITECTURE.md](ARCHITEC
 ```
 .
 ├── terragrunt.hcl              # Root: S3 remote state + DynamoDB lock (inherited by all children)
-├── environments/dev/
-│   ├── config.hcl              # Single source of truth for every config value
-│   ├── domains/{aws,azure,gcp}/  # Domain JSON (infra + grants per domain)
-│   ├── bootstrap/{aws,gcp}/    # One-time bootstrap (metastore, identities, SPN, secrets)
-│   ├── aws/                    # AWS stack: foundation → security → network → storage → data_platform
-│   ├── azure/                  # Azure stack (same layered pattern)
-│   └── gcp/                    # GCP stack
+├── Makefile                    # validate / plan / apply / destroy + policy-scan / governance-report (ENV=dev|prod)
+├── environments/
+│   ├── dev/                    # dev environment (config.hcl, domains, bootstrap, per-cloud stacks)
+│   │   ├── config.hcl          # Single source of truth for every config value
+│   │   ├── policy_exceptions.json  # Documented, time-bound deviations for the access-policy analyzer
+│   │   └── domains/{aws,azure,gcp}/  # Domain JSON (infra + grants per domain; schemas carry classification/PII)
+│   └── prod/                   # prod environment — file-for-file mirror of dev (own config.hcl)
+├── scripts/                    # Offline governance copilot (no cloud, no creds, CI-gated):
+│   ├── validate_domains.py     #   domain-config schema/consistency/wiring validator
+│   ├── governance_model.py     #   shared parser: domain JSON → objects + grants + classification
+│   ├── policy_analyzer.py      #   deterministic least-privilege / PII gate (fails CI on unacknowledged HIGH)
+│   ├── governance_report.py    #   generates docs/governance/REPORT.md + grounding pack
+│   └── genie_space.py          #   Genie governance-space SQL + grounding-contract instructions (deferred deploy)
+├── docs/governance/            # Generated: REPORT.md (EU-AI-Act/GDPR doc) + governance_context.json + genie/
 └── infra/
     ├── aws/modules/            # Pure Terraform modules — no provider.tf, no backend.tf
     ├── azure/modules/
@@ -138,16 +145,18 @@ Domain governance is defined in JSON, loaded natively by Terragrunt, and passed 
 
 ## GitHub Actions workflows
 
-All four workflows live in `.github/workflows/`. The `bootstrap`, `deploy`, and `destroy` workflows target the `dev` GitHub Environment (configure manual approval gates there if needed).
+All six workflows live in `.github/workflows/`. The `bootstrap`, `deploy`, and `destroy` workflows target the `dev` GitHub Environment (configure manual approval gates there if needed).
 
 | Workflow | File | Trigger | Required secrets |
 |---|---|---|---|
 | Validate | `dbx-validate.yml` | PR touching `infra/**`, `environments/**`, `terragrunt.hcl`, `dbx-validate.yml` | `DBX_DEPLOY_ROLE_ARN` |
+| Config validate | `dbx-config-validate.yml` | PR touching domains/scripts/docs/governance — **no cloud creds**: runs `validate_domains` + the `policy_analyzer` gate + report/Genie `--check` + pytest | — |
+| Drift detection | `dbx-drift.yml` | Weekly schedule (+ manual) — `terragrunt run-all plan -detailed-exitcode` per cloud; opens/updates a `drift`-labelled issue | `DBX_DEPLOY_ROLE_ARN` |
 | Bootstrap | `dbx-bootstrap.yml` | Manual (`workflow_dispatch`) | `DBX_DEPLOY_ROLE_ARN` |
 | Deploy | `dbx-deploy.yml` | Manual (`workflow_dispatch`) | `DBX_DEPLOY_ROLE_ARN`, `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID` |
 | Destroy | `dbx-destroy.yml` | Manual — requires typing `DESTROY` to confirm | Same as Deploy |
 
-**Validate** is the only PR-gating workflow. It runs in parallel across three jobs:
+**Validate** and **Config validate** are the two PR-gating workflows (`dbx-config-validate` is credential-free and also runs the access-policy gate). **Validate** runs in parallel across three jobs:
 - `validate (aws/azure/gcp)` matrix — `terraform fmt`, `terragrunt hclfmt`, `terragrunt validate`, Checkov, tfsec
 - `infracost` — cost estimate of `infra/aws/modules`, posts result as a PR comment
 
