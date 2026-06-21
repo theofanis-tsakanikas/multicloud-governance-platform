@@ -102,7 +102,8 @@ GitHub Actions workflows in `.github/workflows/`:
 
 | Workflow | Trigger |
 |---|---|
-| `dbx-validate.yml` | Every PR touching `infra/**`, `environments/**`, or `terragrunt.hcl` |
+| `dbx-validate.yml` | Every PR touching `infra/**`, `environments/**`, or `terragrunt.hcl` — fmt, validate, Checkov, tfsec, Infracost |
+| `dbx-config-validate.yml` | PR touching domains/scripts/docs — **credential-free**: domain validator + the access-policy gate + report/Genie `--check` + pytest |
 | `dbx-bootstrap.yml` | Manual: bootstrap AWS or GCP |
 | `dbx-deploy.yml` | Manual: deploy one or all clouds |
 | `dbx-destroy.yml` | Manual: destroy with "DESTROY" confirmation |
