@@ -37,3 +37,9 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
+
+# === Pre-publish security baseline (added 2026-06-22) ===
+PRE-PUBLISH.md
+.env
+*.pfx
+*.tfvars
