@@ -1,4 +1,4 @@
-# CLAUDE.md — Databricks Multi-Cloud Governance Platform
+# CLAUDE.md — Multi-Cloud Governance Platform
 
 Terraform (via Terragrunt) provisioning for a Databricks Unity Catalog platform deployed across AWS, Azure, and GCP from a single `environments/dev/` configuration tree. It manages cloud infrastructure (VPCs, storage, databases), Databricks workspaces, and data governance (catalogs, schemas, external locations, grants) as code.
 
@@ -214,7 +214,7 @@ The estimate is useful as a floor for infrastructure cost awareness, not a full 
 
 ### 6. `databricks-platform-v2` appears in git history
 
-Workflow files and some commit messages reference `databricks-platform-v2` as a subdirectory path. This is a legacy artifact from when the project was designed as a subdirectory in a parent monorepo. The repo is now standalone (`databricks-uc-multicloud-platform`). All `working-directory` references in the current workflow files have been corrected to use repo-root-relative paths. The old name in git history is harmless — ignore it.
+Workflow files and some commit messages reference `databricks-platform-v2` as a subdirectory path. This is a legacy artifact from when the project was designed as a subdirectory in a parent monorepo. The repo is now standalone (`multicloud-governance-platform`). All `working-directory` references in the current workflow files have been corrected to use repo-root-relative paths. The old name in git history is harmless — ignore it.
 
 ### 7. Checkov and tfsec scan `infra/` only
 
