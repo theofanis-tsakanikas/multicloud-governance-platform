@@ -1,12 +1,12 @@
-# Databricks Multicloud Data Platform
+# Multi-Cloud Governance Platform
 
-[![CI](https://github.com/theofanis-tsakanikas/databricks-uc-multicloud-platform/actions/workflows/dbx-validate.yml/badge.svg)](https://github.com/theofanis-tsakanikas/databricks-uc-multicloud-platform/actions/workflows/dbx-validate.yml)
-[![Config Validation](https://github.com/theofanis-tsakanikas/databricks-uc-multicloud-platform/actions/workflows/dbx-config-validate.yml/badge.svg)](https://github.com/theofanis-tsakanikas/databricks-uc-multicloud-platform/actions/workflows/dbx-config-validate.yml)
+[![CI](https://github.com/theofanis-tsakanikas/multicloud-governance-platform/actions/workflows/dbx-validate.yml/badge.svg)](https://github.com/theofanis-tsakanikas/multicloud-governance-platform/actions/workflows/dbx-validate.yml)
+[![Config Validation](https://github.com/theofanis-tsakanikas/multicloud-governance-platform/actions/workflows/dbx-config-validate.yml/badge.svg)](https://github.com/theofanis-tsakanikas/multicloud-governance-platform/actions/workflows/dbx-config-validate.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Terraform](https://img.shields.io/badge/Terraform-%E2%89%A51.10-7B42BC?logo=terraform&logoColor=white)](https://www.terraform.io/)
 [![Terragrunt](https://img.shields.io/badge/Terragrunt-%E2%89%A50.75-4CADE3)](https://terragrunt.gruntwork.io/)
 [![Databricks](https://img.shields.io/badge/Databricks-Unity%20Catalog-FF3621?logo=databricks&logoColor=white)](https://www.databricks.com/)
-[![Cloud](https://img.shields.io/badge/Cloud-AWS%20%7C%20Azure%20%7C%20GCP-orange)](https://github.com/theofanis-tsakanikas/databricks-uc-multicloud-platform)
+[![Cloud](https://img.shields.io/badge/Cloud-AWS%20%7C%20Azure%20%7C%20GCP-orange)](https://github.com/theofanis-tsakanikas/multicloud-governance-platform)
 
 Enterprise-grade, fully automated Databricks Unity Catalog governance across AWS, Azure, and GCP.
 

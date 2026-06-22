@@ -17,6 +17,10 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `.github/dependabot.yml` configured for `github-actions` weekly updates
 - README badge row (CI status, MIT license, Terraform, Terragrunt, Databricks, multi-cloud)
 - README table of contents and "What this demonstrates" portfolio section
+- gitleaks secret scanning: a pre-commit hook plus a CI workflow (`gitleaks.yml`, full git history); hardened `.gitignore` (secrets baseline)
+
+### Changed
+- Renamed the project to **Multi-Cloud Governance Platform** (repo `databricks-uc-multicloud-platform` → `multicloud-governance-platform`)
 
 ### Fixed
 - All four GitHub Actions workflows (`dbx-validate.yml`, `dbx-deploy.yml`, `dbx-bootstrap.yml`, `dbx-destroy.yml`) had `WORKING_DIR: databricks-platform-v2` and monorepo-relative `working-directory` paths; corrected to repo-root-relative paths for standalone operation
@@ -48,6 +52,6 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `Makefile` developer targets: `validate`, `fmt`, `bootstrap-{aws,gcp}`, `plan-{aws,azure,gcp}`, `apply-{aws,azure,gcp}`, `destroy-{aws,azure,gcp}`, `clean`
 - MIT License
 
-[Unreleased]: https://github.com/theofanis-tsakanikas/databricks-uc-multicloud-platform/compare/v0.2.0...HEAD
-[0.2.0]: https://github.com/theofanis-tsakanikas/databricks-uc-multicloud-platform/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/theofanis-tsakanikas/databricks-uc-multicloud-platform/releases/tag/v0.1.0
+[Unreleased]: https://github.com/theofanis-tsakanikas/multicloud-governance-platform/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/theofanis-tsakanikas/multicloud-governance-platform/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/theofanis-tsakanikas/multicloud-governance-platform/releases/tag/v0.1.0
