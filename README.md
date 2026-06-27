@@ -39,8 +39,12 @@ This project is a reference implementation of production-grade, multi-cloud data
 | **OIDC-based CI with no long-lived credentials** | GitHub Actions assumes an AWS IAM role via OIDC; Azure uses federated identity; GCP seeds from AWS Secrets Manager |
 | **Cross-cloud Delta Sharing** | GCP marketing catalog is shared to the AWS metastore using dual Databricks provider aliases and native HCL logic |
 | **Responsible-AI governance copilot** | A deterministic least-privilege / PII analyzer gates CI, generates EU-AI-Act / GDPR documentation from the config, and grounds a single cross-cloud Genie NL layer — trust-first, LLM bounded ([docs/governance/](docs/governance/README.md)) |
-| **Security scanning in CI** | Checkov and tfsec run on every PR against `infra/`; pre-commit hooks enforce the same checks locally |
+| **Provable governance, two engines** | The policy gate is backed by a golden test corpus and an independent OPA/Rego re-implementation ([policy/opa/](policy/opa/README.md)); findings publish as SARIF to the GitHub Security tab |
+| **Versioned config contract** | Domain JSON is validated against published [JSON Schema](schema/README.md) (Draft 2020-12) with editor autocomplete, on top of the structural validator |
+| **Governance telemetry + FinOps** | Trendable [metrics](docs/governance/metrics.json) (posture/coverage/expiring exceptions) and a multi-cloud [cost + carbon floor](docs/governance/COST.md) that fills Infracost's Databricks/Azure/GCP blind spots |
+| **Security scanning in CI** | Checkov, tfsec, gitleaks, plus an SBOM + vulnerability scan ([sbom.yml](.github/workflows/sbom.yml)) on every change; pre-commit hooks enforce the same locally |
 | **Cost estimation in CI** | Infracost posts an AWS infrastructure cost breakdown as a PR comment on every change |
+| **Decisions on the record** | Every significant choice is captured as an [ADR](docs/adr/README.md); a [dev container](.devcontainer/README.md) + `make demo` runs the whole offline governance story in ~30s, no cloud |
 
 Full architecture detail, dependency graphs, and design decisions are in [ARCHITECTURE.md](ARCHITECTURE.md). Operational gotchas and secrets flow are in [CLAUDE.md](CLAUDE.md).
 
@@ -110,6 +114,7 @@ GitHub Actions workflows in `.github/workflows/`:
 | `dbx-deploy.yml` | Manual: deploy one or all clouds |
 | `dbx-destroy.yml` | Manual: destroy with "DESTROY" confirmation |
 | `dbx-drift.yml` | Weekly schedule: `terragrunt plan -detailed-exitcode` per cloud; opens a `drift` issue on differences |
+| `sbom.yml` | Push / weekly: generate an SPDX SBOM (Syft) + scan deps for CVEs (Grype) → Security tab |
 
 Required GitHub secrets: `DBX_DEPLOY_ROLE_ARN`, `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`
 
@@ -126,8 +131,13 @@ Required GitHub secrets: `DBX_DEPLOY_ROLE_ARN`, `AZURE_CLIENT_ID`, `AZURE_TENANT
 The platform ships a Responsible-AI governance layer over the catalog — a deterministic access-policy analyzer (CI gate), auto-generated EU-AI-Act / GDPR documentation, and a single cross-cloud Genie NL interface grounded on that analysis. All offline and credential-free. See [docs/governance/](docs/governance/README.md) and the generated [REPORT.md](docs/governance/REPORT.md).
 
 ```bash
+make demo                 # run the whole offline pipeline end-to-end (no cloud, ~30s)
 make policy-scan          # least-privilege / PII analysis (fails on unacknowledged HIGH)
-make governance-report    # regenerate the governance docs + Genie grounding pack
+make governance-report    # regenerate the governance docs + metrics + cost + Genie pack
+make metrics              # governance telemetry (posture / coverage / expiring exceptions)
+make cost-estimate        # multi-cloud + Databricks cost & carbon floor
+make opa                  # cross-check the gate with the OPA/Rego policy (needs conftest)
+make policy-sarif         # write policy.sarif for the GitHub Security tab
 ```
 
 ## After a full destroy

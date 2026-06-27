@@ -35,7 +35,13 @@ Thumbs.db
 
 # IDE
 .idea/
-.vscode/
+# Ignore per-user VS Code state, but keep the shared, repo-wide editor config
+# (domain-JSON schema mapping + recommended extensions) so autocomplete works
+# out of the box. A negation only works if the parent dir isn't itself ignored,
+# hence `.vscode/*` rather than `.vscode/`.
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
 *.swp
 
 # === Pre-publish security baseline (added 2026-06-22) ===

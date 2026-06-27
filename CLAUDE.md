@@ -19,12 +19,18 @@ Full architecture detail and dependency graphs are in [ARCHITECTURE.md](ARCHITEC
 │   │   └── domains/{aws,azure,gcp}/  # Domain JSON (infra + grants per domain; schemas carry classification/PII)
 │   └── prod/                   # prod environment — file-for-file mirror of dev (own config.hcl)
 ├── scripts/                    # Offline governance copilot (no cloud, no creds, CI-gated):
-│   ├── validate_domains.py     #   domain-config schema/consistency/wiring validator
+│   ├── validate_domains.py     #   domain-config schema/consistency/wiring validator (+ optional JSON Schema)
 │   ├── governance_model.py     #   shared parser: domain JSON → objects + grants + classification
-│   ├── policy_analyzer.py      #   deterministic least-privilege / PII gate (fails CI on unacknowledged HIGH)
+│   ├── policy_analyzer.py      #   deterministic least-privilege / PII gate (HIGH-gating); --format sarif, --warn-expiring
 │   ├── governance_report.py    #   generates docs/governance/REPORT.md + grounding pack
+│   ├── governance_metrics.py   #   trendable telemetry → docs/governance/metrics.json (CI --check)
+│   ├── cost_estimate.py        #   multi-cloud + Databricks cost & carbon floor → docs/governance/COST.md (CI --check)
+│   ├── catalog_drift.py        #   reconcile declared grants vs live Unity Catalog (deferred --live)
 │   └── genie_space.py          #   Genie governance-space SQL + grounding-contract instructions (deferred deploy)
-├── docs/governance/            # Generated: REPORT.md (EU-AI-Act/GDPR doc) + governance_context.json + genie/
+├── schema/                     # Versioned JSON Schema (Draft 2020-12) for domain config + IDE autocomplete
+├── policy/opa/                 # Independent OPA/Rego re-implementation of the gating rules (CI cross-check)
+├── docs/adr/                   # Architecture Decision Records (the decision ledger)
+├── docs/governance/            # Generated: REPORT.md (EU-AI-Act/GDPR doc) + governance_context.json + metrics.json + COST.md + genie/
 └── infra/
     ├── aws/modules/            # Pure Terraform modules — no provider.tf, no backend.tf
     ├── azure/modules/
@@ -234,10 +240,13 @@ Operational notes:
   `"owner"`. Terraform ignores both — the modules consume the JSON via
   `jsondecode` + `merge`/`lookup`, so unknown keys pass through untouched. Adding
   them does **not** change any `apply`.
-- **`docs/governance/` is generated, not hand-written.** `governance_report.py` and
-  `genie_space.py` regenerate it; CI asserts it is in sync (`--check`). After
-  editing any domain JSON, run `make governance-report` and commit the result, or
-  the `--check` step fails.
+- **`docs/governance/` is generated, not hand-written.** `governance_report.py`,
+  `genie_space.py`, `governance_metrics.py`, and `cost_estimate.py` regenerate it
+  (REPORT.md, governance_context.json, genie/, metrics.json, COST.md); CI asserts
+  each is in sync (`--check`). After editing any domain JSON, run
+  `make governance-report` and commit the result, or the `--check` steps fail.
+  `make demo` runs the whole offline pipeline; `make opa` cross-checks the gate
+  with the independent Rego policy in `policy/opa/`.
 - **Exceptions are time-bound.** `environments/dev/policy_exceptions.json` entries
   have an `expires` date. An expired exception stops suppressing its finding, which
   will then fail CI — that is intentional (it forces re-review), not a bug.

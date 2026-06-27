@@ -46,6 +46,16 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 
+# jsonschema is an *optional* dev dependency. When present (it is installed in CI
+# and the devcontainer), each domain file is additionally validated against the
+# versioned schema under schema/ — cross-checking the structural validator below
+# against the published contract. When absent (e.g. the stdlib-only pre-commit
+# hook), the validator degrades gracefully: the rich checks here still run.
+try:  # pragma: no cover - import guard
+    import jsonschema as _jsonschema
+except ImportError:  # pragma: no cover - exercised by the no-deps path
+    _jsonschema = None
+
 # --------------------------------------------------------------------------- #
 # Unity Catalog privilege model
 #
@@ -197,6 +207,43 @@ def load_json(path: Path) -> tuple[object | None, Finding | None]:
 
 def _is_str(value: object) -> bool:
     return isinstance(value, str) and value.strip() != ""
+
+
+# --------------------------------------------------------------------------- #
+# Optional JSON Schema validation (schema/ — versioned contract)
+# --------------------------------------------------------------------------- #
+
+SCHEMA_DIR = "schema"
+_INFRA_SCHEMA = "domain.infra.schema.json"
+_GRANTS_SCHEMA = "domain.grants.schema.json"
+
+
+def jsonschema_available() -> bool:
+    """True when the optional ``jsonschema`` dev dependency is importable."""
+    return _jsonschema is not None
+
+
+def validate_against_schema(data: object, repo_root: Path, schema_file: str, loc: str, findings: list[Finding]) -> None:
+    """Validate one parsed domain file against its versioned JSON Schema.
+
+    No-op when ``jsonschema`` is not installed (the structural checks below still
+    run) or when the schema file is missing. Each schema violation becomes a
+    ``SCHEMA_VALIDATION`` ERROR so it gates exactly like the hand-written checks.
+    """
+    if _jsonschema is None:
+        return
+    schema_path = repo_root / SCHEMA_DIR / schema_file
+    if not schema_path.is_file():
+        return
+    try:
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        findings.append(Finding(ERROR, "SCHEMA_BROKEN", f"could not parse schema {schema_file}", str(schema_path)))
+        return
+    validator = _jsonschema.Draft202012Validator(schema)
+    for err in sorted(validator.iter_errors(data), key=lambda e: list(e.path)):
+        where = "/".join(str(p) for p in err.path) or "(root)"
+        findings.append(Finding(ERROR, "SCHEMA_VALIDATION", f"{where}: {err.message}", loc))
 
 
 # --------------------------------------------------------------------------- #
@@ -580,6 +627,7 @@ def validate_repo(repo_root: str | os.PathLike) -> list[Finding]:
         if not isinstance(infra_data, dict):
             findings.append(Finding(ERROR, "INFRA_SHAPE", "infra file must be a JSON object", infra_loc))
             continue
+        validate_against_schema(infra_data, repo_root, _INFRA_SCHEMA, infra_loc, findings)
         idx = build_infra_index(infra_data, infra_loc, findings)
 
         grants_loc = _rel(repo_root, grants_path)
@@ -587,6 +635,7 @@ def validate_repo(repo_root: str | os.PathLike) -> list[Finding]:
         if gerr:
             findings.append(gerr)
             continue
+        validate_against_schema(grants_data, repo_root, _GRANTS_SCHEMA, grants_loc, findings)
         local_principals: list[str] = []
         if isinstance(grants_data, dict):
             validate_grants(grants_data, idx, grants_loc, findings, local_principals)
