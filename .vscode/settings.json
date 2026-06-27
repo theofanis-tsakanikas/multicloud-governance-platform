@@ -1,0 +1,13 @@
+{
+  "//": "Maps the domain config files to their JSON Schema so the editor validates them as you type. See schema/README.md.",
+  "json.schemas": [
+    {
+      "fileMatch": ["environments/*/domains/**/*_infra.json"],
+      "url": "./schema/domain.infra.schema.json"
+    },
+    {
+      "fileMatch": ["environments/*/domains/**/*_grants.json"],
+      "url": "./schema/domain.grants.schema.json"
+    }
+  ]
+}

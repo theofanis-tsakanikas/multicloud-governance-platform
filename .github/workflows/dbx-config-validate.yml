@@ -13,8 +13,11 @@ on:
     paths:
       - "environments/dev/domains/**"
       - "environments/dev/policy_exceptions.json"
+      - "environments/dev/cost_assumptions.json"
       - "environments/dev/**/data_platform/dbx_governance/terragrunt.hcl"
       - "scripts/**"
+      - "schema/**"
+      - "policy/**"
       - "docs/governance/**"
       - "tests/**"
       - "requirements-dev.txt"
@@ -29,6 +32,9 @@ jobs:
   validate-config:
     name: Validate domain config
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write # upload the policy SARIF to the Security tab
 
     steps:
       - uses: actions/checkout@v4
@@ -41,17 +47,27 @@ jobs:
       - name: Install dev dependencies
         run: pip install -r requirements-dev.txt
 
+      - name: Install conftest (OPA cross-check)
+        run: |
+          CONFTEST_VERSION=0.56.0
+          curl -sSfL "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_x86_64.tar.gz" \
+            | tar -xz conftest
+          sudo mv conftest /usr/local/bin/
+
       - name: Ruff lint
         run: ruff check scripts tests
 
       - name: Ruff format check
         run: ruff format --check scripts tests
 
-      - name: Validate domain config (offline)
+      - name: Validate domain config (offline — structural + JSON Schema)
         run: python scripts/validate_domains.py
 
       - name: Access-policy analysis (deterministic gate — fails on unacknowledged HIGH)
-        run: python scripts/policy_analyzer.py
+        run: python scripts/policy_analyzer.py --warn-expiring 30
+
+      - name: OPA / Conftest cross-check (independent second opinion)
+        run: make opa
 
       - name: Governance docs are in sync with the config
         run: python scripts/governance_report.py --check
@@ -59,5 +75,22 @@ jobs:
       - name: Genie copilot artifacts are in sync with the config
         run: python scripts/genie_space.py --check
 
+      - name: Governance metrics are in sync with the config
+        run: python scripts/governance_metrics.py --check
+
+      - name: Cost estimate is in sync with the config
+        run: python scripts/cost_estimate.py --check
+
       - name: Run test suite
         run: pytest -q
+
+      - name: Generate policy SARIF
+        if: always()
+        run: python scripts/policy_analyzer.py --format sarif --output policy.sarif
+
+      - name: Upload policy findings to the Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: policy.sarif
+          category: uc-policy-analyzer

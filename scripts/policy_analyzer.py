@@ -365,6 +365,159 @@ def apply_exceptions(
 
 
 # --------------------------------------------------------------------------- #
+# Exception expiry warnings (non-gating — forces re-review before risk re-opens)
+# --------------------------------------------------------------------------- #
+
+
+@dataclass
+class ExpiringException:
+    """An exception that is expired or about to expire."""
+
+    rule: str
+    object_ref: str
+    principal: str
+    expires: str
+    approved_by: str
+    days_left: int  # negative = already expired
+
+    def __str__(self) -> str:
+        when = "EXPIRED" if self.days_left < 0 else f"expires in {self.days_left}d"
+        who = f" → {self.principal}" if self.principal else ""
+        return f"WARNING  EXC_EXPIRING {self.rule}: {self.object_ref}{who} ({when}, {self.expires})"
+
+
+def expiring_exceptions(
+    exceptions: Iterable[Exception_],
+    *,
+    within_days: int,
+    today: _dt.date | None = None,
+) -> list[ExpiringException]:
+    """Exceptions that are expired or expire within ``within_days``.
+
+    When an exception expires, its finding stops being suppressed and re-surfaces
+    as a (likely gating) HIGH — so a near-expiry is something CI should *warn*
+    about ahead of time, not discover the day a build breaks.
+    """
+    today = today or _dt.date.today()
+    out: list[ExpiringException] = []
+    for e in exceptions:
+        if not e.expires:
+            continue
+        try:
+            exp = _dt.date.fromisoformat(e.expires)
+        except ValueError:
+            continue
+        days_left = (exp - today).days
+        if days_left <= within_days:
+            out.append(ExpiringException(e.rule, e.object_ref, e.principal, e.expires, e.approved_by, days_left))
+    out.sort(key=lambda x: x.days_left)
+    return out
+
+
+# --------------------------------------------------------------------------- #
+# SARIF 2.1.0 rendering (GitHub code-scanning / Security tab)
+# --------------------------------------------------------------------------- #
+
+_TOOL_URI = "https://github.com/theofanis-tsakanikas/multicloud-governance-platform"
+_DOMAINS_REL = "environments/dev/domains"
+
+# SARIF level per severity; GitHub renders error/warning/note in the Security tab.
+_SARIF_LEVEL = {HIGH: "error", MEDIUM: "warning", LOW: "note", INFO: "note"}
+# security-severity drives GitHub's High/Medium/Low badge (0.0–10.0 scale).
+_SECURITY_SEVERITY = {HIGH: "8.5", MEDIUM: "5.0", LOW: "2.0", INFO: "0.0"}
+
+
+def _locate(finding: PolicyFinding, repo_root: Path) -> tuple[str, int]:
+    """Best-effort map a finding to (relative file uri, 1-based line).
+
+    Object-level findings point at the *_infra.json that declares the object;
+    grant-level findings at the *_grants.json that grants it. Falls back to the
+    cloud's domains directory so a result always has a navigable location.
+    """
+    name = finding.object_ref.split(":", 1)[-1]
+    leaf = name.split(".")[-1]
+    cloud_dir = repo_root / _DOMAINS_REL / finding.cloud.lower()
+    prefer_grants = bool(finding.principal)
+    suffix = "_grants.json" if prefer_grants else "_infra.json"
+    candidates = sorted(cloud_dir.glob(f"*{suffix}")) + sorted(cloud_dir.glob("*.json")) if cloud_dir.is_dir() else []
+    for path in candidates:
+        try:
+            lines = path.read_text(encoding="utf-8").splitlines()
+        except OSError:
+            continue
+        for needle in (name, leaf, finding.principal):
+            if not needle:
+                continue
+            for i, line in enumerate(lines, start=1):
+                if needle in line:
+                    return (str(path.relative_to(repo_root)), i)
+    fallback = cloud_dir if cloud_dir.is_dir() else (repo_root / _DOMAINS_REL)
+    return (str(fallback.relative_to(repo_root)), 1)
+
+
+def to_sarif(result: AnalysisResult, repo_root: str | Path) -> dict:
+    """Render findings as a SARIF 2.1.0 log for GitHub code scanning."""
+    repo_root = Path(repo_root).resolve()
+    seen_rules: dict[str, PolicyFinding] = {}
+    for f in result.findings:
+        seen_rules.setdefault(f.rule, f)
+    rules = [
+        {
+            "id": rule,
+            "name": rule.title().replace("_", ""),
+            "shortDescription": {"text": example.message},
+            "helpUri": f"{_TOOL_URI}/blob/main/docs/governance/README.md#policy-rules",
+            "properties": {
+                "security-severity": _SECURITY_SEVERITY.get(example.severity, "0.0"),
+                "dimension": example.dimension,
+            },
+        }
+        for rule, example in sorted(seen_rules.items())
+    ]
+
+    results = []
+    for f in result.findings:
+        uri, line = _locate(f, repo_root)
+        entry = {
+            "ruleId": f.rule,
+            "level": _SARIF_LEVEL.get(f.severity, "note"),
+            "message": {"text": f"{f.message} ({f.object_ref}{' → ' + f.principal if f.principal else ''})"},
+            "locations": [
+                {
+                    "physicalLocation": {
+                        "artifactLocation": {"uri": uri},
+                        "region": {"startLine": line},
+                    }
+                }
+            ],
+            "properties": {"cloud": f.cloud, "remediation": f.remediation},
+        }
+        if f.accepted:
+            # Documented, time-bound exception — surfaced as a suppression so the
+            # Security tab shows it as an accepted risk rather than an open alert.
+            entry["suppressions"] = [{"kind": "external", "justification": f.justification}]
+        results.append(entry)
+
+    return {
+        "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+        "version": "2.1.0",
+        "runs": [
+            {
+                "tool": {
+                    "driver": {
+                        "name": "uc-policy-analyzer",
+                        "informationUri": _TOOL_URI,
+                        "version": "1.0.0",
+                        "rules": rules,
+                    }
+                },
+                "results": results,
+            }
+        ],
+    }
+
+
+# --------------------------------------------------------------------------- #
 # Orchestration + reporting
 # --------------------------------------------------------------------------- #
 
@@ -396,12 +549,15 @@ class AnalysisResult:
         return out
 
 
+def _exceptions_path(repo_root: Path, exceptions_path: Path | None) -> Path:
+    return exceptions_path or (repo_root / "environments" / "dev" / "policy_exceptions.json")
+
+
 def run_analysis(repo_root: str | Path, exceptions_path: Path | None = None) -> AnalysisResult:
     repo_root = Path(repo_root).resolve()
     model = build_model(repo_root)
     findings = analyze(model)
-    exc_path = exceptions_path or (repo_root / "environments" / "dev" / "policy_exceptions.json")
-    apply_exceptions(findings, load_exceptions(exc_path))
+    apply_exceptions(findings, load_exceptions(_exceptions_path(repo_root, exceptions_path)))
     return AnalysisResult(findings)
 
 
@@ -413,12 +569,31 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Analyze Databricks UC access policy (offline, deterministic).")
     parser.add_argument("--root", default=str(_default_repo_root()), help="repository root (default: parent of scripts/)")
     parser.add_argument("--strict", action="store_true", help="also fail on unacknowledged MEDIUM findings")
-    parser.add_argument("--format", choices=("text", "json"), default="text", help="output format")
+    parser.add_argument("--format", choices=("text", "json", "sarif"), default="text", help="output format")
+    parser.add_argument("--output", default=None, help="write output to this file instead of stdout (e.g. policy.sarif)")
     parser.add_argument("--exceptions", default=None, help="path to policy_exceptions.json")
+    parser.add_argument(
+        "--warn-expiring",
+        type=int,
+        metavar="DAYS",
+        default=None,
+        help="also print a non-gating warning for exceptions expiring within DAYS (forces re-review before the risk re-opens)",
+    )
     args = parser.parse_args(argv)
 
+    root = Path(args.root).resolve()
     exc_path = Path(args.exceptions) if args.exceptions else None
-    result = run_analysis(args.root, exc_path)
+    result = run_analysis(root, exc_path)
+
+    if args.format == "sarif":
+        payload = json.dumps(to_sarif(result, root), indent=2) + "\n"
+        if args.output:
+            Path(args.output).write_text(payload, encoding="utf-8")
+            print(f"wrote SARIF to {args.output} ({len(result.findings)} results)")
+        else:
+            print(payload, end="")
+        # SARIF is a report artifact for the Security tab — never the gate itself.
+        return 0
 
     if args.format == "json":
         print(json.dumps([asdict(f) for f in result.findings], indent=2))
@@ -432,6 +607,14 @@ def main(argv: list[str] | None = None) -> int:
             f"policy scan: {c[HIGH]} high, {c[MEDIUM]} medium, {c[LOW]} low, "
             f"{c[INFO]} info, {c['ACCEPTED']} accepted (documented exceptions)"
         )
+
+    if args.warn_expiring is not None and args.format == "text":
+        soon = expiring_exceptions(load_exceptions(_exceptions_path(root, exc_path)), within_days=args.warn_expiring)
+        if soon:
+            print()
+            for e in soon:
+                print(e)
+            print(f"note: {len(soon)} exception(s) expire within {args.warn_expiring} days — review before they stop suppressing.")
 
     failed = bool(result.gating) or (args.strict and bool(result.medium_open))
     if failed:

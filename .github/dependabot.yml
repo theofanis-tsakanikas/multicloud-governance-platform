@@ -10,3 +10,15 @@ updates:
     labels:
       - "dependencies"
       - "ci"
+
+  # Dev/test Python tooling (the offline governance copilot + validator)
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "python"
+    commit-message:
+      prefix: "deps"

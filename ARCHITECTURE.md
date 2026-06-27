@@ -169,6 +169,10 @@ flowchart TD
 
 ## Key design decisions
 
+> Each decision below is also recorded as an immutable **Architecture Decision
+> Record** in [docs/adr/](docs/adr/README.md) — the decision ledger (context →
+> choice → consequences → alternatives). This section is the prose overview.
+
 ### 1. Secrets — never in code
 
 All secrets are fetched at plan/apply time via `run_cmd` in Terragrunt locals:

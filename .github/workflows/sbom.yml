@@ -1,0 +1,55 @@
+name: SBOM & supply-chain
+
+# Generates a Software Bill of Materials (SPDX) for the repository and scans it
+# for known vulnerabilities. Supply-chain transparency to complement the secret
+# scanning (gitleaks) and IaC scanning (Checkov/tfsec) already in CI.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - "requirements-dev.txt"
+      - "pyproject.toml"
+      - ".github/workflows/sbom.yml"
+  schedule:
+    # Weekly — catch newly-disclosed CVEs in pinned deps even with no code change.
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sbom:
+    name: Generate SBOM + scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write # upload the vuln scan to the Security tab
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate SPDX SBOM (Syft)
+        uses: anchore/sbom-action@v0
+        with:
+          path: .
+          format: spdx-json
+          output-file: sbom.spdx.json
+          artifact-name: sbom.spdx.json
+
+      - name: Scan dependencies for known vulnerabilities (Grype)
+        id: grype
+        uses: anchore/scan-action@v4
+        with:
+          sbom: sbom.spdx.json
+          fail-build: false # report, don't block — review in the Security tab
+          output-format: sarif
+          output-file: grype.sarif
+
+      - name: Upload vulnerability report to the Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: grype.sarif
+          category: grype-sbom
