@@ -27,10 +27,15 @@ Full architecture detail and dependency graphs are in [ARCHITECTURE.md](ARCHITEC
 │   ├── cost_estimate.py        #   multi-cloud + Databricks cost & carbon floor → docs/governance/COST.md (CI --check)
 │   ├── catalog_drift.py        #   reconcile declared grants vs live Unity Catalog (deferred --live)
 │   └── genie_space.py          #   Genie governance-space SQL + grounding-contract instructions (deferred deploy)
+├── pipelines/                  # Level B — governance over data in motion (offline, stdlib sqlite3):
+│   ├── generate_data.py        #   deterministic synthetic data shaped by the governance model
+│   ├── medallion.py            #   bronze→silver→gold + cross-cloud KPI table (PII-minimised gold)
+│   ├── profile_data.py         #   observed PII vs declared classification → docs/governance/data_profile.json
+│   └── databricks/             #   the same medallion as Spark SQL for the live platform (deferred)
 ├── schema/                     # Versioned JSON Schema (Draft 2020-12) for domain config + IDE autocomplete
 ├── policy/opa/                 # Independent OPA/Rego re-implementation of the gating rules (CI cross-check)
 ├── docs/adr/                   # Architecture Decision Records (the decision ledger)
-├── docs/governance/            # Generated: REPORT.md (EU-AI-Act/GDPR doc) + governance_context.json + metrics.json + COST.md + genie/
+├── docs/governance/            # Generated: REPORT.md + governance_context.json + metrics.json + COST.md + data_profile.json + dashboard/ + genie/
 └── infra/
     ├── aws/modules/            # Pure Terraform modules — no provider.tf, no backend.tf
     ├── azure/modules/
@@ -247,6 +252,16 @@ Operational notes:
   `make governance-report` and commit the result, or the `--check` steps fail.
   `make demo` runs the whole offline pipeline; `make opa` cross-checks the gate
   with the independent Rego policy in `policy/opa/`.
+
+- **Data pipelines (`pipelines/`) are offline and deterministic.** `make data`
+  generates synthetic data (shaped by the governance model), runs a real
+  bronze→silver→gold medallion in stdlib `sqlite3`, and profiles observed PII
+  against declared classification → `docs/governance/data_profile.json`. The bulk
+  warehouse under `pipelines/data/` is git-ignored; only the deterministic
+  `data_profile.json` and the static `dashboard/index.html` are committed, and CI
+  asserts both are in sync (`--check`). `make dashboard` re-renders the dashboard;
+  `make demo-data` runs the whole Level-A+B flow. On the live platform the same
+  transformations run as Spark SQL (`pipelines/databricks/`, deferred).
 - **Exceptions are time-bound.** `environments/dev/policy_exceptions.json` entries
   have an `expires` date. An expired exception stops suppressing its finding, which
   will then fail CI — that is intentional (it forces re-review), not a bug.
