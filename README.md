@@ -23,6 +23,7 @@ Enterprise-grade, fully automated Databricks Unity Catalog governance across AWS
 - [Quick start](#quick-start)
 - [CI/CD](#cicd)
 - [Adding a new domain](#adding-a-new-domain)
+- [Governance copilot](#governance-copilot)
 - [After a full destroy](#after-a-full-destroy)
 
 ---
@@ -111,7 +112,7 @@ GitHub Actions workflows in `.github/workflows/`:
 | Workflow | Trigger |
 |---|---|
 | `dbx-validate.yml` | Every PR touching `infra/**`, `environments/**`, or `terragrunt.hcl` — fmt, validate, Checkov, tfsec, Infracost |
-| `dbx-config-validate.yml` | PR touching domains/scripts/docs — **credential-free**: domain validator + the access-policy gate + report/Genie `--check` + pytest |
+| `dbx-config-validate.yml` | PR touching domains/scripts/schema/policy/docs — **credential-free**: domain + JSON-Schema validation, the access-policy gate (+ SARIF + expiry warning), the OPA/conftest cross-check, report/Genie/metrics/cost/data-profile/dashboard `--check`, and pytest |
 | `dbx-bootstrap.yml` | Manual: bootstrap AWS or GCP |
 | `dbx-deploy.yml` | Manual: deploy one or all clouds |
 | `dbx-destroy.yml` | Manual: destroy with "DESTROY" confirmation |
@@ -126,15 +127,16 @@ Required GitHub secrets: `DBX_DEPLOY_ROLE_ARN`, `AZURE_CLIENT_ID`, `AZURE_TENANT
 1. Add `environments/dev/domains/<cloud>/<domain>_infra.json` (classify schemas with `classification`, set the catalog `owner`)
 2. Add `environments/dev/domains/<cloud>/<domain>_grants.json`
 3. Update the `domain_path` locals in the relevant `data_platform/dbx_governance/terragrunt.hcl`
-4. Run `make policy-scan` to check the new grants against the least-privilege / PII rules, then `make governance-report`
+4. Run `make policy-scan` to check the new grants against the least-privilege / PII rules, then regenerate every committed artifact: `make governance-report && make data && make dashboard` (CI `--check`s them all, so commit the result)
 5. Run `make apply LAYER=<cloud>/data_platform/dbx_governance`
 
 ## Governance copilot
 
-The platform ships a Responsible-AI governance layer over the catalog — a deterministic access-policy analyzer (CI gate), auto-generated EU-AI-Act / GDPR documentation, and a single cross-cloud Genie NL interface grounded on that analysis. All offline and credential-free. See [docs/governance/](docs/governance/README.md) and the generated [REPORT.md](docs/governance/REPORT.md).
+The platform ships a Responsible-AI governance layer over the catalog — a deterministic access-policy analyzer (CI gate), auto-generated EU-AI-Act / GDPR documentation, and a single cross-cloud Genie NL interface grounded on that analysis. It also runs **governance over data in motion** ([pipelines/](pipelines/README.md)): a real bronze→silver→gold medallion (offline `sqlite3`) that proves PII-minimisation and reconciles observed data against the declared classification, surfaced in a self-contained [governance dashboard](docs/governance/dashboard/index.html). All offline and credential-free. See [docs/governance/](docs/governance/README.md) and the generated [REPORT.md](docs/governance/REPORT.md).
 
 ```bash
-make demo                 # run the whole offline pipeline end-to-end (no cloud, ~30s)
+make demo                 # run the whole offline governance pipeline end-to-end (no cloud, ~30s)
+make demo-data            # data in motion: generate → medallion → profile → dashboard
 make policy-scan          # least-privilege / PII analysis (fails on unacknowledged HIGH)
 make governance-report    # regenerate the governance docs + metrics + cost + Genie pack
 make metrics              # governance telemetry (posture / coverage / expiring exceptions)
