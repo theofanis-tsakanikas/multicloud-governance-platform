@@ -11,7 +11,7 @@ Full architecture detail and dependency graphs are in [ARCHITECTURE.md](ARCHITEC
 ```
 .
 ├── terragrunt.hcl              # Root: S3 remote state + DynamoDB lock (inherited by all children)
-├── Makefile                    # validate / plan / apply / destroy + policy-scan / governance-report (ENV=dev|prod)
+├── Makefile                    # validate / plan / apply / destroy + governance copilot + data/dashboard targets (ENV=dev|prod); `make demo` / `make demo-data`
 ├── environments/
 │   ├── dev/                    # dev environment (config.hcl, domains, bootstrap, per-cloud stacks)
 │   │   ├── config.hcl          # Single source of truth for every config value
@@ -156,16 +156,19 @@ Domain governance is defined in JSON, loaded natively by Terragrunt, and passed 
 
 ## GitHub Actions workflows
 
-All six workflows live in `.github/workflows/`. The `bootstrap`, `deploy`, and `destroy` workflows target the `dev` GitHub Environment (configure manual approval gates there if needed).
+All nine workflows live in `.github/workflows/`. The `bootstrap`, `deploy`, and `destroy` workflows target the `dev` GitHub Environment (configure manual approval gates there if needed).
 
 | Workflow | File | Trigger | Required secrets |
 |---|---|---|---|
 | Validate | `dbx-validate.yml` | PR touching `infra/**`, `environments/**`, `terragrunt.hcl`, `dbx-validate.yml` | `DBX_DEPLOY_ROLE_ARN` |
-| Config validate | `dbx-config-validate.yml` | PR touching domains/scripts/docs/governance — **no cloud creds**: runs `validate_domains` + the `policy_analyzer` gate + report/Genie `--check` + pytest | — |
+| Config validate | `dbx-config-validate.yml` | PR touching domains/scripts/schema/policy/docs/tests — **no cloud creds**: `validate_domains` + JSON-Schema check, the `policy_analyzer` gate (+ SARIF upload + expiry warning), the OPA/conftest cross-check, report/Genie/metrics/cost/data-profile/dashboard `--check`, and pytest | — |
 | Drift detection | `dbx-drift.yml` | Weekly schedule (+ manual) — `terragrunt run-all plan -detailed-exitcode` per cloud; opens/updates a `drift`-labelled issue | `DBX_DEPLOY_ROLE_ARN` |
 | Bootstrap | `dbx-bootstrap.yml` | Manual (`workflow_dispatch`) | `DBX_DEPLOY_ROLE_ARN` |
 | Deploy | `dbx-deploy.yml` | Manual (`workflow_dispatch`) | `DBX_DEPLOY_ROLE_ARN`, `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID` |
 | Destroy | `dbx-destroy.yml` | Manual — requires typing `DESTROY` to confirm | Same as Deploy |
+| Secret scan | `gitleaks.yml` | PR + push — scans the diff for committed credentials/keys | — |
+| SBOM & supply-chain | `sbom.yml` | Push to main / PR (deps) / weekly — SPDX SBOM (Syft) + CVE scan (Grype) → Security tab | — |
+| Publish dashboard | `pages.yml` | Push to main — rebuilds + publishes the static governance dashboard to GitHub Pages | — |
 
 **Validate** and **Config validate** are the two PR-gating workflows (`dbx-config-validate` is credential-free and also runs the access-policy gate). **Validate** runs in parallel across three jobs:
 - `validate (aws/azure/gcp)` matrix — `terraform fmt`, `terragrunt hclfmt`, `terragrunt validate`, Checkov, tfsec
@@ -221,7 +224,7 @@ The `infracost` job in `dbx-validate.yml` runs against `infra/aws/modules`. The 
 - Azure and GCP resources — limited Infracost coverage for those providers
 - Any resources created via `environments/dev/` Terragrunt wiring (no resource definitions there)
 
-The estimate is useful as a floor for infrastructure cost awareness, not a full platform cost projection.
+The estimate is useful as a floor for infrastructure cost awareness, not a full platform cost projection. **These exact gaps are now filled by `scripts/cost_estimate.py`** (offline, deterministic), which prices Databricks compute + all three clouds into one figure and a carbon floor → `docs/governance/COST.md` (CI `--check`).
 
 ### 6. `databricks-platform-v2` appears in git history
 
