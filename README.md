@@ -44,6 +44,8 @@ This project is a reference implementation of production-grade, multi-cloud data
 | **Governance telemetry + FinOps** | Trendable [metrics](docs/governance/metrics.json) (posture/coverage/expiring exceptions) and a multi-cloud [cost + carbon floor](docs/governance/COST.md) that fills Infracost's Databricks/Azure/GCP blind spots |
 | **Security scanning in CI** | Checkov, tfsec, gitleaks, plus an SBOM + vulnerability scan ([sbom.yml](.github/workflows/sbom.yml)) on every change; pre-commit hooks enforce the same locally |
 | **Cost estimation in CI** | Infracost posts an AWS infrastructure cost breakdown as a PR comment on every change |
+| **Governance over data in motion** | A deterministic synthetic-data generator + a real bronze→silver→gold medallion (stdlib `sqlite3`, offline) prove the claims: PII is minimised out of gold, observed data is reconciled against declared classification, and one KPI table spans all three clouds ([pipelines/](pipelines/README.md)) |
+| **Self-contained dashboard** | A static, no-JS, no-server [governance dashboard](docs/governance/dashboard/index.html) renders posture, PII map, data reconciliation and cost from the committed artifacts — published to GitHub Pages |
 | **Decisions on the record** | Every significant choice is captured as an [ADR](docs/adr/README.md); a [dev container](.devcontainer/README.md) + `make demo` runs the whole offline governance story in ~30s, no cloud |
 
 Full architecture detail, dependency graphs, and design decisions are in [ARCHITECTURE.md](ARCHITECTURE.md). Operational gotchas and secrets flow are in [CLAUDE.md](CLAUDE.md).
@@ -115,6 +117,7 @@ GitHub Actions workflows in `.github/workflows/`:
 | `dbx-destroy.yml` | Manual: destroy with "DESTROY" confirmation |
 | `dbx-drift.yml` | Weekly schedule: `terragrunt plan -detailed-exitcode` per cloud; opens a `drift` issue on differences |
 | `sbom.yml` | Push / weekly: generate an SPDX SBOM (Syft) + scan deps for CVEs (Grype) → Security tab |
+| `pages.yml` | Push to main: rebuild + publish the static governance dashboard to GitHub Pages |
 
 Required GitHub secrets: `DBX_DEPLOY_ROLE_ARN`, `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`
 
@@ -138,6 +141,8 @@ make metrics              # governance telemetry (posture / coverage / expiring 
 make cost-estimate        # multi-cloud + Databricks cost & carbon floor
 make opa                  # cross-check the gate with the OPA/Rego policy (needs conftest)
 make policy-sarif         # write policy.sarif for the GitHub Security tab
+make data                 # synthetic data → medallion (bronze/silver/gold) → profile
+make dashboard            # render the static, self-contained governance dashboard
 ```
 
 ## After a full destroy

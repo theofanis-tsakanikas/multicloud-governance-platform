@@ -36,6 +36,11 @@ help:
 	@echo "    make catalog-drift    — reconcile declared grants vs the live UC (deferred)"
 	@echo "    make opa              — cross-check the gate with the Rego policy (needs conftest)"
 	@echo ""
+	@echo "  $(YELLOW)Data pipelines + dashboard (offline, no cloud creds)$(RESET)"
+	@echo "    make data            — generate synthetic data → medallion → profile (Level B)"
+	@echo "    make dashboard       — render the static governance dashboard (Level A)"
+	@echo "    make demo-data       — data pipeline + dashboard, end-to-end"
+	@echo ""
 	@echo "  $(YELLOW)Bootstrap (run once per account)$(RESET)"
 	@echo "    make bootstrap-aws   — apply AWS bootstrap (foundation → platform → config)"
 	@echo "    make bootstrap-gcp   — apply GCP bootstrap"
@@ -156,6 +161,26 @@ demo:
 	@echo "$(GREEN)═══ 6/6 · live-catalog drift (offline summary) ═══$(RESET)"
 	python3 scripts/catalog_drift.py
 	@echo "$(GREEN)✔ offline governance pipeline complete$(RESET)"
+
+# ─── Data pipelines + dashboard (Level A + B) ─────────────────────────────────
+
+.PHONY: data dashboard demo-data
+
+data:
+	@echo "$(GREEN)▶ generate synthetic data (shaped by the governance model)$(RESET)"
+	python3 pipelines/generate_data.py
+	@echo "$(GREEN)▶ medallion: bronze → silver → gold (sqlite, offline)$(RESET)"
+	python3 pipelines/medallion.py
+	@echo "$(GREEN)▶ profile: observed PII vs declared classification$(RESET)"
+	python3 pipelines/profile_data.py
+
+dashboard:
+	@echo "$(GREEN)▶ render static governance dashboard$(RESET)"
+	python3 scripts/governance_dashboard.py
+	@echo "$(GREEN)✔ open docs/governance/dashboard/index.html$(RESET)"
+
+demo-data: data dashboard
+	@echo "$(GREEN)✔ data pipeline + dashboard complete — open docs/governance/dashboard/index.html$(RESET)"
 
 # ─── Bootstrap ───────────────────────────────────────────────────────────────
 

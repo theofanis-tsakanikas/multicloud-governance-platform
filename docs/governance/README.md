@@ -102,11 +102,15 @@ and *costed* — all offline:
 | **Cost & carbon** | A multi-cloud + Databricks cost + carbon **floor** that fills Infracost's blind spots. | [`COST.md`](COST.md) |
 | **Live drift** | Reconcile the *declared* grants against the *live* Unity Catalog (deferred — SDK + creds). | `scripts/catalog_drift.py` |
 | **Expiry foresight** | A non-gating warning when an exception is about to expire, before the risk re-opens and breaks a build. | `policy_analyzer.py --warn-expiring` |
+| **Governance over data in motion** | A real bronze→silver→gold medallion (offline sqlite) proves PII-minimisation in gold and reconciles observed PII against the declared classification. | [`pipelines/`](../../pipelines/README.md) → `data_profile.json` |
+| **Self-contained dashboard** | A static, no-JS, no-server page rendering posture / PII / data reconciliation / cost from the committed artifacts; published to GitHub Pages. | [`dashboard/index.html`](dashboard/index.html) |
 
 ## Commands
 
 ```bash
-make demo                 # the entire offline pipeline end-to-end (no cloud, ~30s)
+make demo                 # the entire offline governance pipeline end-to-end (no cloud, ~30s)
+make demo-data            # data in motion: generate → medallion → profile → dashboard
+make dashboard            # render the static governance dashboard (docs/governance/dashboard/)
 make policy-scan          # deterministic analysis; exits non-zero on unacknowledged HIGH
 make governance-report    # regenerate REPORT.md + context + metrics + cost + Genie artifacts
 make metrics              # print governance telemetry

@@ -1,0 +1,174 @@
+{
+  "generated_at": "2026-06-28",
+  "summary": {
+    "governed_schemas": 12,
+    "rows_profiled": 1440,
+    "schemas_with_pii": 2,
+    "classification_drift": 0,
+    "gold_tables": 7,
+    "gold_pii_minimised": true
+  },
+  "schemas": [
+    {
+      "cloud": "AWS",
+      "schema": "sales_aws.bronze",
+      "rows": 120,
+      "columns": 6,
+      "declared_classification": "confidential",
+      "observed_pii_columns": [],
+      "consistent": true
+    },
+    {
+      "cloud": "AWS",
+      "schema": "sales_aws.gold",
+      "rows": 120,
+      "columns": 4,
+      "declared_classification": "internal",
+      "observed_pii_columns": [],
+      "consistent": true
+    },
+    {
+      "cloud": "AWS",
+      "schema": "sales_aws.silver",
+      "rows": 120,
+      "columns": 6,
+      "declared_classification": "confidential",
+      "observed_pii_columns": [],
+      "consistent": true
+    },
+    {
+      "cloud": "AWS",
+      "schema": "sales_rds_fed.crm",
+      "rows": 120,
+      "columns": 6,
+      "declared_classification": "pii",
+      "observed_pii_columns": [
+        "full_name",
+        "email",
+        "phone"
+      ],
+      "consistent": true
+    },
+    {
+      "cloud": "AWS",
+      "schema": "sales_rds_fed.orders",
+      "rows": 120,
+      "columns": 5,
+      "declared_classification": "confidential",
+      "observed_pii_columns": [],
+      "consistent": true
+    },
+    {
+      "cloud": "AZURE",
+      "schema": "supplies_azure.bronze",
+      "rows": 120,
+      "columns": 5,
+      "declared_classification": "confidential",
+      "observed_pii_columns": [],
+      "consistent": true
+    },
+    {
+      "cloud": "AZURE",
+      "schema": "supplies_azure.silver",
+      "rows": 120,
+      "columns": 6,
+      "declared_classification": "confidential",
+      "observed_pii_columns": [],
+      "consistent": true
+    },
+    {
+      "cloud": "AZURE",
+      "schema": "supply_sql_master.inventory",
+      "rows": 120,
+      "columns": 4,
+      "declared_classification": "confidential",
+      "observed_pii_columns": [],
+      "consistent": true
+    },
+    {
+      "cloud": "AZURE",
+      "schema": "supply_sql_master.orders",
+      "rows": 120,
+      "columns": 5,
+      "declared_classification": "confidential",
+      "observed_pii_columns": [],
+      "consistent": true
+    },
+    {
+      "cloud": "GCP",
+      "schema": "marketing_bq_fed.analytics",
+      "rows": 120,
+      "columns": 5,
+      "declared_classification": "internal",
+      "observed_pii_columns": [],
+      "consistent": true
+    },
+    {
+      "cloud": "GCP",
+      "schema": "marketing_bq_fed.web",
+      "rows": 120,
+      "columns": 6,
+      "declared_classification": "pii",
+      "observed_pii_columns": [
+        "user_email",
+        "ip_address"
+      ],
+      "consistent": true
+    },
+    {
+      "cloud": "GCP",
+      "schema": "marketing_gcp.intelligence",
+      "rows": 120,
+      "columns": 4,
+      "declared_classification": "confidential",
+      "observed_pii_columns": [],
+      "consistent": true
+    }
+  ],
+  "classification_drift": [],
+  "gold_layer": [
+    {
+      "table": "gold__global_kpis",
+      "rows": 3,
+      "columns": 4,
+      "pii_columns": []
+    },
+    {
+      "table": "gold__marketing_campaign_perf",
+      "rows": 39,
+      "columns": 5,
+      "pii_columns": []
+    },
+    {
+      "table": "gold__marketing_web_by_country",
+      "rows": 6,
+      "columns": 2,
+      "pii_columns": []
+    },
+    {
+      "table": "gold__sales_customer_value",
+      "rows": 120,
+      "columns": 4,
+      "pii_columns": []
+    },
+    {
+      "table": "gold__sales_revenue_by_region",
+      "rows": 4,
+      "columns": 3,
+      "pii_columns": []
+    },
+    {
+      "table": "gold__supply_inventory_status",
+      "rows": 6,
+      "columns": 3,
+      "pii_columns": []
+    },
+    {
+      "table": "gold__supply_supplier_leadtime",
+      "rows": 25,
+      "columns": 4,
+      "pii_columns": []
+    }
+  ],
+  "gold_pii_leaks": []
+}

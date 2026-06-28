@@ -44,6 +44,10 @@ Thumbs.db
 !.vscode/extensions.json
 *.swp
 
+# Generated pipeline data (Level B) — bulk warehouse is regenerated on demand;
+# only the deterministic docs/governance/data_profile.json + dashboard are committed.
+pipelines/data/
+
 # === Pre-publish security baseline (added 2026-06-22) ===
 PRE-PUBLISH.md
 .env

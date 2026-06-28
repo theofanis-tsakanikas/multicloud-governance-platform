@@ -81,6 +81,17 @@ jobs:
       - name: Cost estimate is in sync with the config
         run: python scripts/cost_estimate.py --check
 
+      - name: Build data warehouse + profile (Level B — offline sqlite)
+        run: |
+          python pipelines/generate_data.py
+          python pipelines/medallion.py
+
+      - name: Data profile is in sync with the config
+        run: python pipelines/profile_data.py --check
+
+      - name: Governance dashboard is in sync with the artifacts
+        run: python scripts/governance_dashboard.py --check
+
       - name: Run test suite
         run: pytest -q
 
