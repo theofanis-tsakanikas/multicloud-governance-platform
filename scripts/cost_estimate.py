@@ -54,6 +54,17 @@ def compute(assumptions: dict) -> dict:
         per_cloud[cloud] = round(float(sum(v for k, v in items.items() if not k.startswith("_"))), 2)
     infra_total = round(sum(per_cloud.values()), 2)
 
+    # Snowflake — the second enforcement backend's compute (optional block). Credit-based:
+    # the per-domain resource-monitor quota × list price per credit. Absent → 0 (the UC-only
+    # cost is unchanged), so this stays backward-compatible with pre-Snowflake assumptions.
+    sf = assumptions.get("snowflake")
+    if sf:
+        sf_credits = sf["credits_per_month"]
+        sf_cost = round(sf_credits * sf["usd_per_credit"], 2)
+    else:
+        sf_credits = 0
+        sf_cost = 0.0
+
     # Carbon for the always-on warehouse (the only steady-state compute in public mode).
     carbon = assumptions["carbon"]
     power_kw = dbx["power_kw"][size]
@@ -63,13 +74,17 @@ def compute(assumptions: dict) -> dict:
     intensity = carbon["grid_intensity_g_per_kwh"].get("AWS", 0)
     carbon_kg = round(kwh_month * intensity / 1000.0, 1)
 
-    total = round(dbx_cost + infra_total, 2)
+    total = round(dbx_cost + infra_total + sf_cost, 2)
     return {
         "currency": assumptions.get("currency", "USD"),
         "databricks": {
             "warehouse_size": size,
             "dbus_per_month": dbx_dbus,
             "monthly_usd": dbx_cost,
+        },
+        "snowflake": {
+            "credits_per_month": sf_credits,
+            "monthly_usd": sf_cost,
         },
         "infra_per_cloud_usd": per_cloud,
         "infra_total_usd": infra_total,
@@ -107,6 +122,15 @@ def render_markdown(est: dict) -> str:
     out.append(f"| DBUs / month | {d['dbus_per_month']:,.0f} |")
     out.append(f"| Cost / month | {d['monthly_usd']:,.2f} {cur} |")
     out.append("")
+    sf = est.get("snowflake", {})
+    if sf.get("monthly_usd", 0):
+        out.append("## Snowflake compute (second enforcement backend)")
+        out.append("")
+        out.append("| Item | Value |")
+        out.append("| --- | --- |")
+        out.append(f"| Credits / month (resource-monitor quota) | {sf['credits_per_month']:,.0f} |")
+        out.append(f"| Cost / month | {sf['monthly_usd']:,.2f} {cur} |")
+        out.append("")
     out.append("## Per-cloud infrastructure")
     out.append("")
     out.append(f"| Cloud | Monthly {cur} |")

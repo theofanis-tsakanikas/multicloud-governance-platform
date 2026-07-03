@@ -41,6 +41,8 @@ This project is a reference implementation of production-grade, multi-cloud data
 | **Cross-cloud Delta Sharing** | GCP marketing catalog is shared to the AWS metastore using dual Databricks provider aliases and native HCL logic |
 | **Responsible-AI governance copilot** | A deterministic least-privilege / PII analyzer gates CI, generates EU-AI-Act / GDPR documentation from the config, and grounds a single cross-cloud Genie NL layer — trust-first, LLM bounded ([docs/governance/](docs/governance/README.md)) |
 | **Provable governance, two engines** | The policy gate is backed by a golden test corpus and an independent OPA/Rego re-implementation ([policy/opa/](policy/opa/README.md)); findings publish as SARIF to the GitHub Security tab |
+| **Engine-agnostic enforcement (Unity Catalog + Snowflake)** | The same domain JSON compiles to *two* enforcement backends via one shared privilege map; a per-engine consistency check proves identical least-privilege on both, and `terraform validate` runs offline ([ADR-0011](docs/adr/0011-snowflake-enforcement-backend.md), `scripts/snowflake_backend.py`) |
+| **The gate as a reusable tool** | The deterministic analyzer ships as an installable `govgate` CLI + composite [GitHub Action](actions/govgate/) — point it at any repo's grants JSON, get SARIF and a PR-gating exit code ([ADR-0012](docs/adr/0012-govgate-packaging.md)) |
 | **Versioned config contract** | Domain JSON is validated against published [JSON Schema](schema/README.md) (Draft 2020-12) with editor autocomplete, on top of the structural validator |
 | **Governance telemetry + FinOps** | Trendable [metrics](docs/governance/metrics.json) (posture/coverage/expiring exceptions) and a multi-cloud [cost + carbon floor](docs/governance/COST.md) that fills Infracost's Databricks/Azure/GCP blind spots |
 | **Security scanning in CI** | Checkov, tfsec, gitleaks, plus an SBOM + vulnerability scan ([sbom.yml](.github/workflows/sbom.yml)) on every change; pre-commit hooks enforce the same locally |
@@ -70,6 +72,7 @@ Full architecture detail, dependency graphs, and design decisions are in [ARCHIT
 - **Remote state** in S3 with DynamoDB locking
 - **Secrets** fetched at plan/apply time from AWS Secrets Manager — never stored in code
 - **Domain governance** defined in JSON, loaded natively by Terragrunt — no custom code
+- **Two enforcement backends** from that one contract: Databricks Unity Catalog and Snowflake (`snowflakedb/snowflake` v2), provably access-equivalent
 
 ## Prerequisites
 

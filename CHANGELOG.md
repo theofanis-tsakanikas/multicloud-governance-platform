@@ -10,6 +10,12 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- **Snowflake — second enforcement backend (engine-agnostic governance).** The same domain JSON contract now compiles to Snowflake as well as Unity Catalog, proving the governance model is engine-agnostic (see [ADR-0011](docs/adr/0011-snowflake-enforcement-backend.md)):
+  - `infra/snowflake/privilege_map.json` — a single shared translation contract (abstract/UC privilege → Snowflake privilege + scope), read by **both** the Snowflake Terraform and the Python consistency check
+  - `scripts/snowflake_backend.py` — translates the shared `GovernanceModel` to Snowflake grants and proves **cross-backend access-equivalence** (independent per-engine read/write/admin classification; `--check` gates CI); 12 tests
+  - `infra/snowflake/modules/global/*` + `infra/aws/modules/data_platform/snowflake_governance` + a Terragrunt leaf — functional-role RBAC, least-privilege grants (schema SELECT/MODIFY fanned out to ALL + FUTURE tables), tag-based masking from classification, row-access scaffolding, and a warehouse capped by a resource monitor. Official `snowflakedb/snowflake` v2.17.0 provider; `terraform validate` runs offline, credential-free (`tests/test_snowflake_terraform.py`)
+- **`govgate` — the policy gate as an installable CLI + GitHub Action** ([ADR-0012](docs/adr/0012-govgate-packaging.md)): `pyproject.toml` build-system + console script; `actions/govgate/action.yml` composite Action (SARIF, fails on unacknowledged HIGH). The monorepo is the gate's reference deployment
+- `snowflake` cost block in `cost_assumptions.json` + `cost_estimate.py` (credit-based warehouse cost); `make snowflake-check` / `snowflake-render` / `snowflake-validate`; a cross-backend consistency step in `dbx-config-validate.yml`
 - Infracost job in `dbx-validate.yml` — posts an AWS infrastructure cost estimate as a PR comment on every pull request; scopes to `infra/aws/modules` and notes that Databricks, Azure, and GCP resources are out of Infracost's coverage
 - Mermaid dependency graphs in `ARCHITECTURE.md` replacing the ASCII art — renders natively on GitHub; GCP cross-cloud edges (`bootstrap/aws/platform`, `aws/data_platform/dbx_governance`) are styled in blue
 - `.github/ISSUE_TEMPLATE/bug_report.md` and `feature_request.md` issue templates

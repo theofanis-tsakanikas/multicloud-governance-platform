@@ -17,6 +17,11 @@
     "days_per_month": 22,
     "power_kw": { "2X-Small": 0.3, "X-Small": 0.5, "Small": 1.0, "Medium": 2.0, "Large": 3.5 }
   },
+  "snowflake": {
+    "_comment": "Second enforcement backend. Credit-based cost = per-domain resource-monitor quota x list price per credit. Illustrative Standard-edition list price.",
+    "usd_per_credit": 3.0,
+    "credits_per_month": 100
+  },
   "infra_monthly_usd": {
     "_comment": "Steady-state list-price floors for the per-cloud data stores + networking.",
     "AWS": { "rds_postgres": 145, "networking": 35, "kms_secrets": 6 },

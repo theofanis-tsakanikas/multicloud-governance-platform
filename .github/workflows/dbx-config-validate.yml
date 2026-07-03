@@ -15,6 +15,8 @@ on:
       - "environments/dev/policy_exceptions.json"
       - "environments/dev/cost_assumptions.json"
       - "environments/dev/**/data_platform/dbx_governance/terragrunt.hcl"
+      - "environments/dev/**/data_platform/snowflake_governance/terragrunt.hcl"
+      - "infra/snowflake/**"
       - "scripts/**"
       - "schema/**"
       - "policy/**"
@@ -65,6 +67,9 @@ jobs:
 
       - name: Access-policy analysis (deterministic gate — fails on unacknowledged HIGH)
         run: python scripts/policy_analyzer.py --warn-expiring 30
+
+      - name: Cross-backend consistency (Unity Catalog ≡ Snowflake, engine-agnostic proof)
+        run: python scripts/snowflake_backend.py --check
 
       - name: OPA / Conftest cross-check (independent second opinion)
         run: make opa
