@@ -20,6 +20,8 @@ Format: a trimmed [MADR](https://adr.github.io/madr/). Template:
 | [0008](0008-single-connectivity-toggle.md) | One `is_private_connection` toggle for the whole platform | Accepted |
 | [0009](0009-cross-cloud-delta-sharing.md) | Cross-cloud Delta Sharing in native HCL | Accepted |
 | [0010](0010-environments-as-file-mirrors.md) | `dev`/`prod` as file-for-file config mirrors | Accepted |
+| [0011](0011-snowflake-enforcement-backend.md) | Snowflake as a second enforcement backend (engine-agnostic governance) | Accepted |
+| [0012](0012-govgate-packaging.md) | Package the policy gate as a standalone CLI + GitHub Action (govgate) | Accepted |
 
 These records formalize the rationale narrated in [ARCHITECTURE.md](../../ARCHITECTURE.md);
 that document remains the prose overview, the ADRs are the decision ledger.

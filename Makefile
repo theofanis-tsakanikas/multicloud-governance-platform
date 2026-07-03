@@ -36,6 +36,11 @@ help:
 	@echo "    make catalog-drift    — reconcile declared grants vs the live UC (deferred)"
 	@echo "    make opa              — cross-check the gate with the Rego policy (needs conftest)"
 	@echo ""
+	@echo "  $(YELLOW)Snowflake — second enforcement backend (engine-agnostic)$(RESET)"
+	@echo "    make snowflake-check    — prove UC ≡ Snowflake access-equivalence (offline)"
+	@echo "    make snowflake-render    — show the Snowflake grants translated from the contract"
+	@echo "    make snowflake-validate  — terraform validate the Snowflake backend (offline)"
+	@echo ""
 	@echo "  $(YELLOW)Data pipelines + dashboard (offline, no cloud creds)$(RESET)"
 	@echo "    make data            — generate synthetic data → medallion → profile (Level B)"
 	@echo "    make dashboard       — render the static governance dashboard (Level A)"
@@ -91,6 +96,8 @@ validate-config:
 	python3 scripts/validate_domains.py
 	@echo "$(GREEN)▶ access-policy analysis (offline)$(RESET)"
 	python3 scripts/policy_analyzer.py
+	@echo "$(GREEN)▶ cross-backend consistency: UC ≡ Snowflake (offline)$(RESET)"
+	python3 scripts/snowflake_backend.py --check
 
 test:
 	@echo "$(GREEN)▶ ruff$(RESET)"
@@ -101,7 +108,8 @@ test:
 
 # ─── Governance copilot ──────────────────────────────────────────────────────
 
-.PHONY: policy-scan policy-sarif governance-report genie-space metrics cost-estimate catalog-drift opa demo
+.PHONY: policy-scan policy-sarif governance-report genie-space metrics cost-estimate catalog-drift opa demo \
+        snowflake-check snowflake-validate snowflake-render
 
 policy-scan:
 	@echo "$(GREEN)▶ access-policy analysis (deterministic, CI gate)$(RESET)"
@@ -130,6 +138,19 @@ cost-estimate:
 	@echo "$(GREEN)▶ cost + carbon floor$(RESET)"
 	python3 scripts/cost_estimate.py
 
+snowflake-check:
+	@echo "$(GREEN)▶ cross-backend consistency: UC ≡ Snowflake (offline)$(RESET)"
+	python3 scripts/snowflake_backend.py --check
+
+snowflake-render:
+	@echo "$(GREEN)▶ Snowflake grants translated from the shared contract$(RESET)"
+	python3 scripts/snowflake_backend.py --render
+
+snowflake-validate:
+	@echo "$(GREEN)▶ terraform validate the Snowflake backend (offline, no creds)$(RESET)"
+	terraform -chdir=tests/terraform/snowflake_governance init -backend=false -input=false
+	terraform -chdir=tests/terraform/snowflake_governance validate
+
 catalog-drift:
 	@echo "$(GREEN)▶ reconcile declared grants vs live Unity Catalog$(RESET)"
 	python3 scripts/catalog_drift.py
@@ -147,8 +168,9 @@ opa:
 demo:
 	@echo "$(GREEN)═══ 1/6 · validate domain config ═══$(RESET)"
 	python3 scripts/validate_domains.py
-	@echo "$(GREEN)═══ 2/6 · deterministic access-policy gate ═══$(RESET)"
+	@echo "$(GREEN)═══ 2/6 · deterministic access-policy gate + cross-backend equivalence ═══$(RESET)"
 	python3 scripts/policy_analyzer.py --warn-expiring 60
+	python3 scripts/snowflake_backend.py --check
 	@echo "$(GREEN)═══ 3/6 · governance docs in sync with config ═══$(RESET)"
 	python3 scripts/governance_report.py --check
 	python3 scripts/genie_space.py --check
