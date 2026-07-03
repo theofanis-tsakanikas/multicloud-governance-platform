@@ -1,0 +1,52 @@
+{
+  "version": "1.0",
+  "description": "Engine-agnostic privilege translation: the vendor-neutral domain grants contract (Unity Catalog vocabulary) -> Snowflake privileges. Read by BOTH the Snowflake Terraform (jsondecode + lookup) and the Python cross-backend consistency test (scripts/snowflake_backend.py), so the two enforcement backends provably derive from one contract. See docs/adr/0011-snowflake-enforcement-backend.md.",
+  "notes": [
+    "The UC privilege set (scripts/validate_domains.py) is the canonical neutral vocabulary because it is the existing contract and the richer of the two; the UC backend maps it identity, Snowflake maps it here.",
+    "Every mapping is capability-preserving: an abstract privilege that confers read/write/admin maps to Snowflake privilege(s) that confer the same effective access. This invariant is asserted by tests/test_snowflake_backend.py (independently, per engine) so a mistranslation is caught.",
+    "A fragment is {privileges[], scope, access}. 'scope' tells the Terraform module WHERE to attach the Snowflake privilege, since Snowflake data-access privileges live on tables, not on the schema/database container. Scopes: 'self' = on the object itself; 'future_and_existing_tables' = ON ALL + FUTURE TABLES IN the object (both, to cover existing and new tables). 'access' documents the conferred capability (read|write|admin|usage; usage = traversal only).",
+    "UC privileges with no faithful Snowflake stage equivalent (external-location BROWSE / CREATE_FOREIGN_SECURABLE / CREATE_MANAGED_STORAGE; catalog/schema-level volume privileges) are intentionally omitted: the coverage test fails loudly if a domain ever grants one, forcing a deliberate mapping decision rather than a silent over/under-grant."
+  ],
+  "object_type_map": {
+    "external_location": "stage",
+    "catalog": "database",
+    "schema": "schema",
+    "volume": "stage"
+  },
+  "privilege_map": {
+    "catalog": {
+      "USE_CATALOG": [{ "privileges": ["USAGE"], "scope": "self", "access": "usage" }],
+      "CREATE_SCHEMA": [{ "privileges": ["CREATE SCHEMA"], "scope": "self", "access": "usage" }],
+      "EXECUTE": [{ "privileges": ["USAGE"], "scope": "self", "access": "usage" }],
+      "REFRESH": [{ "privileges": ["USAGE"], "scope": "self", "access": "usage" }],
+      "BROWSE": [{ "privileges": ["USAGE"], "scope": "self", "access": "usage" }],
+      "MANAGE": [{ "privileges": ["APPLYBUDGET"], "scope": "self", "access": "admin" }],
+      "ALL_PRIVILEGES": [{ "privileges": ["ALL PRIVILEGES"], "scope": "self", "access": "admin" }]
+    },
+    "schema": {
+      "USE_SCHEMA": [{ "privileges": ["USAGE"], "scope": "self", "access": "usage" }],
+      "CREATE_TABLE": [{ "privileges": ["CREATE TABLE"], "scope": "self", "access": "write" }],
+      "SELECT": [{ "privileges": ["SELECT"], "scope": "future_and_existing_tables", "access": "read" }],
+      "MODIFY": [{ "privileges": ["INSERT", "UPDATE", "DELETE", "TRUNCATE"], "scope": "future_and_existing_tables", "access": "write" }],
+      "EXECUTE": [{ "privileges": ["USAGE"], "scope": "self", "access": "usage" }],
+      "REFRESH": [{ "privileges": ["USAGE"], "scope": "self", "access": "usage" }],
+      "BROWSE": [{ "privileges": ["USAGE"], "scope": "self", "access": "usage" }],
+      "MANAGE": [{ "privileges": ["APPLYBUDGET"], "scope": "self", "access": "admin" }],
+      "ALL_PRIVILEGES": [{ "privileges": ["ALL PRIVILEGES"], "scope": "self", "access": "admin" }]
+    },
+    "external_location": {
+      "READ_FILES": [{ "privileges": ["USAGE"], "scope": "self", "access": "read" }],
+      "WRITE_FILES": [{ "privileges": ["WRITE"], "scope": "self", "access": "write" }],
+      "CREATE_EXTERNAL_TABLE": [{ "privileges": ["WRITE"], "scope": "self", "access": "write" }],
+      "CREATE_EXTERNAL_VOLUME": [{ "privileges": ["WRITE"], "scope": "self", "access": "write" }],
+      "MANAGE": [{ "privileges": ["APPLYBUDGET"], "scope": "self", "access": "admin" }],
+      "ALL_PRIVILEGES": [{ "privileges": ["ALL PRIVILEGES"], "scope": "self", "access": "admin" }]
+    },
+    "volume": {
+      "READ_VOLUME": [{ "privileges": ["USAGE"], "scope": "self", "access": "read" }],
+      "WRITE_VOLUME": [{ "privileges": ["WRITE"], "scope": "self", "access": "write" }],
+      "MANAGE": [{ "privileges": ["APPLYBUDGET"], "scope": "self", "access": "admin" }],
+      "ALL_PRIVILEGES": [{ "privileges": ["ALL PRIVILEGES"], "scope": "self", "access": "admin" }]
+    }
+  }
+}
