@@ -57,14 +57,16 @@ locals {
   warehouse_access_groups = ["data_engineers"]
   warehouse_size          = "2X-Small"
   workspace_pricing_tier  = "ENTERPRISE"
-  metastore_admins        = ["79066160746664","77102429556016"]
+  metastore_admins_aws    = ["79066160746664", "77102429556016"] # AWS Databricks account only: you + AWS automation SP
+  # GCP admins are established implicitly (metastore creator = owner; you are account admin).
+  # To wire them explicitly later (symmetric with AWS), the GCP ids are: ["214315615769184", "212919085861654"].
   identity_groups         = ["data_engineers", "data_scientists", "analysts", "business_users", "marketing_scientists", "marketing_analysts", "crm_managers"]
   admin_group_name        = "metastore_admins"
 
   # ─── Azure ───────────────────────────────────────────────────────────────
   azure_location          = "West Europe"
   prefix_key_vault_name   = "kv-datalake"
-  admin_object_id         = "f78c2d5c-7f83-44be-ab3b-4dc0d725b7c1"
+  admin_object_id         = "56ddbe8e-1f5f-4dd7-bb84-92ea9c3d7495"
   adls_name               = "adls"
   azure_containers        = ["raw", "managed", "gold"]
   databricks_app_name     = "databricks-connector"
@@ -97,8 +99,6 @@ locals {
   dbx_system_sa_gcp       = "dabc-d7f3c69a3d414b638430c29ab7771451@gcp-sa-databricks.iam.gserviceaccount.com"
   gcp_dbx_account_id      = "d7f3c69a-3d41-4b63-8430-c29ab7771451"
   gcp_databricks_host     = "https://accounts.gcp.databricks.com"
-  gcp_workspace_id        = "8259562273948428"
-  gcp_metastore_id        = "4a91bd6f-887e-45d7-a14e-18595d85550f"
   gcp_workspace_name      = "gcp-serverless-workspace"
   gcp_metastore_name      = "primary-metastore-europe-west3"
   gcp_metastore_bucket    = "dbx-metastore-bucket"

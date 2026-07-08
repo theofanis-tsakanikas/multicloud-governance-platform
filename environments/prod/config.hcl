@@ -62,7 +62,7 @@ locals {
   warehouse_access_groups = ["data_engineers"]
   warehouse_size          = "Small"
   workspace_pricing_tier  = "ENTERPRISE"
-  metastore_admins        = ["79066160746664"]
+  metastore_admins_aws    = ["79066160746664"] # AWS Databricks account only
   identity_groups         = ["data_engineers", "data_scientists", "analysts", "business_users", "marketing_scientists", "marketing_analysts", "crm_managers"]
   admin_group_name        = "metastore_admins"
 
@@ -102,8 +102,6 @@ locals {
   dbx_system_sa_gcp       = "dabc-d7f3c69a3d414b638430c29ab7771451@gcp-sa-databricks.iam.gserviceaccount.com"
   gcp_dbx_account_id      = "d7f3c69a-3d41-4b63-8430-c29ab7771451"
   gcp_databricks_host     = "https://accounts.gcp.databricks.com"
-  gcp_workspace_id        = "8259562273948428"
-  gcp_metastore_id        = "4a91bd6f-887e-45d7-a14e-18595d85550f"
   gcp_workspace_name      = "gcp-serverless-workspace-prod"
   gcp_metastore_name      = "primary-metastore-europe-west3"
   gcp_metastore_bucket    = "dbx-metastore-bucket"
