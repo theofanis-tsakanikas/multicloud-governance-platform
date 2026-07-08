@@ -130,9 +130,4 @@ locals {
     "serviceusage.googleapis.com"
   ]
 
-  # ─── Unique deployment suffix (replaces cloud_generations.json) ───────────
-  # Change after a full destroy to avoid resource name collisions on re-deploy
-  deployment_id_aws   = "0d760a68"
-  deployment_id_azure = "0f30e9c9"
-  deployment_id_gcp   = "762e9f69"
 }

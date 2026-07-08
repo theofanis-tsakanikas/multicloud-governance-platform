@@ -23,11 +23,11 @@ locals {
   loc_map = {
     for loc in local.external_locations_data : loc.location_name => merge(loc, {
       # Remove trailing slashes and append exactly one for a clean S3 URI
-      calculated_url = "s3://${var.bucket_name}/${trim(loc.path, "/")}/${var.deployment_id_aws}/"
+      calculated_url = "s3://${var.bucket_name}/${trim(loc.path, "/")}/"
 
-      # Calculate a Unique Name (Injecting the deployment_id_aws)
+      # Stable external-location name (derived from location_name)
       # If loc.location_name is "sales_raw", the final name will be "sales_raw_a1b2c3d4"
-      unique_name = "${loc.location_name}_${var.deployment_id_aws}"
+      unique_name = "${loc.location_name}"
     })
   }
 
@@ -39,8 +39,8 @@ locals {
       # 1. Calculate Catalog Storage Root (S3)
       calculated_storage_root = cat.type == "MANAGED" ? (
         lookup(cat, "storage_root", null) != null ?
-        "s3://${var.bucket_name}/${trim(cat.storage_root, "/")}/${var.deployment_id_aws}/" :
-        "s3://${var.bucket_name}/${trim(var.managed_storage_root, "/")}/${var.deployment_id_aws}/"
+        "s3://${var.bucket_name}/${trim(cat.storage_root, "/")}/" :
+        "s3://${var.bucket_name}/${trim(var.managed_storage_root, "/")}/"
       ) : null
 
       # 2. Calculate Volume Storage Locations (S3)
@@ -49,7 +49,7 @@ locals {
           volumes = [
             for v in lookup(s, "volumes", []) : merge(v, {
               calculated_storage_location = lookup(v, "volume_type", "MANAGED") == "EXTERNAL" ? (
-                "s3://${var.bucket_name}/${trim(v.location_path, "/")}/${var.deployment_id_aws}/${trim(v.volume_path, "/")}/"
+                "s3://${var.bucket_name}/${trim(v.location_path, "/")}/${trim(v.volume_path, "/")}/"
               ) : null
             })
           ]

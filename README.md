@@ -152,4 +152,7 @@ make dashboard            # render the static, self-contained governance dashboa
 
 ## After a full destroy
 
-Update `deployment_id_<cloud>` in `environments/dev/config.hcl` to prevent resource name collisions on re-deploy.
+Resource names are **stable** (no `deployment_id` suffix). A re-deploy generally works as-is;
+only if a just-destroyed Databricks object is still in a soft-deleted state might you hit a
+transient name collision — wait for it to purge (or purge it via the Databricks API) and
+re-apply. See [ADR-0013](docs/adr/0013-stable-names-over-deployment-id-suffix.md).

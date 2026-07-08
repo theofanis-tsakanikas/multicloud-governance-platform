@@ -195,15 +195,13 @@ make apply-azure     # depends on bootstrap/aws/platform outputs
 make apply-gcp       # depends on both bootstrap/aws/platform and bootstrap/gcp/platform
 ```
 
-### 2. `deployment_id_*` must be rotated after a full destroy
+### 2. Resource names are stable (no `deployment_id` suffix) — mind soft-deletes on re-deploy
 
-`deployment_id_aws`, `deployment_id_azure`, and `deployment_id_gcp` in `config.hcl` are embedded in Databricks object names (catalogs, external locations, storage credentials). After a destroy, some Databricks control-plane objects may linger in a soft-deleted state. Re-deploying with the same suffix causes name-collision errors on those objects.
+Databricks object names (catalogs, external locations, storage credentials) are **stable** — derived from the domain config, with **no** random suffix. This is the production-correct choice: names are meaningful, referenceable, and idempotent.
 
-**Fix:** Update the relevant `deployment_id_*` to a new 8-character hex string before re-deploying:
-```bash
-openssl rand -hex 4   # generates e.g. "a3f9c1b2"
-```
-Then update `config.hcl` and apply. The README has a reminder note for this.
+**Caveat:** after a `destroy`, some Databricks control-plane objects can linger briefly in a soft-deleted state. Re-deploying the **same** stable name before that purges can hit a name-collision. If it happens, wait for the soft-delete to purge (or purge it via the Databricks API) and re-apply.
+
+*(Earlier versions injected a rotating `deployment_id` suffix into every name to sidestep this. That was removed in favour of stable names — see [ADR-0013](docs/adr/0013-stable-names-over-deployment-id-suffix.md).)*
 
 ### 3. `dbx_workspace` and `managed_warehouse` are no-ops in public mode
 

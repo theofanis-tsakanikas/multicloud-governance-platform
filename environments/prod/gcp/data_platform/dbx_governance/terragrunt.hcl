@@ -71,7 +71,6 @@ inputs = {
   managed_schema_grants_json    = jsonencode(local.managed_schema_grants)
   volume_grants_json            = jsonencode(local.grants.volume_grants)
   managed_storage_root          = local.infra.managed_storage_root
-  deployment_id_gcp             = local.cfg.deployment_id_gcp
   storage_credential_name       = dependency.dbx_creds.outputs.storage_credential_name
   bucket_name                   = dependency.foundation.outputs.gcs_bucket_name
 }

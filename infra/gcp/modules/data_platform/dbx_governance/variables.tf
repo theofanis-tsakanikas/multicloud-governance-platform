@@ -59,10 +59,6 @@ variable "managed_storage_root" {
 }
 
 
-variable "deployment_id_gcp" {
-  type        = string
-  description = "Unique hash or generation ID provided by the orchestrator. Changing this forces a new name for external locations, avoiding API cache issues (ghosting) after a destroy."
-}
 
 variable "storage_credential_name" {
   description = "The name of the storage credential to use"

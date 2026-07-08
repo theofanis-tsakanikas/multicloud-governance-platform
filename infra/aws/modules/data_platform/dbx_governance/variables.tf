@@ -68,7 +68,3 @@ variable "volume_grants_json" {
   description = "JSON array of grants for volumes"
 }
 
-variable "deployment_id_aws" {
-  type        = string
-  description = "Unique hash or generation ID provided by the orchestrator. Changing this forces a new name for external locations, avoiding API cache issues (ghosting) after a destroy."
-}

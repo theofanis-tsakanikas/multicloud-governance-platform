@@ -55,5 +55,4 @@ inputs = {
   adls_account_id           = dependency.foundation.outputs.adls_account_id
   az_spn_client_id          = dependency.security.outputs.az_spn_client_id
   az_spn_client_secret      = dependency.security.outputs.az_spn_client_secret
-  deployment_id_azure        = local.cfg.deployment_id_azure
 }
