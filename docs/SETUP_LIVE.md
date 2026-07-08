@@ -139,24 +139,23 @@ secrets exist. Each is a small JSON blob.
 | `snowflake_organization`, `snowflake_account` | Step 5 | Snowsight account details |
 | `deployment_id_aws/azure/gcp` | collision suffix | `openssl rand -hex 4` (rotate after any destroy) |
 
-## Step 7 · Pipeline secrets (for the one-click data run)
-For [`dbx-pipeline.yml`](../.github/workflows/dbx-pipeline.yml):
-- 🔑 `DATABRICKS_HOST` — the **workspace** URL (not the account URL), e.g.
-  `https://dbc-xxxx.cloud.databricks.com`.
-- 🔑 `DATABRICKS_TOKEN` — Databricks workspace → *Settings → Developer → Access
-  tokens → Generate* (a PAT), or an SPN token.
-- 🔑 `DBX_WAREHOUSE_ID` — *SQL Warehouses → your warehouse →* copy the ID from the
-  URL / *Connection details*.
+## Step 7 · Pipeline secrets — **not needed** (output-driven)
+The one-click data run ([`dbx-pipeline.yml`](../.github/workflows/dbx-pipeline.yml))
+is **output-driven + service-principal auth**: it reads the workspace URL and SQL
+warehouse id from the bootstrap **Terraform outputs**, and authenticates as the
+**seed service principal** (M2M OAuth) — so there is **no** `DATABRICKS_HOST` /
+`DATABRICKS_TOKEN` / `DBX_WAREHOUSE_ID` secret to set, and no personal PAT. The
+only secret it uses is `DBX_DEPLOY_ROLE_ARN` (already set).
 
-## Set the GitHub secrets (any of the 🔑 above)
+*(For a purely **local** `./bundle.sh` run you still export `DATABRICKS_AWS_HOST` /
+`WAREHOUSE_ID` yourself — but CI needs nothing extra.)*
+
+## Set the GitHub secrets (only these four — already done)
 ```bash
 gh secret set DBX_DEPLOY_ROLE_ARN --body "arn:aws:iam::<acct>:role/dbx-github-deploy"
 gh secret set AZURE_CLIENT_ID       --body "<appId>"
 gh secret set AZURE_TENANT_ID       --body "<tenant>"
 gh secret set AZURE_SUBSCRIPTION_ID --body "<sub>"
-gh secret set DATABRICKS_HOST       --body "https://dbc-xxxx.cloud.databricks.com"
-gh secret set DATABRICKS_TOKEN      --body "<pat>"
-gh secret set DBX_WAREHOUSE_ID      --body "<warehouse-id>"
 ```
 
 ---
@@ -223,14 +222,12 @@ Prefer the web consoles? Every step above has a point-and-click equivalent.
 - **Workspace / metastore ids (GCP):** GCP Databricks account console → *Workspaces*
   and *Data → Metastores*.
 
-## Step 7 · Pipeline secrets — Databricks workspace UI
-- **`DATABRICKS_HOST`:** your **workspace** URL from the browser address bar.
-- **`DATABRICKS_TOKEN`:** workspace → top-right avatar → **Settings → Developer →
-  Access tokens** → *Generate new token* → copy.
-- **`DBX_WAREHOUSE_ID`:** workspace → **SQL → SQL Warehouses** → open your warehouse
-  → the ID is in the URL and under *Connection details*.
+## Step 7 · Pipeline secrets — none (output-driven)
+Nothing to click. The data-run pipeline reads the workspace URL + warehouse id
+from Terraform outputs and auths as the seed service principal — no PAT, no
+manual `DATABRICKS_*` secrets. (Only for a **local** `./bundle.sh` run do you
+export `DATABRICKS_AWS_HOST` / `WAREHOUSE_ID` yourself.)
 
 ## Setting the GitHub secrets — GitHub UI
 `github.com/<owner>/<repo>` → **Settings → Secrets and variables → Actions** →
-open each secret (the 4 empty ones already exist) → *Update* → paste value → *Save*.
-For the pipeline ones, *New repository secret* → name (`DATABRICKS_HOST`, …) → value.
+open each of the **four** secrets → *Update* → paste value → *Save*.

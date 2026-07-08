@@ -129,8 +129,8 @@ locals {
   # Identifiers only (no secrets); auth is via a ~/.snowflake/config.toml profile
   # or SNOWFLAKE_* env vars at plan/apply time. The storage integration is
   # provisioned by a creds/bootstrap layer and referenced here by name.
-  snowflake_organization             = "EXAMPLE_ORG"
-  snowflake_account                  = "EXAMPLE_ACCOUNT"
+  snowflake_organization             = "UEMRJTH"
+  snowflake_account                  = "FE44581"
   snowflake_storage_integration_name = "DEV_STORAGE_INTEGRATION"
   snowflake_warehouse_size           = "XSMALL"
   snowflake_credit_quota             = 100
