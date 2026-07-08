@@ -68,7 +68,6 @@ inputs = {
   gcs_bucket_name           = dependency.foundation.outputs.gcs_bucket_name
   dbx_sa_email              = dependency.bootstrap_gcp.outputs.dbx_sa_email
   gcp_storage_credential_name = local.cfg.gcp_storage_credential_name
-  deployment_id_gcp         = local.cfg.deployment_id_gcp
   wif_pool_id               = local.cfg.gcp_wif_pool_id
   provider_id               = local.cfg.gcp_provider_id
 }

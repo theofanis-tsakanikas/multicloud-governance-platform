@@ -17,7 +17,3 @@ variable "azure_storage_credential_name" {
   type = string
 }
 
-variable "deployment_id" {
-  type        = string
-  description = "Unique hash or generation ID provided by the orchestrator. Changing this forces a new name for external locations, avoiding API cache issues (ghosting) after a destroy."
-}

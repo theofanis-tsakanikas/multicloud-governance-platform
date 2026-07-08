@@ -17,7 +17,7 @@ Stand up → record → **destroy the same day**.
 - The 4 GitHub secrets filled (`DBX_DEPLOY_ROLE_ARN`, `AZURE_*`) — see the
   credentials table you already have.
 - Cloud-store secrets created (SPN, seed creds, RDS/SQL passwords, BQ key).
-- `config.hcl` set to **your** account IDs / ARNs / `deployment_id_*`.
+- `config.hcl` set to **your** account IDs / ARNs.
 - Local tools: Terraform ≥1.10, Terragrunt ≥0.75, AWS CLI, `az`, `gcloud`,
   `snow` (Snowflake CLI) with a `~/.snowflake/config.toml` profile.
 
@@ -85,8 +85,9 @@ make bootstrap-gcp-destroy
 make bootstrap-aws-destroy
 # Snowflake: DROP DATABASE sales;  (+ roles/warehouse if desired)
 ```
-Then **rotate** `deployment_id_aws/azure/gcp` in `config.hcl` before any future
-re-deploy (soft-deleted Databricks objects otherwise collide).
+Resource names are **stable** (no `deployment_id`) — a re-deploy just works. Only a
+just-destroyed Databricks object still in a soft-deleted state can cause a transient name
+clash; wait for it to purge (or purge it via the Databricks API) and re-apply.
 
 ---
 

@@ -69,7 +69,6 @@ inputs = {
   bucket_name                = dependency.foundation.outputs.data_bucket_name
   storage_credential_name    = dependency.dbx_creds.outputs.storage_credential_name
   managed_storage_root       = local.infra.managed_storage_root
-  deployment_id_aws          = local.cfg.deployment_id_aws
   external_locations_json    = jsonencode(local.infra.external_locations)
   catalogs_json              = jsonencode(local.managed_catalogs)
   ext_loc_grants_json        = jsonencode(local.grants.external_location_grants)

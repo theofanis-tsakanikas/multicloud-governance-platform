@@ -74,6 +74,5 @@ inputs = {
   volume_grants_json         = jsonencode(local.grants.volume_grants)
   managed_storage_root       = local.infra.managed_storage_root
   managed_storage_container  = local.infra.managed_storage_container
-  deployment_id_azure        = local.cfg.deployment_id_azure
   storage_credential_name    = dependency.dbx_creds.outputs.storage_credential_name
 }

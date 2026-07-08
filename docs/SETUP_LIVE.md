@@ -137,7 +137,6 @@ secrets exist. Each is a small JSON blob.
 | `metastore_admins`, `admin_object_id` | your admin user/SP ids | Databricks / Azure AD |
 | `seed_credentials_arn`, `gcp_seed_secret_arn`, `azure_seed_secret_arn` | the seed ARNs from Step 4 | `aws secretsmanager describe-secret` |
 | `snowflake_organization`, `snowflake_account` | Step 5 | Snowsight account details |
-| `deployment_id_aws/azure/gcp` | collision suffix | `openssl rand -hex 4` (rotate after any destroy) |
 
 ## Step 7 · Pipeline secrets — **not needed** (output-driven)
 The one-click data run ([`dbx-pipeline.yml`](../.github/workflows/dbx-pipeline.yml))
@@ -162,7 +161,7 @@ gh secret set AZURE_SUBSCRIPTION_ID --body "<sub>"
 
 Now you're ready — go to [`LIVE_RUN_RUNBOOK.md`](LIVE_RUN_RUNBOOK.md) §2 (deploy) and
 proceed. **Reminder:** everything here is real-money infra — deploy, record,
-**destroy the same day**, then rotate `deployment_id_*`.
+**destroy the same day**.
 
 ---
 

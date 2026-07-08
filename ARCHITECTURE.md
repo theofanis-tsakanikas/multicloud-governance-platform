@@ -9,7 +9,7 @@ The previous version shipped a 913-line Python orchestrator that manually manage
 | Python orchestrator (913 lines) | Terragrunt — 0 lines of orchestration code |
 | YAML blueprint files | `terragrunt.hcl` dependency graphs |
 | Manual context hydration | Native `dependency {}` output passing |
-| `cloud_generations.json` entropy | `deployment_id_*` in `config.hcl` |
+| `cloud_generations.json` entropy | Stable resource names (no suffix — [ADR-0013](docs/adr/0013-stable-names-over-deployment-id-suffix.md)) |
 | 2-phase IAM (`is_initial_deployment`) | Single-phase with static `external_id` |
 | `platform_bootstrap/ + gcp_platform_bootstrap/` | `bootstrap/aws/ + bootstrap/gcp/` |
 | Local `.tfstate` files | Remote S3 + DynamoDB locking |

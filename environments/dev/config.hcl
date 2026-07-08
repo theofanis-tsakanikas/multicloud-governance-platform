@@ -57,7 +57,7 @@ locals {
   warehouse_access_groups = ["data_engineers"]
   warehouse_size          = "2X-Small"
   workspace_pricing_tier  = "ENTERPRISE"
-  metastore_admins        = ["79066160746664"]
+  metastore_admins        = ["79066160746664","77102429556016"]
   identity_groups         = ["data_engineers", "data_scientists", "analysts", "business_users", "marketing_scientists", "marketing_analysts", "crm_managers"]
   admin_group_name        = "metastore_admins"
 
@@ -135,9 +135,4 @@ locals {
   snowflake_warehouse_size           = "XSMALL"
   snowflake_credit_quota             = 100
 
-  # ─── Unique deployment suffix (replaces cloud_generations.json) ───────────
-  # Change after a full destroy to avoid resource name collisions on re-deploy
-  deployment_id_aws   = "0d760a68"
-  deployment_id_azure = "0f30e9c9"
-  deployment_id_gcp   = "762e9f69"
 }
