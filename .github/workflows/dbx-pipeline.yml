@@ -1,0 +1,49 @@
+name: DBX Pipeline — deploy + run medallion (Asset Bundle)
+
+# Optional convenience: deploys the medallion Asset Bundle to a workspace and
+# (optionally) triggers the job — so the data pipeline runs from CI, not just
+# the UI. Manual only; the live data run is a deliberate, deferred step.
+#
+# Requires these repo/environment secrets (separate from the Terraform ones):
+#   DATABRICKS_HOST   — the target workspace URL (AWS or GCP)
+#   DATABRICKS_TOKEN  — a workspace PAT / SPN token
+#   DBX_WAREHOUSE_ID  — the SQL warehouse the medallion runs on
+
+on:
+  workflow_dispatch:
+    inputs:
+      cloud:
+        description: "Target workspace"
+        type: choice
+        options: [aws, gcp]
+        default: aws
+      run_job:
+        description: "Also run the job after deploy?"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+    environment: dev
+    env:
+      DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+      WAREHOUSE_ID: ${{ secrets.DBX_WAREHOUSE_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Databricks CLI
+        run: curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+
+      - name: Deploy the bundle (creates notebooks + jobs in the workspace)
+        working-directory: pipelines/databricks
+        run: databricks bundle deploy -t ${{ inputs.cloud }} --var "warehouse_id=${WAREHOUSE_ID}"
+
+      - name: Run the medallion job
+        if: ${{ inputs.run_job }}
+        working-directory: pipelines/databricks
+        run: databricks bundle run "medallion_${{ inputs.cloud }}" -t ${{ inputs.cloud }} --var "warehouse_id=${WAREHOUSE_ID}"

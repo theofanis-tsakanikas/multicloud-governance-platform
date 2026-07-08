@@ -53,11 +53,28 @@ The bulk data (`pipelines/data/`) is git-ignored and regenerated on demand;
 only the small, deterministic `data_profile.json` and the dashboard are committed,
 and CI asserts they are in sync (`--check`).
 
-## On the live platform (deferred)
+## On the live platform (the one-time recording)
 
 Offline this runs in sqlite for a zero-dependency, reproducible demo. On the real
 platform the identical transformations run as **Spark SQL on Databricks** across
-the three clouds — see [`databricks/medallion_spark.sql`](databricks/medallion_spark.sql).
-Like `genie_space.py --deploy` and `catalog_drift.py --live`, execution against a
-live workspace is deliberately deferred; the artifacts are build-time, the cluster
-is deploy-time.
+the three clouds, feeding an **AI/BI dashboard** + a results notebook, with a
+**Snowflake masking demo** alongside. The live-run bundle:
+
+One-click via a **Databricks Asset Bundle** ([`databricks/databricks.yml`](databricks/databricks.yml)
++ [`bundle.sh`](databricks/bundle.sh)): `bundle deploy` uploads the SQL + notebook and
+creates the Jobs; then you click **Run** (or `./bundle.sh run aws`). Two workspaces
+(separate Databricks accounts), so two jobs:
+
+| Path | Role |
+|---|---|
+| `databricks/aws/01_seed.sql`, `02_medallion.sql`, `03_executive.sql` | seed → medallion → **executive cross-cloud view** (sales + supply + Delta-shared marketing) |
+| `databricks/aws/04_dashboard_queries.sql` | tiles for the Databricks **AI/BI dashboard** |
+| `databricks/aws/results_notebook.py` | presentation notebook — **only queries the gold tables** (the recording), with inline charts |
+| `databricks/gcp/01_seed.sql`, `02_medallion.sql` | marketing bronze→silver→gold (then Delta-shared to AWS) |
+| [`snowflake/masking_demo.sql`](snowflake/masking_demo.sql) | analyst-vs-admin PII masking, live on Snowflake |
+
+Deploy+run from CI too: [`.github/workflows/dbx-pipeline.yml`](../.github/workflows/dbx-pipeline.yml).
+The full deploy → seed → run → present → **teardown** storyboard is in
+[`docs/LIVE_RUN_RUNBOOK.md`](../docs/LIVE_RUN_RUNBOOK.md). Like `genie_space.py --deploy`,
+execution against a live workspace is deliberately deferred; the offline pipeline proves
+the logic, these run it for real during the one-time recording.
