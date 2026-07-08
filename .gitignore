@@ -50,6 +50,9 @@ Thumbs.db
 # only the deterministic docs/governance/data_profile.json + dashboard are committed.
 pipelines/data/
 
+# 📓 Local notes / study material (PDFs, overview + concepts — local only)
+notes/
+
 # === Pre-publish security baseline (added 2026-06-22) ===
 PRE-PUBLISH.md
 .env
