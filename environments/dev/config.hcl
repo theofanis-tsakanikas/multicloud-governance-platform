@@ -35,7 +35,7 @@ locals {
   delta_sharing_name = "aws_delta_share"
 
   # Bootstrap Secrets ARN (seed credentials for first-time setup)
-  seed_credentials_arn = "arn:aws:secretsmanager:eu-central-1:387229419515:secret:databricks/bootstrap/seed_credentials-DP2XLS"
+  seed_credentials_arn = "arn:aws:secretsmanager:eu-central-1:387229419515:secret:databricks/bootstrap/seed_credentials-juiFEF"
   seed_credentials_id  = "databricks/bootstrap/seed_credentials"
   spn_secret_id        = "databricks/spn"
 
@@ -81,7 +81,7 @@ locals {
   gateway_subnet_prefix   = ["10.20.255.0/27"]
   databricks_vpc_cidr     = "10.10.0.0/16"
   databricks_subnets      = { subnet_a = "10.10.1.0/24", subnet_b = "10.10.2.0/24" }
-  azure_seed_secret_arn   = "arn:aws:secretsmanager:eu-central-1:387229419515:secret:azure/bootstrap/seed_credentials-WxWFsM"
+  azure_seed_secret_arn   = "arn:aws:secretsmanager:eu-central-1:387229419515:secret:azure/bootstrap/seed_credentials-Pe2FJ6"
   azure_storage_credential_name = "azure_federation_creds"
 
   # ─── GCP ─────────────────────────────────────────────────────────────────
@@ -109,7 +109,7 @@ locals {
   gcp_wif_pool_id         = "wif-db-pool"
   gcp_provider_id         = "databricks-oidc-provider"
   gcp_service_account_id  = "dbx-federation-sa"
-  gcp_seed_secret_arn          = "arn:aws:secretsmanager:eu-central-1:387229419515:secret:gcp/bootstrap/seed_credentials-kCRXyj"
+  gcp_seed_secret_arn          = "arn:aws:secretsmanager:eu-central-1:387229419515:secret:gcp/bootstrap/seed_credentials-GGd5LM"
   gcp_storage_credential_name  = "gcp-databricks-creds"
   gcp_service_list        = [
     "iam.googleapis.com",
