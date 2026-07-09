@@ -67,7 +67,18 @@ jobs:
 
       - name: Apply — AWS (full stack)
         working-directory: environments/dev/aws
-        run: terragrunt run-all apply --terragrunt-non-interactive -auto-approve
+        run: |
+          # Apply top-level dirs in dependency order. Secrets created in an earlier
+          # dir (e.g. security/secrets_manager) exist before a later dir fetches them
+          # at parse time; run-all within each dir resolves the fine-grained order.
+          # (run-all across the WHOLE cloud fails on a fresh env: it parses secret-
+          # fetching layers before the secret-creating layer has applied.)
+          for dir in foundation network security storage integration data_platform; do
+            [ -d "$dir" ] || continue
+            echo "::group::apply $dir"
+            terragrunt run-all apply --terragrunt-non-interactive -auto-approve --terragrunt-working-dir "$dir"
+            echo "::endgroup::"
+          done
 
   deploy-azure:
     name: Deploy Azure
@@ -103,7 +114,18 @@ jobs:
 
       - name: Apply — Azure
         working-directory: environments/dev/azure
-        run: terragrunt run-all apply --terragrunt-non-interactive -auto-approve
+        run: |
+          # Apply top-level dirs in dependency order. Secrets created in an earlier
+          # dir (e.g. security/secrets_manager) exist before a later dir fetches them
+          # at parse time; run-all within each dir resolves the fine-grained order.
+          # (run-all across the WHOLE cloud fails on a fresh env: it parses secret-
+          # fetching layers before the secret-creating layer has applied.)
+          for dir in foundation network security storage integration data_platform; do
+            [ -d "$dir" ] || continue
+            echo "::group::apply $dir"
+            terragrunt run-all apply --terragrunt-non-interactive -auto-approve --terragrunt-working-dir "$dir"
+            echo "::endgroup::"
+          done
         env:
           ARM_USE_OIDC: true
           ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
@@ -137,4 +159,15 @@ jobs:
 
       - name: Apply — GCP
         working-directory: environments/dev/gcp
-        run: terragrunt run-all apply --terragrunt-non-interactive -auto-approve
+        run: |
+          # Apply top-level dirs in dependency order. Secrets created in an earlier
+          # dir (e.g. security/secrets_manager) exist before a later dir fetches them
+          # at parse time; run-all within each dir resolves the fine-grained order.
+          # (run-all across the WHOLE cloud fails on a fresh env: it parses secret-
+          # fetching layers before the secret-creating layer has applied.)
+          for dir in foundation network security storage integration data_platform; do
+            [ -d "$dir" ] || continue
+            echo "::group::apply $dir"
+            terragrunt run-all apply --terragrunt-non-interactive -auto-approve --terragrunt-working-dir "$dir"
+            echo "::endgroup::"
+          done
