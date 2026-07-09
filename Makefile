@@ -221,13 +221,22 @@ bootstrap-gcp:
 		$(TG) apply $(TG_FLAGS) -auto-approve --terragrunt-working-dir $(ENV_DIR)/bootstrap/gcp/$$layer || exit 1; \
 	done
 
+# Reverse order. config/platform may have no state (or fail to parse when the SPN
+# secret isn't created yet) — tolerate those; foundation holds the real resources
+# and must succeed.
 bootstrap-aws-destroy:
-	$(TG) run-all destroy $(TG_FLAGS) -auto-approve \
-		--terragrunt-working-dir $(ENV_DIR)/bootstrap/aws
+	@for layer in config platform; do \
+		echo "=== bootstrap-aws-destroy: $$layer (tolerated) ==="; \
+		$(TG) destroy $(TG_FLAGS) -auto-approve --terragrunt-working-dir $(ENV_DIR)/bootstrap/aws/$$layer || echo "  ($$layer skipped: no state / not bootstrapped)"; \
+	done
+	$(TG) destroy $(TG_FLAGS) -auto-approve --terragrunt-working-dir $(ENV_DIR)/bootstrap/aws/foundation
 
 bootstrap-gcp-destroy:
-	$(TG) run-all destroy $(TG_FLAGS) -auto-approve \
-		--terragrunt-working-dir $(ENV_DIR)/bootstrap/gcp
+	@for layer in config platform; do \
+		echo "=== bootstrap-gcp-destroy: $$layer (tolerated) ==="; \
+		$(TG) destroy $(TG_FLAGS) -auto-approve --terragrunt-working-dir $(ENV_DIR)/bootstrap/gcp/$$layer || echo "  ($$layer skipped: no state / not bootstrapped)"; \
+	done
+	$(TG) destroy $(TG_FLAGS) -auto-approve --terragrunt-working-dir $(ENV_DIR)/bootstrap/gcp/foundation
 
 # ─── Plan ────────────────────────────────────────────────────────────────────
 

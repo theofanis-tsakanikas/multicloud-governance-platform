@@ -67,7 +67,19 @@ jobs:
             done
           elif [ "${{ inputs.action }}" = "destroy" ]; then
             echo "::warning::Bootstrap destroy runs in reverse order"
-            terragrunt run-all destroy --terragrunt-non-interactive -auto-approve
+            # Reverse order. config/platform may have no state (or fail to parse
+            # when the SPN secret isn't created yet) — tolerate those; foundation
+            # holds the real resources and must succeed.
+            for layer in config platform; do
+              echo "::group::terragrunt destroy — $layer (tolerated)"
+              terragrunt destroy --terragrunt-non-interactive -auto-approve \
+                --terragrunt-working-dir "$layer" || echo "::warning::$layer skipped (no state / not bootstrapped)"
+              echo "::endgroup::"
+            done
+            echo "::group::terragrunt destroy — foundation"
+            terragrunt destroy --terragrunt-non-interactive -auto-approve \
+              --terragrunt-working-dir foundation
+            echo "::endgroup::"
           fi
 
   bootstrap-gcp:
@@ -113,5 +125,17 @@ jobs:
               echo "::endgroup::"
             done
           elif [ "${{ inputs.action }}" = "destroy" ]; then
-            terragrunt run-all destroy --terragrunt-non-interactive -auto-approve
+            # Reverse order. config/platform may have no state (or fail to parse
+            # when the SPN secret isn't created yet) — tolerate those; foundation
+            # holds the real resources and must succeed.
+            for layer in config platform; do
+              echo "::group::terragrunt destroy — $layer (tolerated)"
+              terragrunt destroy --terragrunt-non-interactive -auto-approve \
+                --terragrunt-working-dir "$layer" || echo "::warning::$layer skipped (no state / not bootstrapped)"
+              echo "::endgroup::"
+            done
+            echo "::group::terragrunt destroy — foundation"
+            terragrunt destroy --terragrunt-non-interactive -auto-approve \
+              --terragrunt-working-dir foundation
+            echo "::endgroup::"
           fi

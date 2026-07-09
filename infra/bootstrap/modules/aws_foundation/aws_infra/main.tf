@@ -13,7 +13,9 @@ locals {
 # ─── Unity Catalog metastore root storage ────────────────────────────────────
 
 resource "aws_s3_bucket" "unity_metastore" {
-  bucket        = var.metastore_bucket_name
+  # S3 bucket names are globally unique across all AWS accounts, so suffix with
+  # the account id (the AWS analogue of the GCP module's project_id suffix).
+  bucket        = "${var.metastore_bucket_name}-${data.aws_caller_identity.current.account_id}"
   force_destroy = true
 
   tags = {
@@ -55,17 +57,30 @@ resource "aws_iam_role" "metastore_data_access" {
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Sid    = "UnityCatalogAssumeRole"
-      Effect = "Allow"
-      Principal = {
-        AWS = [local.uc_master_role_arn, local.metastore_role_arn]
+    Statement = [
+      {
+        Sid       = "UnityCatalogAssumeRole"
+        Effect    = "Allow"
+        Principal = { AWS = local.uc_master_role_arn }
+        Action    = "sts:AssumeRole"
+        Condition = {
+          StringEquals = { "sts:ExternalId" = var.dbx_account_id }
+        }
+      },
+      {
+        # Self-assumption for UC credential vending. A role cannot list itself as
+        # a principal before it exists (AWS rejects "Invalid principal"), so the
+        # principal is the account root (always valid) and a condition restricts
+        # the trust to this role only. This is the Databricks-documented pattern.
+        Sid       = "ExplicitSelfRoleAssumption"
+        Effect    = "Allow"
+        Principal = { AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root" }
+        Action    = "sts:AssumeRole"
+        Condition = {
+          ArnLike = { "aws:PrincipalArn" = local.metastore_role_arn }
+        }
       }
-      Action = "sts:AssumeRole"
-      Condition = {
-        StringEquals = { "sts:ExternalId" = var.dbx_account_id }
-      }
-    }]
+    ]
   })
 
   tags = { Environment = var.environment }
