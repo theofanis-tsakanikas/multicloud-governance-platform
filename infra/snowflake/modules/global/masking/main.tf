@@ -16,11 +16,9 @@ resource "snowflake_schema" "governance" {
 
 # One masking policy per masked classification (full value to the privileged role only).
 resource "snowflake_masking_policy" "classification" {
-  for_each = toset(var.masked_classifications)
-
   database = var.database
   schema   = snowflake_schema.governance.name
-  name     = "mask_${each.value}"
+  name     = "mask_classification"
 
   argument {
     name = "val"
@@ -29,7 +27,7 @@ resource "snowflake_masking_policy" "classification" {
 
   body             = "case when is_role_in_session('${var.privileged_role}') then val else '***REDACTED***' end"
   return_data_type = "VARCHAR"
-  comment          = "Masks ${each.value} data for principals outside '${var.privileged_role}'."
+  comment          = "Masks classified values for principals outside '${var.privileged_role}'. One policy per data type — a tag allows only one masking policy per type."
 }
 
 # The classification governance tag; masked classifications carry their masking policy, so a
@@ -40,7 +38,7 @@ resource "snowflake_tag" "classification" {
   name                   = "data_classification"
   comment                = "Data classification governance tag; masked values carry a masking policy."
   ordered_allowed_values = ["public", "internal", "confidential", "pii"]
-  masking_policies       = [for c in var.masked_classifications : snowflake_masking_policy.classification[c].fully_qualified_name]
+  masking_policies       = [snowflake_masking_policy.classification.fully_qualified_name]
 }
 
 # Tag each classified schema with its classification (propagates to columns as tables are built).

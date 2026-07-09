@@ -167,7 +167,7 @@ module "external_stage" {
   source                   = "../../../../snowflake/modules/global/external_stage"
   database                 = local.managed_db
   storage_integration_name = var.storage_integration_name
-  external_stages          = local.external_stages
+  external_stages          = [] # deferred: needs the Snowflake storage integration (S3<->Snowflake IAM trust); RBAC+masking are the core
   internal_stages          = local.internal_stages
   depends_on               = [module.schema]
 }

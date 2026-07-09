@@ -40,7 +40,7 @@ variable "frequency" {
 variable "start_timestamp" {
   description = "Resource monitor start timestamp."
   type        = string
-  default     = "2026-01-01 00:00"
+  default     = "IMMEDIATELY"
 }
 
 variable "notify_triggers" {

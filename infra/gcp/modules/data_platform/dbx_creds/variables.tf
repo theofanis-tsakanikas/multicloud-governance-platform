@@ -29,3 +29,12 @@ variable "project_id" {
   description = "The ID of the Google Cloud Project where security resources will be created."
   type        = string
 }
+variable "spn_client_id" {
+  description = "Databricks automation SP client id (for the generated UC provider)."
+  type        = string
+}
+variable "spn_client_secret" {
+  description = "Databricks automation SP client secret (for the generated UC provider)."
+  type        = string
+  sensitive   = true
+}

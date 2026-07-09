@@ -17,3 +17,13 @@ variable "azure_storage_credential_name" {
   type = string
 }
 
+
+variable "spn_client_id" {
+  description = "Databricks automation SP client id (for the generated UC provider)."
+  type        = string
+}
+variable "spn_client_secret" {
+  description = "Databricks automation SP client secret (for the generated UC provider)."
+  type        = string
+  sensitive   = true
+}

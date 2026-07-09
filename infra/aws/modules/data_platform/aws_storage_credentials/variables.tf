@@ -9,3 +9,13 @@ variable "environment" {
   description = "Deployment environment (dev, stage, prod)"
 }
 
+
+variable "spn_client_id" {
+  description = "Databricks automation SP client id (for the generated UC provider)."
+  type        = string
+}
+variable "spn_client_secret" {
+  description = "Databricks automation SP client secret (for the generated UC provider)."
+  type        = string
+  sensitive   = true
+}
