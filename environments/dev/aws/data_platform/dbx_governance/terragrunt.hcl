@@ -31,7 +31,7 @@ locals {
   # Filter schema grants: managed = schemas NOT in federated catalogs
   managed_schema_grants = [
     for g in local.grants.schema_grants : g
-    if !contains([for n in local.federated_names : "${n}."], split(".", g.schema)[0] + ".")
+    if !contains([for n in local.federated_names : "${n}."], "${split(".", g.schema)[0]}.")
   ]
 }
 
