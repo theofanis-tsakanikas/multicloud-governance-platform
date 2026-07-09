@@ -24,11 +24,6 @@ on:
         type: choice
         options: [skip, public, private]
         default: skip
-      start_from_layer:
-        description: "AWS only: start from layer (e.g. foundation, storage/rds). Empty = full stack."
-        required: false
-        type: string
-        default: ""
 
 permissions:
   id-token: write
@@ -70,23 +65,13 @@ jobs:
             -O /usr/local/bin/terragrunt
           chmod +x /usr/local/bin/terragrunt
 
-      - name: Plan — AWS ${{ inputs.start_from_layer || 'full stack' }}
-        working-directory: environments/dev/aws/${{ inputs.start_from_layer }}
-        run: |
-          if [ -n "${{ inputs.start_from_layer }}" ]; then
-            terragrunt plan --terragrunt-non-interactive
-          else
-            terragrunt run-all plan --terragrunt-non-interactive
-          fi
+      - name: Plan — AWS (full stack)
+        working-directory: environments/dev/aws
+        run: terragrunt run-all plan --terragrunt-non-interactive
 
-      - name: Apply — AWS
-        working-directory: environments/dev/aws/${{ inputs.start_from_layer }}
-        run: |
-          if [ -n "${{ inputs.start_from_layer }}" ]; then
-            terragrunt apply --terragrunt-non-interactive -auto-approve
-          else
-            terragrunt run-all apply --terragrunt-non-interactive -auto-approve
-          fi
+      - name: Apply — AWS (full stack)
+        working-directory: environments/dev/aws
+        run: terragrunt run-all apply --terragrunt-non-interactive -auto-approve
 
   deploy-azure:
     name: Deploy Azure
