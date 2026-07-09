@@ -42,7 +42,7 @@ dependency "bootstrap_platform" {
 }
 
 terraform {
-  source = "../../../../../infra/aws/modules/data_platform//dbx_governance"
+  source = "../../../../../infra//aws/modules/data_platform/dbx_governance"
 }
 
 generate "providers" {

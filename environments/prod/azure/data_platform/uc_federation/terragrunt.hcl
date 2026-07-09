@@ -28,7 +28,7 @@ dependency "dbx_governance" {
 }
 
 terraform {
-  source = "../../../../../infra/azure/modules/data_platform//uc_federation"
+  source = "../../../../../infra//azure/modules/data_platform/uc_federation"
 }
 
 generate "providers" {

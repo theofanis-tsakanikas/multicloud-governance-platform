@@ -31,7 +31,7 @@ dependency "bootstrap_platform" {
 }
 
 terraform {
-  source = "../../../../../infra/aws/modules/data_platform//dbx_rds_grants"
+  source = "../../../../../infra//aws/modules/data_platform/dbx_rds_grants"
 }
 
 generate "provider_databricks" {

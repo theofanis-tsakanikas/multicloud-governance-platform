@@ -44,7 +44,7 @@ dependency "bq_datasets" {
 }
 
 terraform {
-  source = "../../../../../infra/gcp/modules/data_platform//dbx_bq_grants"
+  source = "../../../../../infra//gcp/modules/data_platform/dbx_bq_grants"
 }
 
 generate "providers" {

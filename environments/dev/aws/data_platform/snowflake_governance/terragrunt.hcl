@@ -21,7 +21,7 @@ locals {
 }
 
 terraform {
-  source = "../../../../../infra/aws/modules/data_platform//snowflake_governance"
+  source = "../../../../../infra//aws/modules/data_platform/snowflake_governance"
 }
 
 generate "providers" {

@@ -35,7 +35,7 @@ dependency "dbx_mssql_connector" {
 }
 
 terraform {
-  source = "../../../../../infra/azure/modules/data_platform//dbx_mssql_grants"
+  source = "../../../../../infra//azure/modules/data_platform/dbx_mssql_grants"
 }
 
 generate "providers" {

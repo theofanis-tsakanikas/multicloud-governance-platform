@@ -41,7 +41,7 @@ dependency "bootstrap_gcp_platform" {
 }
 
 terraform {
-  source = "../../../../../infra/gcp/modules/data_platform//dbx_governance"
+  source = "../../../../../infra//gcp/modules/data_platform/dbx_governance"
 }
 
 generate "providers" {
