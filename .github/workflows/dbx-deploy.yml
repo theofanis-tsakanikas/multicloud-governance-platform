@@ -25,7 +25,7 @@ permissions:
   contents: read
 
 env:
-  TF_VERSION: "1.10.0"
+  TF_VERSION: "1.9.8"
   TERRAGRUNT_VERSION: "0.75.0"
 
 jobs:
