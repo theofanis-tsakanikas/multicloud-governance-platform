@@ -55,7 +55,16 @@ jobs:
           if [ "${{ inputs.action }}" = "plan" ]; then
             terragrunt run-all plan --terragrunt-non-interactive
           elif [ "${{ inputs.action }}" = "apply" ]; then
-            terragrunt run-all apply --terragrunt-non-interactive -auto-approve
+            # Bootstrap layers apply IN SEQUENCE: foundation creates the SPN secret
+            # + outputs that platform/config read via run_cmd at parse time. run-all
+            # evaluates every layer's locals upfront, so it aborts on a fresh env
+            # (databricks/spn not created yet). Apply one layer at a time.
+            for layer in foundation platform config; do
+              echo "::group::terragrunt apply — $layer"
+              terragrunt apply --terragrunt-non-interactive -auto-approve \
+                --terragrunt-working-dir "$layer"
+              echo "::endgroup::"
+            done
           elif [ "${{ inputs.action }}" = "destroy" ]; then
             echo "::warning::Bootstrap destroy runs in reverse order"
             terragrunt run-all destroy --terragrunt-non-interactive -auto-approve
@@ -93,7 +102,16 @@ jobs:
           if [ "${{ inputs.action }}" = "plan" ]; then
             terragrunt run-all plan --terragrunt-non-interactive
           elif [ "${{ inputs.action }}" = "apply" ]; then
-            terragrunt run-all apply --terragrunt-non-interactive -auto-approve
+            # Bootstrap layers apply IN SEQUENCE: foundation creates the SPN secret
+            # + outputs that platform/config read via run_cmd at parse time. run-all
+            # evaluates every layer's locals upfront, so it aborts on a fresh env
+            # (databricks/spn not created yet). Apply one layer at a time.
+            for layer in foundation platform config; do
+              echo "::group::terragrunt apply — $layer"
+              terragrunt apply --terragrunt-non-interactive -auto-approve \
+                --terragrunt-working-dir "$layer"
+              echo "::endgroup::"
+            done
           elif [ "${{ inputs.action }}" = "destroy" ]; then
             terragrunt run-all destroy --terragrunt-non-interactive -auto-approve
           fi
