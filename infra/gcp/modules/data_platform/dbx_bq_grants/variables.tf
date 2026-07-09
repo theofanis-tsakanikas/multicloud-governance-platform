@@ -29,3 +29,8 @@ variable "federated_schema_grants_json" {
   description = "JSON string containing the filtered federated schema grants"
   type        = string
 }
+
+variable "warehouse_id" {
+  description = "SQL warehouse used to warm the foreign catalog before applying grants"
+  type        = string
+}

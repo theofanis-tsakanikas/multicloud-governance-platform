@@ -203,19 +203,41 @@ Databricks object names (catalogs, external locations, storage credentials) are 
 
 *(Earlier versions injected a rotating `deployment_id` suffix into every name to sidestep this. That was removed in favour of stable names — see [ADR-0013](docs/adr/0013-stable-names-over-deployment-id-suffix.md).)*
 
-### 3. `dbx_workspace` and `managed_warehouse` are no-ops in public mode
+### 3. Federated (FOREIGN) catalogs need a warm-up query before grants apply
+
+A foreign catalog stores no metadata of its own. Unity Catalog materialises its
+schemas from the remote engine **only when a compute resource queries it** — the
+REST list endpoint does not trigger the discovery (verified: repeated
+`GET /unity-catalog/schemas?catalog_name=<fed>` on a fresh foreign catalog keeps
+returning `{}`, and `PATCH .../permissions/schema/<fed>.<schema>` returns 404).
+Terraform surfaces this as:
+
+```
+Error: cannot create grants: Schema 'sales_rds_fed.crm' does not exist.
+```
+
+So `infra/databricks/modules/global/federated_grants` runs one `SHOW SCHEMAS` on
+the SQL warehouse (`warm_foreign_catalog.py`) and blocks until every declared
+schema is visible, before `databricks_grants` runs. The discovery then persists —
+including after the warehouse auto-suspends.
+
+Consequence: the `dbx_*_grants` layers depend on `bootstrap/<cloud>/config` for
+`warehouse_id`, and **the remote engine must be reachable and running** at apply
+time (e.g. a stopped RDS instance fails the warm-up, by design).
+
+### 4. `dbx_workspace` and `managed_warehouse` are no-ops in public mode
 
 When `is_private_connection = false` (the default), the `dbx_workspace` layers for Azure and GCP gate themselves with `for_each = local.private_mode` and create nothing. The platform uses the serverless workspace created during bootstrap instead.
 
 If `make apply-azure` completes quickly with no `dbx_workspace` resources applied, that's expected behaviour.
 
-### 4. Azure and GCP seed credentials are in AWS Secrets Manager
+### 5. Azure and GCP seed credentials are in AWS Secrets Manager
 
 `bootstrap/gcp/foundation`, `gcp/foundation`, and several Azure/GCP layers fetch credentials from **AWS** Secrets Manager (paths `azure/bootstrap/seed_credentials`, `gcp/bootstrap/seed_credentials`). This is intentional — the bootstrap must authenticate to those clouds before their own secret stores are available.
 
 Consequence: you need active AWS credentials (or OIDC role) even when running a Terragrunt apply that only touches Azure or GCP resources.
 
-### 5. Infracost PR comments cover AWS infrastructure only
+### 6. Infracost PR comments cover AWS infrastructure only
 
 The `infracost` job in `dbx-validate.yml` runs against `infra/aws/modules`. The PR comment covers AWS resource types that Infracost prices (RDS, ECS, EC2, KMS, S3, VPC endpoints). It does **not** estimate:
 - Databricks costs (warehouses, compute) — Infracost has no Databricks provider support
@@ -224,15 +246,15 @@ The `infracost` job in `dbx-validate.yml` runs against `infra/aws/modules`. The 
 
 The estimate is useful as a floor for infrastructure cost awareness, not a full platform cost projection. **These exact gaps are now filled by `scripts/cost_estimate.py`** (offline, deterministic), which prices Databricks compute + all three clouds into one figure and a carbon floor → `docs/governance/COST.md` (CI `--check`).
 
-### 6. `databricks-platform-v2` appears in git history
+### 7. `databricks-platform-v2` appears in git history
 
 Workflow files and some commit messages reference `databricks-platform-v2` as a subdirectory path. This is a legacy artifact from when the project was designed as a subdirectory in a parent monorepo. The repo is now standalone (`multicloud-governance-platform`). All `working-directory` references in the current workflow files have been corrected to use repo-root-relative paths. The old name in git history is harmless — ignore it.
 
-### 7. Checkov and tfsec scan `infra/` only
+### 8. Checkov and tfsec scan `infra/` only
 
 Both security scanners (in `dbx-validate.yml` and `.pre-commit-config.yaml`) target `infra/`. The `environments/dev/` Terragrunt configs are not scanned — they contain no Terraform resource definitions, only wiring (provider generation, dependency declarations, input passing). This is correct and intentional.
 
-### 8. Governance copilot — deterministic-first, LLM bounded
+### 9. Governance copilot — deterministic-first, LLM bounded
 
 The `scripts/governance_*.py` + `scripts/genie_space.py` layer is a Responsible-AI
 governance copilot over the catalog (see [docs/governance/](docs/governance/README.md)).

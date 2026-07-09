@@ -14,6 +14,10 @@ module "federated_grants" {
   for_each                = local.federated_catalog_map
   federated_catalog       = each.value
   federated_schema_grants = local.federated_schema_grants
+  workspace_host          = var.serverless_workspace_host
+  warehouse_id            = var.warehouse_id
+  spn_client_id           = var.spn_client_id
+  spn_client_secret       = var.spn_client_secret
   providers = {
     databricks = databricks.uc_mws
   }

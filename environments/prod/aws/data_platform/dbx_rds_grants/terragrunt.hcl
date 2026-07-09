@@ -30,6 +30,11 @@ dependency "bootstrap_platform" {
   config_path = "../../../bootstrap/aws/platform"
 }
 
+# The SQL warehouse that warms the foreign catalog before grants apply.
+dependency "bootstrap_config" {
+  config_path = "../../../bootstrap/aws/config"
+}
+
 # Ordering-only: these layers expose no outputs, so they cannot be a
 # `dependency` block (Terragrunt requires outputs there). They must still
 # apply first — the federated catalog and the remote schemas must exist
@@ -63,4 +68,5 @@ inputs = {
   spn_client_secret            = local.spn.client_secret
   federated_catalogs_json      = jsonencode(local.federated_catalogs)
   federated_schema_grants_json = jsonencode(local.federated_schema_grants)
+  warehouse_id                 = dependency.bootstrap_config.outputs.warehouse_id
 }
