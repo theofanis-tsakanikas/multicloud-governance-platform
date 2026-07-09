@@ -36,11 +36,11 @@ resource "google_service_account_iam_member" "dbx_sa_user" {
   member             = "serviceAccount:${var.terraform_sa_account}"
 }
 
-# Allow the Databricks System SA to impersonate our custom Service Account
-resource "google_service_account_iam_member" "dbx_system_sa_impersonation" {
-  # The target SA to be impersonated (the UC access SA)
-  service_account_id = google_service_account.dbx_sa.name
-  role               = "roles/iam.serviceAccountTokenCreator"
-  # The Databricks system identity
-  member = "serviceAccount:${var.dbx_system_sa}"
-}
+# NOTE: the account-level Databricks system SA (var.dbx_system_sa,
+# dabc-<accountid>@gcp-sa-databricks…) does not exist until a metastore/workspace
+# is provisioned, and it is NOT the actual UC storage identity. The real
+# impersonation grant is made in the platform layer (dbx_metastore), which reads
+# the per-metastore SA that Databricks generates
+# (databricks_metastore_data_access.this.databricks_gcp_service_account[0].email)
+# and grants IT tokenCreator + serviceAccountUser on dbx_sa. So this foundation
+# grant was both premature (SA absent) and redundant — removed.
