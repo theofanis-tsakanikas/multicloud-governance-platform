@@ -23,8 +23,11 @@ dependency "bootstrap_gcp_platform" {
   config_path = "../../../bootstrap/gcp/platform"
 }
 
-dependency "dbx_governance" {
-  config_path = "../dbx_governance"
+# Ordering-only: dbx_governance exposes no outputs, so it cannot be a
+# `dependency` block (Terragrunt requires outputs there) — but its catalogs
+# must exist before this layer applies.
+dependencies {
+  paths = ["../dbx_governance"]
 }
 
 terraform {

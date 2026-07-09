@@ -30,6 +30,14 @@ dependency "bootstrap_platform" {
   config_path = "../../../bootstrap/aws/platform"
 }
 
+# Ordering-only: these layers expose no outputs, so they cannot be a
+# `dependency` block (Terragrunt requires outputs there). They must still
+# apply first — the federated catalog and the remote schemas must exist
+# before Databricks can resolve them when applying these grants.
+dependencies {
+  paths = ["../dbx_governance", "../../storage/rds_schemas"]
+}
+
 terraform {
   source = "../../../../../infra//aws/modules/data_platform/dbx_rds_grants"
 }

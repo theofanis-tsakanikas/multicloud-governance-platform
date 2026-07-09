@@ -34,6 +34,14 @@ dependency "dbx_mssql_connector" {
   config_path = "../dbx_mssql_connector"
 }
 
+# Ordering-only: these layers expose no outputs, so they cannot be a
+# `dependency` block (Terragrunt requires outputs there). They must still
+# apply first — the federated catalog and the remote schemas must exist
+# before Databricks can resolve them when applying these grants.
+dependencies {
+  paths = ["../dbx_governance", "../../storage/mssql_schemas"]
+}
+
 terraform {
   source = "../../../../../infra//azure/modules/data_platform/dbx_mssql_grants"
 }
