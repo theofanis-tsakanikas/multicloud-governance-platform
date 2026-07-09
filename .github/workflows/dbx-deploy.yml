@@ -46,6 +46,12 @@ jobs:
     environment: dev
     env:
       PRIVATE_AWS: ${{ inputs.aws == 'private' }}
+      # Snowflake governance (second enforcement backend) lives under the AWS tree,
+      # so the AWS deploy provisions it too. org/account come from config.hcl in the
+      # generated provider; user/password/role are injected here (secrets-at-runtime).
+      SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+      SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+      SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
 
     steps:
       - uses: actions/checkout@v4
