@@ -28,7 +28,7 @@ locals {
     "--project", local.cfg.gcp_project_id
   )
 
-  domain_path        = "${get_terragrunt_dir()}/../../domains/gcp"
+  domain_path        = "${get_terragrunt_dir()}/../../../domains/gcp"
   infra              = jsondecode(file("${local.domain_path}/marketing_infra.json"))
   federated_catalogs = [for c in local.infra.catalogs : c if c.type == "FEDERATED"]
 }

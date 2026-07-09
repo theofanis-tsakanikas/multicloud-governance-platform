@@ -23,7 +23,7 @@ locals {
   ))
 
   # ── Build delta_shares_map from marketing_infra.json shared items ────────
-  domain_path = "${get_terragrunt_dir()}/../../domains/gcp"
+  domain_path = "${get_terragrunt_dir()}/../../../domains/gcp"
   infra       = jsondecode(file("${local.domain_path}/marketing_infra.json"))
 
   # Collect schemas with shared=true (or shared volumes — share entire parent schema)

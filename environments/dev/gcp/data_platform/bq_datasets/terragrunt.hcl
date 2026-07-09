@@ -14,7 +14,7 @@ locals {
   ))
 
   # Datasets = the federated catalog's schema names, from the domain model
-  domain = jsondecode(file("${get_terragrunt_dir()}/../../domains/gcp/marketing_infra.json"))
+  domain = jsondecode(file("${get_terragrunt_dir()}/../../../domains/gcp/marketing_infra.json"))
   fed    = [for c in local.domain.catalogs : c if c.type == "FEDERATED"]
   datasets = flatten([
     for c in local.fed : [for s in lookup(c, "schemas", []) : s.schema_name]

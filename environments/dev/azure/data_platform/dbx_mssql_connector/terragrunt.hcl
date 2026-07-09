@@ -21,7 +21,7 @@ locals {
     "--output", "tsv"
   )
 
-  domain_path        = "${get_terragrunt_dir()}/../../domains/azure"
+  domain_path        = "${get_terragrunt_dir()}/../../../domains/azure"
   infra              = jsondecode(file("${local.domain_path}/supply_infra.json"))
   federated_catalogs = [for c in local.infra.catalogs : c if c.type == "FEDERATED"]
 }

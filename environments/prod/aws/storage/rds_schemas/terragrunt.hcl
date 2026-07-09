@@ -14,7 +14,7 @@ locals {
   ))
 
   # Extract federated catalog schemas from domain definition
-  domain       = jsondecode(file("${get_terragrunt_dir()}/../../domains/aws/sales_infra.json"))
+  domain       = jsondecode(file("${get_terragrunt_dir()}/../../../domains/aws/sales_infra.json"))
   fed_catalogs = [for c in local.domain.catalogs : c if c.type == "FEDERATED"]
   schemas_to_create = flatten([
     for cat in local.fed_catalogs : [

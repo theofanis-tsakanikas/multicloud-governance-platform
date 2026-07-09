@@ -13,7 +13,7 @@ locals {
     "--region", local.cfg.aws_region
   ))
 
-  domain_path = "${get_terragrunt_dir()}/../../domains/azure"
+  domain_path = "${get_terragrunt_dir()}/../../../domains/azure"
   infra       = jsondecode(file("${local.domain_path}/supply_infra.json"))
   grants      = jsondecode(file("${local.domain_path}/supply_grants.json"))
 

@@ -13,7 +13,7 @@ locals {
     "--region", local.cfg.aws_region
   ))
 
-  domain_path = "${get_terragrunt_dir()}/../domains/gcp"
+  domain_path = "${get_terragrunt_dir()}/../../domains/gcp"
   infra       = jsondecode(file("${local.domain_path}/marketing_infra.json"))
   datasets    = [for c in local.infra.catalogs : c.catalog_name if c.type == "FEDERATED"]
 }
