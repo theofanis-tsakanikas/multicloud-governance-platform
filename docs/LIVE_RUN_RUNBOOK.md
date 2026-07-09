@@ -18,7 +18,7 @@ Stand up → record → **destroy the same day**.
   credentials table you already have.
 - Cloud-store secrets created (SPN, seed creds, RDS/SQL passwords, BQ key).
 - `config.hcl` set to **your** account IDs / ARNs.
-- Local tools: Terraform ≥1.10, Terragrunt ≥0.75, AWS CLI, `az`, `gcloud`,
+- Local tools: Terraform 1.9.x, Terragrunt ≥0.75, AWS CLI, `az`, `gcloud`,
   `snow` (Snowflake CLI) with a `~/.snowflake/config.toml` profile.
 
 ## 2 · Deploy the infrastructure (the containers + governance)
