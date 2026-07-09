@@ -20,8 +20,9 @@ resource "databricks_service_principal_secret" "sp_secret" {
 resource "aws_secretsmanager_secret_version" "spn_creds_value" {
   secret_id = var.spn_secret_arn
   secret_string = jsonencode({
-    spn_client_id     = databricks_service_principal.automation_sp.application_id
-    spn_client_secret = databricks_service_principal_secret.sp_secret.secret
+    # Keys must match what every consumer reads: local.spn.client_id / .client_secret
+    client_id     = databricks_service_principal.automation_sp.application_id
+    client_secret = databricks_service_principal_secret.sp_secret.secret
   })
 }
 
