@@ -62,7 +62,8 @@ locals {
   warehouse_access_groups      = ["data_engineers"]
   warehouse_size               = "Small"
   workspace_pricing_tier       = "ENTERPRISE"
-  metastore_admins_aws         = ["79066160746664"] # AWS Databricks account only
+  metastore_admins_aws         = ["79066160746664"]                     # AWS Databricks account only
+  metastore_admins_gcp         = ["214315615769184", "212919085861654"] # GCP Databricks account (replace for prod tenancy)
   identity_groups              = ["data_engineers", "data_scientists", "analysts", "business_users", "marketing_scientists", "marketing_analysts", "crm_managers"]
   admin_group_name             = "metastore_admins"
 

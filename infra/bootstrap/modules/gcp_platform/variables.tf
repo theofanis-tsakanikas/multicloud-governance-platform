@@ -27,5 +27,5 @@ variable "workspace_pricing_tier" {
   default = "ENTERPRISE"
 }
 variable "admin_group_name" { type = string }
-variable "admin_group_id" { type = string }
-variable "functional_group_ids" { type = map(string) }
+variable "metastore_admins" { type = list(string) }
+variable "identity_groups" { type = list(string) }

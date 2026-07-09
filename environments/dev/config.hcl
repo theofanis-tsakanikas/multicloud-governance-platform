@@ -57,11 +57,10 @@ locals {
   warehouse_access_groups      = ["data_engineers"]
   warehouse_size               = "2X-Small"
   workspace_pricing_tier       = "ENTERPRISE"
-  metastore_admins_aws         = ["79066160746664", "77102429556016"] # AWS Databricks account only: you + AWS automation SP
-  # GCP admins are established implicitly (metastore creator = owner; you are account admin).
-  # To wire them explicitly later (symmetric with AWS), the GCP ids are: ["214315615769184", "212919085861654"].
-  identity_groups  = ["data_engineers", "data_scientists", "analysts", "business_users", "marketing_scientists", "marketing_analysts", "crm_managers"]
-  admin_group_name = "metastore_admins"
+  metastore_admins_aws         = ["79066160746664", "77102429556016"]   # AWS Databricks account: you + AWS automation SP
+  metastore_admins_gcp         = ["214315615769184", "212919085861654"] # GCP Databricks account: you + GCP automation SP
+  identity_groups              = ["data_engineers", "data_scientists", "analysts", "business_users", "marketing_scientists", "marketing_analysts", "crm_managers"]
+  admin_group_name             = "metastore_admins"
 
   # ─── Azure ───────────────────────────────────────────────────────────────
   azure_location                = "West Europe"
