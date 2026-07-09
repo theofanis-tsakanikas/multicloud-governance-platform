@@ -1,16 +1,19 @@
+# ─── Lakehouse Federation: Unity Catalog connection to the Azure SQL Server ────
+#
+# Creates the UC CONNECTION only. The FEDERATED catalog (supply_sql_master) is
+# created in the Azure dbx_governance layer via the global/catalog module, binding
+# to this connection by name — the live Azure SQL database as a governed UC catalog,
+# no data movement.
 
+resource "databricks_connection" "azure_sql" {
+  name            = var.connection_name
+  connection_type = "SQLSERVER"
+  comment         = "Federated connection to the Azure SQL Server"
 
-
-module "azure_sql_databricks_connection" {
-  source = "./dbx_mssql_connector"
-  # Authentication & Secrets
-  sql_password_value = var.sql_admin_password
-  sql_password_name  = var.sql_password_name
-  # Server Details
-  sql_server_host   = var.sql_server_host
-  sql_admin_user    = var.sql_admin_user
-  sql_database_name = var.sql_database_name
-  connection_name   = var.connection_name
+  options = {
+    host     = var.sql_server_host
+    port     = "1433"
+    user     = var.sql_admin_user
+    password = var.sql_admin_password
+  }
 }
-
-

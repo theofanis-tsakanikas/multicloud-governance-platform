@@ -30,6 +30,10 @@ dependency "rds" {
   config_path = "../../storage/rds"
 }
 
+dependency "secrets_manager" {
+  config_path = "../../security/secrets_manager"
+}
+
 dependency "bootstrap_platform" {
   config_path = "../../../bootstrap/aws/platform"
 }
@@ -57,7 +61,7 @@ inputs = {
   spn_client_id             = local.spn.client_id
   spn_client_secret         = local.spn.client_secret
   # Private mode: use custom DNS name (NLB route). Public mode: direct RDS hostname
-  rds_hostname        = local.cfg.is_private_connection ? local.cfg.rds_custom_dns_name : dependency.rds.outputs.rds_hostname
+  rds_hostname        = local.cfg.is_private_connection_aws ? local.cfg.rds_custom_dns_name : dependency.rds.outputs.rds_hostname
   rds_port            = local.cfg.rds_port
   rds_username        = local.cfg.rds_username
   password            = local.rds_secret.password

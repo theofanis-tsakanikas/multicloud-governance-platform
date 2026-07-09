@@ -27,6 +27,10 @@ dependency "rds" {
   config_path = "../rds"
 }
 
+dependency "secrets_manager" {
+  config_path = "../../security/secrets_manager"
+}
+
 terraform {
   source = "../../../../../infra/aws/modules/storage//rds_schemas"
 }

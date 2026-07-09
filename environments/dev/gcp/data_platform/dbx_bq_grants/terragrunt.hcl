@@ -34,6 +34,15 @@ dependency "dbx_bq_connector" {
   config_path = "../dbx_bq_connector"
 }
 
+# Federated catalog must exist so Databricks can resolve marketing_bq_fed.<dataset>.
+dependency "dbx_governance" {
+  config_path = "../dbx_governance"
+}
+
+dependency "bq_datasets" {
+  config_path = "../bq_datasets"
+}
+
 terraform {
   source = "../../../../../infra/gcp/modules/data_platform//dbx_bq_grants"
 }

@@ -1,7 +1,7 @@
 # Resource to define authentication for Azure Data Lake Storage (ADLS) Gen2
 resource "databricks_storage_credential" "azure_adls_creds" {
   # Unique name combining the base credential name and deployment ID
-  name = "${var.azure_storage_credential_name}"
+  name = var.azure_storage_credential_name
 
   # Azure-specific authentication using a Service Principal (SPN)
   azure_service_principal {

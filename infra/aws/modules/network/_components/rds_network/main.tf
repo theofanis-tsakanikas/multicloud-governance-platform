@@ -63,7 +63,7 @@ resource "aws_security_group_rule" "rds_egress" {
 
 # Rule to allow the Orchestrator IP access in Public Mode
 resource "aws_security_group_rule" "public_orch_ingress" {
-  for_each          = local.public_mode
+  for_each          = length(var.orch_ip) > 0 ? local.public_mode : {}
   type              = "ingress"
   from_port         = 5432
   to_port           = 5432

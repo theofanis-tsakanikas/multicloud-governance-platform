@@ -10,7 +10,9 @@ resource "databricks_catalog" "catalog" {
   isolation_mode = var.catalog.type == "MANAGED" ? "ISOLATED" : null
 
   # Federated catalogs require the 'database' option to map the remote DB
-  options = var.catalog.type == "FEDERATED" ? { "database" = lookup(var.catalog, "database_name", null) } : null
+  # AWS/Azure federation maps to a specific remote DB; BigQuery does not (the
+  # project lives in the connection), so only set the option when present.
+  options = var.catalog.type == "FEDERATED" && lookup(var.catalog, "database_name", null) != null ? { "database" = var.catalog.database_name } : null
 
   comment       = "Catalog managed by Terraform"
   force_destroy = true

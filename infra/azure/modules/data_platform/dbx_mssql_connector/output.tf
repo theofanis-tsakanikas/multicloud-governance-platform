@@ -1,16 +1,9 @@
 output "connection_id" {
-  value       = module.azure_sql_databricks_connection.connection_id
-  description = "The unique ID of the Databricks connection."
+  value       = databricks_connection.azure_sql.id
+  description = "The Unity Catalog connection id."
 }
 
 output "connection_name" {
-  value       = module.azure_sql_databricks_connection.connection_name
-  description = "The name of the external connection to Azure SQL."
+  value       = databricks_connection.azure_sql.name
+  description = "The UC connection name the federated catalog (supply_sql_master) binds to."
 }
-
-/*
-output "secret_scope_name" {
-  value       = module.azure_sql_databricks_connection.secret_scope_name
-  description = "The name of the Databricks secret scope."
-}
-*/

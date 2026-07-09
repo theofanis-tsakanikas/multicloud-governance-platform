@@ -30,6 +30,16 @@ dependency "bootstrap_platform" {
   config_path = "../../../bootstrap/aws/platform"
 }
 
+# Federated catalog must exist and the Postgres schemas must be present so
+# Databricks can resolve sales_rds_fed.crm / .orders when applying the grants.
+dependency "dbx_governance" {
+  config_path = "../dbx_governance"
+}
+
+dependency "rds_schemas" {
+  config_path = "../../storage/rds_schemas"
+}
+
 terraform {
   source = "../../../../../infra/aws/modules/data_platform//dbx_rds_grants"
 }

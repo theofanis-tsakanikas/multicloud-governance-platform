@@ -34,6 +34,16 @@ dependency "dbx_mssql_connector" {
   config_path = "../dbx_mssql_connector"
 }
 
+# Federated catalog must exist and the SQL schemas must be present so Databricks
+# can resolve supply_sql_master.<schema> when applying the grants.
+dependency "dbx_governance" {
+  config_path = "../dbx_governance"
+}
+
+dependency "mssql_schemas" {
+  config_path = "../../storage/mssql_schemas"
+}
+
 terraform {
   source = "../../../../../infra/azure/modules/data_platform//dbx_mssql_grants"
 }

@@ -9,7 +9,7 @@ resource "random_password" "db_pass" {
 # 2. Secrets Manager - Credentials Storage
 # Defines the secret container in AWS Secrets Manager
 resource "aws_secretsmanager_secret" "db_secret" {
-  name        = "${var.password_name}-${var.environment}"
+  name        = var.password_name
   description = "Database credentials for RDS Proxy"
   # Set to 0 to allow immediate deletion during terraform destroy
   recovery_window_in_days = 0

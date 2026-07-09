@@ -22,6 +22,12 @@ locals {
   federated_catalogs = [for c in local.infra.catalogs : c if c.type == "FEDERATED"]
   federated_names    = toset([for c in local.federated_catalogs : c.catalog_name])
 
+  # Federated (foreign) catalogs: strip schemas — Databricks auto-discovers them
+  # from the source DB (creating databricks_schema on a foreign catalog fails).
+  # Their schema grants are applied separately in the dbx_rds_grants layer.
+  federated_catalogs_bare = [for c in local.federated_catalogs : merge(c, { schemas = [] })]
+  all_catalogs            = concat(local.managed_catalogs, local.federated_catalogs_bare)
+
   # Filter schema grants: managed = schemas NOT in federated catalogs
   managed_schema_grants = [
     for g in local.grants.schema_grants : g
@@ -35,6 +41,11 @@ dependency "foundation" {
 
 dependency "dbx_creds" {
   config_path = "../dbx_creds"
+}
+
+# The federated catalog binds to the UC connection created by the connector.
+dependency "dbx_rds_connector" {
+  config_path = "../dbx_rds_connector"
 }
 
 dependency "bootstrap_platform" {
@@ -70,7 +81,7 @@ inputs = {
   storage_credential_name    = dependency.dbx_creds.outputs.storage_credential_name
   managed_storage_root       = local.infra.managed_storage_root
   external_locations_json    = jsonencode(local.infra.external_locations)
-  catalogs_json              = jsonencode(local.managed_catalogs)
+  catalogs_json              = jsonencode(local.all_catalogs)
   ext_loc_grants_json        = jsonencode(local.grants.external_location_grants)
   catalog_grants_json        = jsonencode(local.grants.catalog_grants)
   managed_schema_grants_json = jsonencode(local.managed_schema_grants)
