@@ -27,13 +27,6 @@ generate "provider_gcp" {
       region      = "${local.cfg.gcp_location}"
       credentials = var.provider_key
     }
-    provider "databricks" {
-      alias         = "mws"
-      host          = "${local.cfg.gcp_databricks_host}"
-      account_id    = "${local.cfg.gcp_dbx_account_id}"
-      client_id     = var.initial_client_id
-      client_secret = var.initial_client_secret
-    }
     provider "time" {}
   EOF
 }

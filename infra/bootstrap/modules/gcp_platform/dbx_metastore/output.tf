@@ -25,3 +25,7 @@ output "uc_sa_email" {
   value       = databricks_metastore_data_access.this.databricks_gcp_service_account[0].email
   description = "The system-generated GCP Service Account for Unity Catalog"
 }
+output "global_metastore_id" {
+  value       = databricks_metastore.this.global_metastore_id
+  description = "Global metastore id (aws|gcp:region:uuid) used for cross-cloud Delta Sharing."
+}

@@ -58,3 +58,6 @@ PRE-PUBLISH.md
 .env
 *.pfx
 *.tfvars
+
+# Screen recordings / promo assets (large binaries — keep out of git)
+promo/

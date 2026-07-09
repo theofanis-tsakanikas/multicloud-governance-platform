@@ -31,3 +31,8 @@ variable "terraform_sa_account" {
 variable "dbx_sa_name" {
   type = string
 }
+variable "provider_key" {
+  description = "GCP service-account key JSON for the google provider (from the seed)."
+  type        = string
+  sensitive   = true
+}
