@@ -5,7 +5,7 @@ include "root" {
 locals {
   cfg = read_terragrunt_config(find_in_parent_folders("config.hcl")).locals
 
-  spn = jsondecode(run_cmd(
+  spn = jsondecode(run_cmd("--terragrunt-quiet",
     "aws", "secretsmanager", "get-secret-value",
     "--secret-id", local.cfg.spn_secret_id,
     "--query", "SecretString",
@@ -15,8 +15,8 @@ locals {
 
   # ── Domain governance — loaded natively, no Python required ──────────────
   domain_path = "${get_terragrunt_dir()}/../../../domains/gcp"
-  infra        = jsondecode(file("${local.domain_path}/marketing_infra.json"))
-  grants       = jsondecode(file("${local.domain_path}/marketing_grants.json"))
+  infra       = jsondecode(file("${local.domain_path}/marketing_infra.json"))
+  grants      = jsondecode(file("${local.domain_path}/marketing_grants.json"))
 
   managed_catalogs   = [for c in local.infra.catalogs : c if c.type == "MANAGED"]
   federated_catalogs = [for c in local.infra.catalogs : c if c.type == "FEDERATED"]
