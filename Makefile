@@ -206,13 +206,20 @@ demo-data: data dashboard
 
 # ─── Bootstrap ───────────────────────────────────────────────────────────────
 
+# Bootstrap layers apply IN SEQUENCE (not run-all): foundation creates the SPN
+# secret + outputs that platform/config read via run_cmd at parse time. run-all
+# evaluates every layer's locals upfront, so it aborts on a fresh environment.
 bootstrap-aws:
-	$(TG) run-all apply $(TG_FLAGS) -auto-approve \
-		--terragrunt-working-dir $(ENV_DIR)/bootstrap/aws
+	@for layer in foundation platform config; do \
+		echo "=== bootstrap-aws: apply $$layer ==="; \
+		$(TG) apply $(TG_FLAGS) -auto-approve --terragrunt-working-dir $(ENV_DIR)/bootstrap/aws/$$layer || exit 1; \
+	done
 
 bootstrap-gcp:
-	$(TG) run-all apply $(TG_FLAGS) -auto-approve \
-		--terragrunt-working-dir $(ENV_DIR)/bootstrap/gcp
+	@for layer in foundation platform config; do \
+		echo "=== bootstrap-gcp: apply $$layer ==="; \
+		$(TG) apply $(TG_FLAGS) -auto-approve --terragrunt-working-dir $(ENV_DIR)/bootstrap/gcp/$$layer || exit 1; \
+	done
 
 bootstrap-aws-destroy:
 	$(TG) run-all destroy $(TG_FLAGS) -auto-approve \
