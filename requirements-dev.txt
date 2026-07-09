@@ -4,7 +4,7 @@
 # Pinned with a lower bound + a known-good upper bound so a CI run is reproducible
 # and a surprise major release can't silently break the gate. Dependabot
 # (.github/dependabot.yml, pip ecosystem) proposes bumps as reviewable PRs.
-pytest>=7.4,<9
+pytest>=9.1.1,<10
 ruff>=0.5,<0.13
 # jsonschema powers the optional, versioned schema validation in
 # scripts/validate_domains.py (schema/). Absent → that layer degrades gracefully.
