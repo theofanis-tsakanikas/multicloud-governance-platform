@@ -5,7 +5,7 @@ include "root" {
 locals {
   cfg = read_terragrunt_config(find_in_parent_folders("config.hcl")).locals
 
-  spn = jsondecode(run_cmd(
+  spn = jsondecode(run_cmd("--terragrunt-quiet",
     "aws", "secretsmanager", "get-secret-value",
     "--secret-id", local.cfg.spn_secret_id,
     "--query", "SecretString",
@@ -16,6 +16,13 @@ locals {
 
 dependency "platform" {
   config_path = "../platform"
+
+  # Plan-time only (see note in ../platform); locked to plan/validate.
+  mock_outputs_allowed_terraform_commands = ["plan", "validate"]
+  mock_outputs = {
+    serverless_workspace_url = "https://mock-workspace.cloud.databricks.com"
+    metastore_id             = "00000000-0000-0000-0000-000000000000"
+  }
 }
 
 terraform {

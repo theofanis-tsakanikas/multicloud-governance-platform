@@ -1,0 +1,36 @@
+{
+  "_comment": [
+    "Inputs for scripts/cost_estimate.py — a deterministic, order-of-magnitude",
+    "monthly cost + carbon FLOOR for the platform. This is NOT a billing source of",
+    "truth: list prices, single region, steady-state assumptions. It exists because",
+    "Infracost in CI prices AWS infra only (no Databricks, limited Azure/GCP); this",
+    "fills the two gaps Infracost leaves — Databricks compute and the other clouds.",
+    "Edit per engagement. Prices are illustrative USD list prices, mid-2026."
+  ],
+  "currency": "USD",
+  "databricks": {
+    "_comment": "Serverless SQL warehouse — the one always-on compute in public mode.",
+    "warehouse_size": "Small",
+    "dbu_per_hour": { "2X-Small": 4, "X-Small": 6, "Small": 12, "Medium": 24, "Large": 40 },
+    "usd_per_dbu": 0.70,
+    "hours_per_day": 10,
+    "days_per_month": 22,
+    "power_kw": { "2X-Small": 0.3, "X-Small": 0.5, "Small": 1.0, "Medium": 2.0, "Large": 3.5 }
+  },
+  "snowflake": {
+    "_comment": "Second enforcement backend. Credit-based cost = per-domain resource-monitor quota x list price per credit. Illustrative Standard-edition list price.",
+    "usd_per_credit": 3.0,
+    "credits_per_month": 100
+  },
+  "infra_monthly_usd": {
+    "_comment": "Steady-state list-price floors for the per-cloud data stores + networking.",
+    "AWS": { "rds_postgres": 145, "networking": 35, "kms_secrets": 6 },
+    "Azure": { "sql_database": 160, "networking": 30, "key_vault": 4 },
+    "GCP": { "bigquery_baseline": 90, "networking": 25, "secret_manager": 3 }
+  },
+  "carbon": {
+    "_comment": "Grid carbon intensity (gCO2e/kWh) for each platform's primary region. Sources: cloud provider sustainability + public grid averages.",
+    "grid_intensity_g_per_kwh": { "AWS": 320, "Azure": 330, "GCP": 110 },
+    "pue": 1.12
+  }
+}

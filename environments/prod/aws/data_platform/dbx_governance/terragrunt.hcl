@@ -5,7 +5,7 @@ include "root" {
 locals {
   cfg = read_terragrunt_config(find_in_parent_folders("config.hcl")).locals
 
-  spn = jsondecode(run_cmd(
+  spn = jsondecode(run_cmd("--terragrunt-quiet",
     "aws", "secretsmanager", "get-secret-value",
     "--secret-id", local.cfg.spn_secret_id,
     "--query", "SecretString",
@@ -15,8 +15,8 @@ locals {
 
   # ── Domain governance — loaded natively, no Python required ──────────────
   domain_path = "${get_terragrunt_dir()}/../../../domains/aws"
-  infra        = jsondecode(file("${local.domain_path}/sales_infra.json"))
-  grants       = jsondecode(file("${local.domain_path}/sales_grants.json"))
+  infra       = jsondecode(file("${local.domain_path}/sales_infra.json"))
+  grants      = jsondecode(file("${local.domain_path}/sales_grants.json"))
 
   managed_catalogs   = [for c in local.infra.catalogs : c if c.type == "MANAGED"]
   federated_catalogs = [for c in local.infra.catalogs : c if c.type == "FEDERATED"]
@@ -69,7 +69,6 @@ inputs = {
   bucket_name                = dependency.foundation.outputs.data_bucket_name
   storage_credential_name    = dependency.dbx_creds.outputs.storage_credential_name
   managed_storage_root       = local.infra.managed_storage_root
-  deployment_id_aws          = local.cfg.deployment_id_aws
   external_locations_json    = jsonencode(local.infra.external_locations)
   catalogs_json              = jsonencode(local.managed_catalogs)
   ext_loc_grants_json        = jsonencode(local.grants.external_location_grants)

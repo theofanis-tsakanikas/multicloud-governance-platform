@@ -5,7 +5,7 @@ include "root" {
 locals {
   cfg = read_terragrunt_config(find_in_parent_folders("config.hcl")).locals
 
-  rds_secret = jsondecode(run_cmd(
+  rds_secret = jsondecode(run_cmd("--terragrunt-quiet",
     "aws", "secretsmanager", "get-secret-value",
     "--secret-id", local.cfg.password_name,
     "--query", "SecretString",
@@ -14,8 +14,8 @@ locals {
   ))
 
   # Extract federated catalog schemas from domain definition
-  domain         = jsondecode(file("${get_terragrunt_dir()}/../../domains/aws/sales_infra.json"))
-  fed_catalogs   = [for c in local.domain.catalogs : c if c.type == "FEDERATED"]
+  domain       = jsondecode(file("${get_terragrunt_dir()}/../../domains/aws/sales_infra.json"))
+  fed_catalogs = [for c in local.domain.catalogs : c if c.type == "FEDERATED"]
   schemas_to_create = flatten([
     for cat in local.fed_catalogs : [
       for s in lookup(cat, "schemas", []) : s.schema_name

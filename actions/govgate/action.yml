@@ -1,0 +1,45 @@
+name: "UC / Snowflake Governance Gate"
+description: >-
+  Fail a pull request on least-privilege / PII violations in Unity Catalog & Snowflake
+  domain grants. Deterministic, credential-free, SARIF output for code scanning.
+author: "Theofanis Tsakanikas"
+branding:
+  icon: "shield"
+  color: "green"
+
+inputs:
+  root:
+    description: "Repo root containing environments/<env>/domains (the grants JSON to gate)."
+    required: false
+    default: "."
+  strict:
+    description: "Treat MEDIUM findings as gating too (not just HIGH)."
+    required: false
+    default: "false"
+  sarif-file:
+    description: "Where to write the SARIF report."
+    required: false
+    default: "govgate.sarif"
+  warn-expiring-days:
+    description: "Warn about policy exceptions expiring within N days."
+    required: false
+    default: "30"
+
+runs:
+  using: "composite"
+  steps:
+    - name: "Install govgate"
+      shell: bash
+      # Installs the gate from this action's own repo checkout (zero runtime deps).
+      run: pip install --quiet "$GITHUB_ACTION_PATH/../.."
+
+    - name: "Write SARIF report (never fails the build)"
+      shell: bash
+      run: govgate --root "${{ inputs.root }}" --format sarif --output "${{ inputs.sarif-file }}"
+
+    - name: "Gate on unacknowledged findings"
+      shell: bash
+      run: |
+        args=(--root "${{ inputs.root }}" --warn-expiring "${{ inputs.warn-expiring-days }}")
+        if [ "${{ inputs.strict }}" = "true" ]; then args+=(--strict); fi
+        govgate "${args[@]}"

@@ -1,0 +1,87 @@
+name: DBX Pipeline — deploy + run medallion (output-driven, SP auth)
+
+# One-click data run, the professional way: nothing is copied by hand.
+#   • Workspace URL + SQL warehouse id are read from the bootstrap Terraform
+#     OUTPUTS (they are created by the deploy, not by you).
+#   • Auth is the SERVICE PRINCIPAL (the bootstrap seed) via M2M OAuth — no
+#     personal PAT, no manual DATABRICKS_* secrets.
+# The only secret this needs is DBX_DEPLOY_ROLE_ARN (already used by deploy),
+# which also grants read of the seed from Secrets Manager.
+#
+# Prereq: the platform is deployed (bootstrap has run) so the outputs exist.
+
+on:
+  workflow_dispatch:
+    inputs:
+      cloud:
+        description: "Target workspace"
+        type: choice
+        options: [aws, gcp]
+        default: aws
+      run_job:
+        description: "Also run the job after deploy?"
+        type: boolean
+        default: true
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  TF_VERSION: "1.10.0"
+  TERRAGRUNT_VERSION: "0.75.0"
+  AWS_REGION: eu-central-1
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.DBX_DEPLOY_ROLE_ARN }}
+          aws-region: eu-central-1
+
+      - name: Setup Terraform + Terragrunt + Databricks CLI
+        run: |
+          wget -q "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip" -O tf.zip
+          unzip -q tf.zip && sudo mv terraform /usr/local/bin/
+          wget -q "https://github.com/gruntwork-io/terragrunt/releases/download/v${TERRAGRUNT_VERSION}/terragrunt_linux_amd64" -O tg
+          chmod +x tg && sudo mv tg /usr/local/bin/terragrunt
+          curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sudo sh
+
+      - name: Resolve host + warehouse from Terraform outputs, SP creds from Secrets Manager
+        run: |
+          set -euo pipefail
+          CLOUD="${{ inputs.cloud }}"
+          if [ "$CLOUD" = "aws" ]; then
+            HOST=$(cd environments/dev/bootstrap/aws/platform && terragrunt output -raw serverless_workspace_url --terragrunt-non-interactive)
+            WID=$(cd environments/dev/bootstrap/aws/config && terragrunt output -raw warehouse_id --terragrunt-non-interactive)
+            SEED=databricks/bootstrap/seed_credentials
+          else
+            HOST=$(cd environments/dev/bootstrap/gcp/platform && terragrunt output -raw gcp_serverless_workspace_url --terragrunt-non-interactive)
+            WID=$(cd environments/dev/bootstrap/gcp/config && terragrunt output -raw warehouse_id --terragrunt-non-interactive)
+            SEED=gcp/bootstrap/seed_credentials
+          fi
+          CREDS=$(aws secretsmanager get-secret-value --secret-id "$SEED" --query SecretString --output text)
+          CID=$(echo "$CREDS" | jq -r .client_id)
+          CSEC=$(echo "$CREDS" | jq -r .client_secret)
+          echo "::add-mask::$CSEC"
+          # M2M OAuth for the Databricks CLI + the target host for the bundle:
+          echo "DATABRICKS_HOST=$HOST"                >> "$GITHUB_ENV"
+          echo "DATABRICKS_CLIENT_ID=$CID"            >> "$GITHUB_ENV"
+          echo "DATABRICKS_CLIENT_SECRET=$CSEC"       >> "$GITHUB_ENV"
+          echo "DATABRICKS_${CLOUD^^}_HOST=$HOST"     >> "$GITHUB_ENV"
+          echo "WAREHOUSE_ID=$WID"                    >> "$GITHUB_ENV"
+
+      - name: Deploy the bundle (creates notebooks + jobs in the workspace)
+        working-directory: pipelines/databricks
+        run: databricks bundle deploy -t ${{ inputs.cloud }} --var "warehouse_id=${WAREHOUSE_ID}"
+
+      - name: Run the medallion job
+        if: ${{ inputs.run_job }}
+        working-directory: pipelines/databricks
+        run: databricks bundle run "medallion_${{ inputs.cloud }}" -t ${{ inputs.cloud }} --var "warehouse_id=${WAREHOUSE_ID}"

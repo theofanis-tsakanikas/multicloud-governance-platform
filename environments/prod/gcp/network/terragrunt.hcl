@@ -5,7 +5,7 @@ include "root" {
 locals {
   cfg = read_terragrunt_config(find_in_parent_folders("config.hcl")).locals
 
-  gcp_seed = jsondecode(run_cmd(
+  gcp_seed = jsondecode(run_cmd("--terragrunt-quiet",
     "aws", "secretsmanager", "get-secret-value",
     "--secret-id", local.cfg.gcp_seed_secret_arn,
     "--query", "SecretString",
@@ -32,11 +32,11 @@ generate "providers" {
 }
 
 inputs = {
-  project_id       = local.cfg.gcp_project_id
-  location         = local.cfg.gcp_location
-  provider_key     = local.gcp_seed.provider_key
-  gcp_vpc_cidr     = local.cfg.gcp_vpc_cidr
-  gcp_subnet_cidr  = local.cfg.gcp_subnet_cidr
-  network_name     = local.cfg.network_name
-  subnetwork_name  = local.cfg.subnetwork_name
+  project_id      = local.cfg.gcp_project_id
+  location        = local.cfg.gcp_location
+  provider_key    = local.gcp_seed.provider_key
+  gcp_vpc_cidr    = local.cfg.gcp_vpc_cidr
+  gcp_subnet_cidr = local.cfg.gcp_subnet_cidr
+  network_name    = local.cfg.network_name
+  subnetwork_name = local.cfg.subnetwork_name
 }

@@ -1,4 +1,11 @@
-# Dev/test-only tooling for the offline domain-config validator.
+# Dev/test-only tooling for the offline governance copilot + config validator.
 # NOT required by the Terraform/Terragrunt apply path — see docs/TESTING.md.
-pytest>=7.4
-ruff>=0.5
+#
+# Pinned with a lower bound + a known-good upper bound so a CI run is reproducible
+# and a surprise major release can't silently break the gate. Dependabot
+# (.github/dependabot.yml, pip ecosystem) proposes bumps as reviewable PRs.
+pytest>=7.4,<9
+ruff>=0.5,<0.13
+# jsonschema powers the optional, versioned schema validation in
+# scripts/validate_domains.py (schema/). Absent → that layer degrades gracefully.
+jsonschema>=4.21,<5

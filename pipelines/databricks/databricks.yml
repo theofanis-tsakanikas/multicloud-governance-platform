@@ -1,0 +1,69 @@
+# ============================================================================
+# Databricks Asset Bundle (DAB) — the one-click medallion.
+# ----------------------------------------------------------------------------
+# `databricks bundle deploy` uploads these SQL files + the results notebook
+# INTO your workspace and creates the Jobs below. Then you either click "Run
+# now" on the Job in the Databricks UI, or `databricks bundle run medallion_aws`.
+# No manual copy-paste — deploy once, click play.
+#
+# Multi-cloud: two Jobs on two workspaces (separate Databricks accounts).
+#   · medallion_aws → AWS workspace: seed → medallion → executive (sales+supply)
+#   · medallion_gcp → GCP workspace: seed → medallion (marketing) → Delta-shared
+#
+# Deploy per target:  ./bundle.sh deploy aws   |   ./bundle.sh deploy gcp
+# Run per target:     ./bundle.sh run aws      |   ./bundle.sh run gcp
+# ============================================================================
+
+bundle:
+  name: governance-medallion
+
+variables:
+  warehouse_id:
+    description: "SQL warehouse ID the medallion runs on (from your workspace)."
+
+targets:
+  aws:
+    default: true
+    workspace:
+      host: ${DATABRICKS_AWS_HOST} # e.g. https://dbc-xxxx.cloud.databricks.com
+  gcp:
+    workspace:
+      host: ${DATABRICKS_GCP_HOST} # e.g. https://xxxx.gcp.databricks.com
+
+resources:
+  jobs:
+    medallion_aws:
+      name: "[gov] Medallion — AWS (sales + supply + executive)"
+      tasks:
+        - task_key: seed
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file: { path: ./aws/01_seed.sql }
+        - task_key: medallion
+          depends_on: [{ task_key: seed }]
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file: { path: ./aws/02_medallion.sql }
+        - task_key: executive
+          depends_on: [{ task_key: medallion }]
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file: { path: ./aws/03_executive.sql }
+
+    medallion_gcp:
+      name: "[gov] Medallion — GCP (marketing)"
+      tasks:
+        - task_key: seed
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file: { path: ./gcp/01_seed.sql }
+        - task_key: medallion
+          depends_on: [{ task_key: seed }]
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file: { path: ./gcp/02_medallion.sql }
+
+# The results notebook (aws/results_notebook.py) and the dashboard queries
+# (aws/04_dashboard_queries.sql) are synced into the workspace by the bundle too,
+# so they show up ready to open. results_notebook.py ONLY queries the gold tables
+# (it does not build anything) — open it and click through for the recording.

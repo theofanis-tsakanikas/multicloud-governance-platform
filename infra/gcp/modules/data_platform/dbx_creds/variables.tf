@@ -9,10 +9,6 @@ variable "gcp_storage_credential_name" {
   default     = "gcs_storage_credential"
 }
 
-variable "deployment_id" {
-  type        = string
-  description = "A unique identifier for the deployment (e.g., environment name or random suffix) to ensure resource name uniqueness."
-}
 
 variable "admin_group_name" {
   type        = string

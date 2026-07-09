@@ -1,0 +1,9 @@
+{
+  "//": "Recommended extensions for working on this repo (shared; the rest of .vscode/ is gitignored).",
+  "recommendations": [
+    "ms-python.python",
+    "charliermarsh.ruff",
+    "hashicorp.terraform",
+    "tsandall.opa"
+  ]
+}

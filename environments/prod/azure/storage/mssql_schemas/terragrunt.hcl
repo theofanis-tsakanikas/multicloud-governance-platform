@@ -5,7 +5,7 @@ include "root" {
 locals {
   cfg = read_terragrunt_config(find_in_parent_folders("config.hcl")).locals
 
-  sql_secret = jsondecode(run_cmd(
+  sql_secret = jsondecode(run_cmd("--terragrunt-quiet",
     "az", "keyvault", "secret", "show",
     "--vault-name", dependency.foundation.outputs.key_vault_name,
     "--name", local.cfg.sql_password_name,
@@ -14,10 +14,10 @@ locals {
   ))
 
   domain_path = "${get_terragrunt_dir()}/../../domains/azure"
-  infra        = jsondecode(file("${local.domain_path}/supply_infra.json"))
+  infra       = jsondecode(file("${local.domain_path}/supply_infra.json"))
 
   federated_catalogs = [for c in local.infra.catalogs : c if c.type == "FEDERATED"]
-  schemas_to_create  = flatten([
+  schemas_to_create = flatten([
     for cat in local.federated_catalogs : [
       for s in lookup(cat, "schemas", []) : s.schema_name
     ]

@@ -9,11 +9,11 @@ locals {
   loc_map = {
     for loc in local.external_locations_data : loc.location_name => merge(loc, {
       # Path calculation for GCP: gs://bucket-name/path
-      calculated_url = "gs://${var.bucket_name}/${trim(loc.path, "/")}/${var.deployment_id_gcp}/"
+      calculated_url = "gs://${var.bucket_name}/${trim(loc.path, "/")}/"
 
-      # Calculate the Unique Name (Injecting the deployment_id_gcp)
+      # Stable external-location name (derived from location_name)
       # If loc.location_name is "sales_raw", the final name will be "sales_raw_a1b2c3d4"
-      unique_name = "${loc.location_name}_${var.deployment_id_gcp}"
+      unique_name = "${loc.location_name}"
     })
   }
 
@@ -32,8 +32,8 @@ locals {
       # 1. Calculation of Catalog Storage Root
       calculated_storage_root = cat.type == "MANAGED" ? (
         lookup(cat, "storage_root", null) != null ?
-        "gs://${var.bucket_name}/${trim(cat.storage_root, "/")}/${var.deployment_id_gcp}/" :
-        "gs://${var.bucket_name}/${trim(var.managed_storage_root, "/")}/${var.deployment_id_gcp}/"
+        "gs://${var.bucket_name}/${trim(cat.storage_root, "/")}/" :
+        "gs://${var.bucket_name}/${trim(var.managed_storage_root, "/")}/"
       ) : null
 
       # 2. Calculation of Volume Storage Locations within schemas
@@ -42,7 +42,7 @@ locals {
           volumes = [
             for v in lookup(s, "volumes", []) : merge(v, {
               calculated_storage_location = lookup(v, "volume_type", "MANAGED") == "EXTERNAL" ? (
-                "gs://${var.bucket_name}/${trim(v.location_path, "/")}/${var.deployment_id_gcp}/${trim(v.volume_path, "/")}/"
+                "gs://${var.bucket_name}/${trim(v.location_path, "/")}/${trim(v.volume_path, "/")}/"
               ) : null
             })
           ]

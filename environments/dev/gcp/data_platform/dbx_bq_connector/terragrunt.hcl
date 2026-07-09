@@ -5,7 +5,7 @@ include "root" {
 locals {
   cfg = read_terragrunt_config(find_in_parent_folders("config.hcl")).locals
 
-  spn = jsondecode(run_cmd(
+  spn = jsondecode(run_cmd("--terragrunt-quiet",
     "aws", "secretsmanager", "get-secret-value",
     "--secret-id", local.cfg.spn_secret_id,
     "--query", "SecretString",
@@ -13,7 +13,7 @@ locals {
     "--region", local.cfg.aws_region
   ))
 
-  gcp_seed = jsondecode(run_cmd(
+  gcp_seed = jsondecode(run_cmd("--terragrunt-quiet",
     "aws", "secretsmanager", "get-secret-value",
     "--secret-id", local.cfg.gcp_seed_secret_arn,
     "--query", "SecretString",
@@ -22,7 +22,7 @@ locals {
   ))
 
   # BQ SA key fetched from GCP Secret Manager (requires gcloud ADC before apply)
-  gcp_bq_key = run_cmd(
+  gcp_bq_key = run_cmd("--terragrunt-quiet",
     "gcloud", "secrets", "versions", "access", "latest",
     "--secret", local.cfg.gcp_sa_secret_id,
     "--project", local.cfg.gcp_project_id

@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/theofanis-tsakanikas/multicloud-governance-platform/schema/domain.infra.schema.json",
+  "title": "Domain infra config (v1)",
+  "description": "Storage + Unity Catalog layout for one domain. Consumed by the dbx_governance terragrunt.hcl via jsondecode(file(...)). Mirrors scripts/validate_domains.py; the validator stays the runtime gate, this schema gives IDE autocomplete and a versioned contract.",
+  "type": "object",
+  "required": ["cloud", "domain"],
+  "additionalProperties": true,
+  "properties": {
+    "$schema": { "type": "string" },
+    "cloud": {
+      "description": "Cloud the domain is deployed to (uppercase, as consumed by governance_model).",
+      "type": "string",
+      "enum": ["AWS", "AZURE", "GCP"]
+    },
+    "domain": {
+      "description": "Domain name (e.g. sales, supply, marketing).",
+      "type": "string",
+      "minLength": 1
+    },
+    "managed_storage_root": { "type": "string" },
+    "external_locations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["location_name", "path"],
+        "additionalProperties": true,
+        "properties": {
+          "location_name": { "type": "string", "minLength": 1 },
+          "path": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "catalogs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/catalog" }
+    }
+  },
+  "$defs": {
+    "classification": {
+      "description": "Additive governance convention (Terraform ignores it). Ordered least to most sensitive.",
+      "type": "string",
+      "enum": ["public", "internal", "confidential", "pii"]
+    },
+    "catalog": {
+      "type": "object",
+      "required": ["catalog_name", "type"],
+      "additionalProperties": true,
+      "properties": {
+        "catalog_name": { "type": "string", "minLength": 1 },
+        "type": {
+          "description": "Case-sensitive: only MANAGED or FEDERATED. A mis-cased value is silently dropped by the HCL [for c if c.type == \"MANAGED\"] filter.",
+          "type": "string",
+          "enum": ["MANAGED", "FEDERATED"]
+        },
+        "owner": {
+          "description": "Accountable owner group (additive governance convention).",
+          "type": "string"
+        },
+        "storage_root": { "type": "string" },
+        "connection_name": { "type": "string" },
+        "database_name": { "type": "string" },
+        "schemas": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/schema" }
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "FEDERATED" } } },
+          "then": { "required": ["connection_name"] }
+        }
+      ]
+    },
+    "schema": {
+      "type": "object",
+      "required": ["schema_name"],
+      "additionalProperties": true,
+      "properties": {
+        "schema_name": { "type": "string", "minLength": 1 },
+        "classification": { "$ref": "#/$defs/classification" },
+        "volumes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/volume" }
+        }
+      }
+    },
+    "volume": {
+      "type": "object",
+      "required": ["volume_name"],
+      "additionalProperties": true,
+      "properties": {
+        "volume_name": { "type": "string", "minLength": 1 },
+        "classification": { "$ref": "#/$defs/classification" },
+        "volume_type": { "type": "string", "enum": ["MANAGED", "EXTERNAL"] },
+        "location_path": { "type": "string" },
+        "volume_path": { "type": "string" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "volume_type": { "const": "EXTERNAL" } } },
+          "then": { "required": ["location_path", "volume_path"] }
+        }
+      ]
+    }
+  }
+}

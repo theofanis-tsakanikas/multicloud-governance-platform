@@ -1,0 +1,24 @@
+# gitleaks configuration.
+#
+# Extends the full default ruleset (nothing weakened) and allowlists one class
+# of KNOWN FALSE POSITIVE: the `*_password_name` fields in environments/*/config.hcl.
+#
+# These values are the NAMES (references) of secrets stored in Azure Key Vault /
+# AWS Secrets Manager — e.g. `sql_password_name = "sql-admin-password"` names the
+# Key Vault secret to fetch; it is not itself a credential. Every real secret is
+# fetched at plan time via `run_cmd` (ADR-0002) and is never committed to the repo.
+#
+# The default `hashicorp-tf-password` rule fires on these because the key contains
+# "password" and the value carries entropy. Scoped, line-targeted allowlist below.
+
+title = "multicloud-governance-platform gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Secret NAME references (Key Vault / Secrets Manager identifiers), not secret values, in config.hcl"
+regexTarget = "line"
+regexes = [
+  '''(sql_)?password_name\s*=''',
+]

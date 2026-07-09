@@ -1,0 +1,66 @@
+name: Publish governance dashboard
+
+# Publishes the static, self-contained governance dashboard
+# (docs/governance/dashboard/index.html) to GitHub Pages on every push to main.
+# No live data, no server — the page is a deterministic render of the committed
+# governance artifacts, rebuilt here so Pages always reflects main.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/governance/**"
+      - "environments/dev/domains/**"
+      - "scripts/**"
+      - "pipelines/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment; newer pushes supersede in-flight ones.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dev dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Rebuild artifacts + dashboard from the committed config
+        run: |
+          python scripts/governance_report.py
+          python scripts/governance_metrics.py
+          python scripts/cost_estimate.py
+          python pipelines/generate_data.py
+          python pipelines/medallion.py
+          python pipelines/profile_data.py
+          python scripts/governance_dashboard.py
+
+      - name: Upload dashboard as the Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/governance/dashboard
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

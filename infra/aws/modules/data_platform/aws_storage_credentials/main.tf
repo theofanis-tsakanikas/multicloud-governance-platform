@@ -1,7 +1,7 @@
 # Resource to define how Databricks connects to AWS storage
 resource "databricks_storage_credential" "creds" {
   # Dynamic naming using environment and unique deployment ID
-  name = "aws_data_storage_${var.environment}_${var.deployment_id_aws}"
+  name = "aws_data_storage_${var.environment}"
 
   # AWS-specific authentication using an IAM Role ARN
   aws_iam_role {
