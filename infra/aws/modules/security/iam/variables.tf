@@ -28,3 +28,8 @@ variable "is_private_connection" {
   type    = bool
   default = false
 }
+
+variable "dbx_account_id" {
+  description = "Databricks account id (UUID) — the sts:ExternalId UC uses to assume the storage-credential role."
+  type        = string
+}

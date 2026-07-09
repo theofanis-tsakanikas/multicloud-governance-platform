@@ -5,7 +5,7 @@ locals {
 }
 
 # Trust policy — single-phase: both Databricks UC Master and self-assume included from day 1.
-# External ID = aws_account_id (static, predictable, never changes).
+# External ID = the Databricks account id — the id UC uses when assuming this role.
 data "aws_iam_policy_document" "trust_policy" {
   statement {
     sid     = "UnityCatalogAssumeRole"
@@ -20,7 +20,7 @@ data "aws_iam_policy_document" "trust_policy" {
     condition {
       test     = "StringEquals"
       variable = "sts:ExternalId"
-      values   = [var.aws_account_id]
+      values   = [var.dbx_account_id]
     }
   }
 

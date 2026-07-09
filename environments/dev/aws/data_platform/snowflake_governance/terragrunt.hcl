@@ -2,6 +2,10 @@ include "root" {
   path = find_in_parent_folders()
 }
 
+# Temporarily skipped: grants reference the Databricks-only federated catalog + the
+# deferred external stages. Re-enable after fixing those + the storage integration.
+skip = true
+
 locals {
   cfg = read_terragrunt_config(find_in_parent_folders("config.hcl")).locals
 
