@@ -16,6 +16,13 @@ locals {
 
 dependency "platform" {
   config_path = "../platform"
+
+  # Plan-time only (see note in ../platform); locked to plan/validate.
+  mock_outputs_allowed_terraform_commands = ["plan", "validate"]
+  mock_outputs = {
+    serverless_workspace_url = "https://mock-workspace.cloud.databricks.com"
+    metastore_id             = "00000000-0000-0000-0000-000000000000"
+  }
 }
 
 terraform {
