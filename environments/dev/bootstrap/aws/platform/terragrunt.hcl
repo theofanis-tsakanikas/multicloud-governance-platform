@@ -16,6 +16,18 @@ locals {
 
 dependency "foundation" {
   config_path = "../foundation"
+
+  # Plan-time only: lets `run-all plan` resolve before foundation is applied.
+  # Once foundation is applied its REAL outputs override these; the mocks are
+  # locked to plan/validate so they can never reach an apply.
+  mock_outputs_allowed_terraform_commands = ["plan", "validate"]
+  mock_outputs = {
+    metastore_bucket_name  = "mock-metastore-bucket"
+    metastore_iam_role_arn = "arn:aws:iam::000000000000:role/mock-metastore-data-access"
+    cross_account_role_arn = "arn:aws:iam::000000000000:role/mock-cross-account"
+    admin_group_id         = "000000000000000"
+    functional_group_ids   = { mock_group = "000000000000000" }
+  }
 }
 
 terraform {
