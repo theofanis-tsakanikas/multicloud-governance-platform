@@ -55,7 +55,7 @@ generate "providers" {
 inputs = {
   environment            = local.cfg.environment
   region                 = local.cfg.aws_region
-  is_private_connection  = local.cfg.is_private_connection
+  is_private_connection  = local.cfg.is_private_connection_aws
   databricks_host        = local.cfg.databricks_host
   dbx_account_id         = local.cfg.dbx_account_id
   spn_client_id          = local.spn.client_id

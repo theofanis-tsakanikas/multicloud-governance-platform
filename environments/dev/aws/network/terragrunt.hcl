@@ -23,7 +23,7 @@ generate "provider_aws" {
 inputs = {
   environment           = local.cfg.environment
   region                = local.cfg.aws_region
-  is_private_connection = local.cfg.is_private_connection
+  is_private_connection = local.cfg.is_private_connection_aws
   rds_vpc_cidr          = local.cfg.rds_vpc_cidr
   rds_subnets_config    = local.cfg.rds_subnets_config
   orch_ip               = []

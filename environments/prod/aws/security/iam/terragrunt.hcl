@@ -36,5 +36,5 @@ inputs = {
   iam_role_name         = local.cfg.iam_role_name
   data_bucket_arn       = dependency.foundation.outputs.data_bucket_arn
   rds_secret_arn        = dependency.secrets_manager.outputs.rds_secret_arn
-  is_private_connection = local.cfg.is_private_connection
+  is_private_connection = local.cfg.is_private_connection_aws
 }

@@ -3,19 +3,29 @@ name: DBX Platform — Deploy
 on:
   workflow_dispatch:
     inputs:
-      cloud:
-        description: "Cloud(s) to deploy"
+      # One tri-state selector per cloud: it encodes BOTH "deploy this cloud?"
+      # and "with what connectivity?". "skip" = don't touch it. So "all public"
+      # = set all three to public; mixed (e.g. aws=private, gcp=public) is native.
+      aws:
+        description: "AWS — skip, or deploy public / private"
         required: true
         type: choice
-        options: [aws, azure, gcp, aws-azure, aws-gcp, all]
-      connectivity:
-        description: "Connectivity mode"
+        options: [skip, public, private]
+        default: skip
+      azure:
+        description: "Azure — skip, or deploy public / private"
         required: true
         type: choice
-        options: [public, private]
-        default: public
+        options: [skip, public, private]
+        default: skip
+      gcp:
+        description: "GCP — skip, or deploy public / private"
+        required: true
+        type: choice
+        options: [skip, public, private]
+        default: skip
       start_from_layer:
-        description: "Start from layer (e.g. foundation, security/iam, storage/rds). Leave empty for full stack."
+        description: "AWS only: start from layer (e.g. foundation, storage/rds). Empty = full stack."
         required: false
         type: string
         default: ""
@@ -32,8 +42,10 @@ jobs:
   deploy-aws:
     name: Deploy AWS
     runs-on: ubuntu-latest
-    if: contains(fromJSON('["aws","aws-azure","aws-gcp","all"]'), inputs.cloud)
+    if: inputs.aws != 'skip'
     environment: dev
+    env:
+      PRIVATE_AWS: ${{ inputs.aws == 'private' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -60,8 +72,6 @@ jobs:
           else
             terragrunt run-all plan --terragrunt-non-interactive
           fi
-        env:
-          TF_VAR_is_private_connection: ${{ inputs.connectivity == 'private' }}
 
       - name: Apply — AWS
         working-directory: environments/dev/aws/${{ inputs.start_from_layer }}
@@ -71,14 +81,14 @@ jobs:
           else
             terragrunt run-all apply --terragrunt-non-interactive -auto-approve
           fi
-        env:
-          TF_VAR_is_private_connection: ${{ inputs.connectivity == 'private' }}
 
   deploy-azure:
     name: Deploy Azure
     runs-on: ubuntu-latest
-    if: contains(fromJSON('["azure","aws-azure","all"]'), inputs.cloud)
+    if: inputs.azure != 'skip'
     environment: dev
+    env:
+      PRIVATE_AZURE: ${{ inputs.azure == 'private' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -118,8 +128,10 @@ jobs:
   deploy-gcp:
     name: Deploy GCP
     runs-on: ubuntu-latest
-    if: contains(fromJSON('["gcp","aws-gcp","all"]'), inputs.cloud)
+    if: inputs.gcp != 'skip'
     environment: dev
+    env:
+      PRIVATE_GCP: ${{ inputs.gcp == 'private' }}
 
     steps:
       - uses: actions/checkout@v4

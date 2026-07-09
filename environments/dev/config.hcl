@@ -5,12 +5,14 @@ locals {
   environment = "dev"
 
   # ─── AWS ─────────────────────────────────────────────────────────────────
-  aws_account_id        = "387229419515"
-  dbx_aws_account_id    = "414351767826"
-  aws_region            = "eu-central-1"
-  bucket_name           = "dbx-de-project-bucket-2026"
-  iam_role_name         = "databricks-access-role"
-  is_private_connection = false # Toggle: true = private NCC/PrivateLink, false = public
+  aws_account_id              = "387229419515"
+  dbx_aws_account_id          = "414351767826"
+  aws_region                  = "eu-central-1"
+  bucket_name                 = "dbx-de-project-bucket-2026"
+  iam_role_name               = "databricks-access-role"
+  is_private_connection_aws   = get_env("PRIVATE_AWS", "false") == "true" # per-cloud connectivity — set by the deploy workflow (skip/public/private)
+  is_private_connection_azure = get_env("PRIVATE_AZURE", "false") == "true"
+  is_private_connection_gcp   = get_env("PRIVATE_GCP", "false") == "true"
 
   # RDS
   rds_username           = "sales_admin"

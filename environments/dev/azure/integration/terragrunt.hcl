@@ -33,7 +33,7 @@ inputs = {
   location              = local.cfg.azure_location
   region                = local.cfg.aws_region
   resource_group_name   = dependency.foundation.outputs.resource_group_name
-  is_private_connection = local.cfg.is_private_connection
+  is_private_connection = local.cfg.is_private_connection_azure
   vnet_id               = dependency.network.outputs.vnet_id
   endpoint_subnet_id    = dependency.network.outputs.endpoint_subnet_id
 }

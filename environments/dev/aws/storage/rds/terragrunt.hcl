@@ -45,5 +45,5 @@ inputs = {
   password               = local.rds_secret.password
   db_subnet_group_name   = dependency.network.outputs.db_subnet_group_name
   rds_security_group_id  = dependency.network.outputs.rds_security_group_id
-  is_private_connection  = local.cfg.is_private_connection
+  is_private_connection  = local.cfg.is_private_connection_aws
 }

@@ -25,5 +25,5 @@ inputs = {
   region                = local.cfg.aws_region
   bucket_name           = local.cfg.bucket_name
   ecr_repo_name         = local.cfg.ecr_repo_name
-  is_private_connection = local.cfg.is_private_connection
+  is_private_connection = local.cfg.is_private_connection_aws
 }

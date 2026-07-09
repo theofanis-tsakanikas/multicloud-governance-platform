@@ -37,5 +37,5 @@ inputs = {
   databricks_vpc_cidr    = local.cfg.databricks_vpc_cidr
   databricks_subnets     = local.cfg.databricks_subnets
   key_vault_id           = dependency.foundation.outputs.key_vault_id
-  is_private_connection  = local.cfg.is_private_connection
+  is_private_connection  = local.cfg.is_private_connection_azure
 }

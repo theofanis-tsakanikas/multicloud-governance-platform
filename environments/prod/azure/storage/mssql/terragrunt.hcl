@@ -36,5 +36,5 @@ inputs = {
   key_vault_id          = dependency.foundation.outputs.key_vault_id
   databricks_aws_cidrs  = local.cfg.databricks_vpc_cidr != "" ? [local.cfg.databricks_vpc_cidr] : []
   orch_ip               = []
-  is_private_connection = local.cfg.is_private_connection
+  is_private_connection = local.cfg.is_private_connection_azure
 }

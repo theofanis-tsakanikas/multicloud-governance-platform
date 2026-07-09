@@ -52,5 +52,5 @@ inputs = {
   private_subnet_ids     = dependency.network.outputs.private_subnet_ids
   security_group_id      = dependency.network.outputs.security_group_id
   metastore_id           = dependency.bootstrap_platform.outputs.metastore_id
-  is_private_connection  = local.cfg.is_private_connection
+  is_private_connection  = local.cfg.is_private_connection_azure
 }
