@@ -177,12 +177,21 @@ def snowflake_capabilities(snowflake_object_type: str, privileges: tuple[str, ..
     for p in privileges:
         if p == "ALL PRIVILEGES":
             caps.update({READ, WRITE, ADMIN})
-        elif p == "SELECT":
+        elif p in ("SELECT", "READ"):
+            # READ exists only on internal stages — Snowflake's file-read privilege.
             caps.add(READ)
         elif p == "USAGE":
-            # Stage USAGE = read files; database/schema USAGE = traversal only.
-            if snowflake_object_type == "stage":
-                caps.add(READ)
+            if snowflake_object_type == "stage_external":
+                # An external stage has exactly one privilege, USAGE, and it permits both
+                # `COPY INTO <table> FROM @stage` and `COPY INTO @stage FROM <table>`.
+                # Snowflake cannot express read-only on an external stage; the write
+                # boundary lives in the storage integration's IAM policy. See
+                # ENGINE_LIMITATIONS.
+                caps.update({READ, WRITE})
+            elif snowflake_object_type == "stage_internal":
+                # USAGE is not a valid internal-stage privilege at all; it confers nothing.
+                pass
+            # database / schema USAGE = traversal only.
         elif p in _SNOWFLAKE_WRITE:
             caps.add(WRITE)
         elif p in _SNOWFLAKE_ADMIN:
@@ -216,11 +225,44 @@ def effective_access_snowflake(model: GovernanceModel, priv_map: dict) -> dict[A
     return {k: frozenset(v) for k, v in out.items()}
 
 
+# --------------------------------------------------------------------------- #
+# Engine expressiveness limits
+# --------------------------------------------------------------------------- #
+
+# Divergences that are a property of the *engine*, not of the translation. They cannot be
+# fixed by remapping a privilege, so they are classified apart from a mistranslation — but
+# they are still reported, never suppressed: an over-grant is exactly what this platform
+# exists to surface.
+#
+# (object_type, added_capability) -> why the engine cannot express the contract
+_EXTERNAL_STAGE_USAGE_IS_COARSE = (
+    "Snowflake external stages expose a single privilege, USAGE, which permits both loading "
+    "from and unloading to the stage. Read-only and write-only external stages are therefore "
+    "both inexpressible; the boundary can only be drawn in the storage integration's IAM "
+    "policy, which is per-integration, not per-role. Unity Catalog draws it per principal "
+    "(READ_FILES vs WRITE_FILES), so either UC grant becomes read+write on Snowflake."
+)
+
+ENGINE_LIMITATIONS: dict[tuple[str, str], str] = {
+    ("external_location", READ): _EXTERNAL_STAGE_USAGE_IS_COARSE,
+    ("external_location", WRITE): _EXTERNAL_STAGE_USAGE_IS_COARSE,
+}
+
+
+def engine_limitation(object_type: str, added: frozenset[str]) -> str | None:
+    """The documented reason an *added* capability is unavoidable, or None if it is a bug."""
+    reasons = [ENGINE_LIMITATIONS.get((object_type, cap)) for cap in sorted(added)]
+    return reasons[0] if reasons and all(reasons) else None
+
+
 @dataclass(frozen=True)
 class ConsistencyIssue:
     """A cross-backend access divergence for one (object, principal)."""
 
-    kind: str  # "lost" (Snowflake grants less than UC) | "added" (Snowflake grants more)
+    # "lost"  — Snowflake grants less than UC (an enforcement gap; always a bug)
+    # "added" — Snowflake grants more (least-privilege drift from a mistranslation)
+    # "engine_limitation" — an "added" the target engine cannot avoid; see ENGINE_LIMITATIONS
+    kind: str
     object_type: str
     fqn: str
     principal: str
@@ -239,8 +281,10 @@ def cross_backend_issues(model: GovernanceModel, priv_map: dict) -> list[Consist
 
     ``lost``  — the Snowflake translation confers *less* than the UC contract (a real
     enforcement gap, the serious case). ``added`` — Snowflake confers *more* (an
-    over-grant / least-privilege drift). Both keys' union is walked so an object/principal
-    present in only one backend surfaces too.
+    over-grant / least-privilege drift from a mistranslation). ``engine_limitation`` — an
+    ``added`` that no mapping could avoid, because the target engine cannot express the
+    distinction at all (see :data:`ENGINE_LIMITATIONS`); still reported, never suppressed.
+    Both keys' union is walked so an object/principal present in only one backend surfaces.
     """
     uc = effective_access_uc(model)
     sf = effective_access_snowflake(model, priv_map)
@@ -253,8 +297,10 @@ def cross_backend_issues(model: GovernanceModel, priv_map: dict) -> list[Consist
         object_type, fqn, principal = key
         if uc_access - sf_access:
             issues.append(ConsistencyIssue("lost", object_type, fqn, principal, uc_access, sf_access))
-        if sf_access - uc_access:
-            issues.append(ConsistencyIssue("added", object_type, fqn, principal, uc_access, sf_access))
+        added = sf_access - uc_access
+        if added:
+            kind = "engine_limitation" if engine_limitation(object_type, added) else "added"
+            issues.append(ConsistencyIssue(kind, object_type, fqn, principal, uc_access, sf_access))
     return issues
 
 

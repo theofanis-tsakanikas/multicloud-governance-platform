@@ -75,5 +75,29 @@ check.
   equivalent and are out of scope for the Snowflake backend (filtered like the UC MANAGED/
   FEDERATED split).
 - Column-level masking is applied via a governance tag on classified schemas; it takes full
-  effect as tables/columns are onboarded and inherit the tag. Storage integrations are owned
-  by a creds/bootstrap layer and referenced by name (governance does not own cloud trust).
+  effect as tables/columns are onboarded and inherit the tag.
+- The Snowflake storage integration **is** owned by this layer, mirroring how `dbx_creds`
+  owns `databricks_storage_credential` for Unity Catalog. Both engines then read the same S3
+  prefixes with no credential stored in either. The AWS↔Snowflake trust is two-way and would
+  be circular; it is broken by deriving the IAM role's ARN as a string (account id + a chosen
+  name), so the integration never waits on the role resource to exist.
+
+**The one place the engines are not equivalent — and it is the engine's limit, not the map's**
+
+A Snowflake *external* stage exposes exactly one privilege, `USAGE`, and it permits `COPY` in
+**both** directions. Read-only and write-only external stages are therefore inexpressible: a
+UC `READ_FILES` grant necessarily becomes read+write on Snowflake. No privilege mapping can
+fix this — the only place the write boundary can be drawn is the storage integration's IAM
+policy, which is per-integration, not per-role.
+
+Rather than let this hide inside a capability-equivalence claim that would then be false,
+`scripts/snowflake_backend.py` classifies it as a third issue kind, `engine_limitation`,
+enumerated in `ENGINE_LIMITATIONS` with its rationale. It is **reported on every run**, and a
+test asserts it can only ever cover an *added* capability on an external location — never a
+lost one, and never anywhere else. A genuine mistranslation can therefore never be filed
+under it.
+
+The corollary is worth stating plainly: on Snowflake, `analysts` and `business_users` can
+write to `loc_sales_gold`, and Unity Catalog does not permit that. That is a real,
+surfaced least-privilege drift — precisely the kind of finding this platform exists to make
+visible, rather than discover in an audit.

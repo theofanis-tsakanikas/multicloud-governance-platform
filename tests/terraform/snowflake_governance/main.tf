@@ -12,12 +12,25 @@ terraform {
       source  = "snowflakedb/snowflake"
       version = "2.17.0"
     }
+    aws = {
+      source = "hashicorp/aws"
+    }
   }
 }
 
 provider "snowflake" {
   # No connection is made during `validate`; real credentials come from a TOML profile
   # (or the creds layer) at plan/apply time.
+}
+
+provider "aws" {
+  # The wrapper owns the AWS half of the Snowflake storage integration (the IAM role
+  # Snowflake assumes). No API call is made during `validate`.
+  region                      = "eu-central-1"
+  skip_credentials_validation = true
+  skip_requesting_account_id  = true
+  access_key                  = "mock"
+  secret_key                  = "mock"
 }
 
 locals {

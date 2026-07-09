@@ -3,8 +3,5 @@ terraform {
     snowflake = {
       source = "snowflakedb/snowflake"
     }
-    aws = {
-      source = "hashicorp/aws"
-    }
   }
 }

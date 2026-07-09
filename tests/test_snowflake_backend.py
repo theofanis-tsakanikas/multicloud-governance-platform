@@ -13,6 +13,7 @@ from pathlib import Path
 
 from governance_model import GovernanceModel, Grant, build_model
 from snowflake_backend import (
+    engine_limitation,
     ADMIN,
     READ,
     WRITE,
@@ -52,8 +53,10 @@ def test_object_type_mapping_to_snowflake():
     pm = _priv_map()
     assert snowflake_object_type("catalog", pm) == "database"
     assert snowflake_object_type("schema", pm) == "schema"
-    assert snowflake_object_type("volume", pm) == "stage"
-    assert snowflake_object_type("external_location", pm) == "stage"
+    # The two stage kinds are distinct because Snowflake's stage privileges are:
+    # internal -> READ/WRITE (USAGE invalid); external -> USAGE (READ/WRITE invalid).
+    assert snowflake_object_type("volume", pm) == "stage_internal"
+    assert snowflake_object_type("external_location", pm) == "stage_external"
 
 
 def test_map_covers_every_privilege_used_in_committed_grants():
@@ -83,13 +86,17 @@ def test_abstract_capability_classification():
 
 
 def test_snowflake_capability_classification_is_object_aware():
-    # Stage USAGE is file-read; schema/database USAGE is traversal only.
-    assert snowflake_capabilities("stage", ["USAGE"]) == frozenset({READ})
+    # External-stage USAGE permits COPY in BOTH directions, so it is read+write.
+    assert snowflake_capabilities("stage_external", ["USAGE"]) == frozenset({READ, WRITE})
+    # USAGE is not a valid internal-stage privilege; it confers nothing there.
+    assert snowflake_capabilities("stage_internal", ["USAGE"]) == frozenset()
+    assert snowflake_capabilities("stage_internal", ["READ"]) == frozenset({READ})
+    assert snowflake_capabilities("stage_internal", ["WRITE"]) == frozenset({WRITE})
+    assert snowflake_capabilities("stage_internal", ["READ", "WRITE"]) == frozenset({READ, WRITE})
     assert snowflake_capabilities("schema", ["USAGE"]) == frozenset()
     assert snowflake_capabilities("database", ["USAGE"]) == frozenset()
     assert snowflake_capabilities("schema", ["SELECT"]) == frozenset({READ})
     assert snowflake_capabilities("schema", ["INSERT", "UPDATE", "DELETE"]) == frozenset({WRITE})
-    assert snowflake_capabilities("stage", ["WRITE"]) == frozenset({WRITE})
     assert snowflake_capabilities("database", ["ALL PRIVILEGES"]) == frozenset({READ, WRITE, ADMIN})
     assert snowflake_capabilities("schema", ["CREATE SCHEMA"]) == frozenset()  # mirrors abstract
 
@@ -107,7 +114,7 @@ def test_render_produces_grants_for_every_model_grant_object():
     for sg in rendered:
         assert sg.privileges
         assert sg.scope in {"self", "future_and_existing_tables", "future_and_existing_views"}
-        assert sg.snowflake_object_type in {"database", "schema", "stage"}
+        assert sg.snowflake_object_type in {"database", "schema", "stage_internal", "stage_external"}
 
 
 def test_select_on_schema_targets_tables_not_the_schema():
@@ -129,10 +136,24 @@ def test_select_on_schema_targets_tables_not_the_schema():
 
 
 def test_committed_config_is_access_equivalent():
-    """The committed contract grants identical read/write/admin on UC and Snowflake."""
+    """The committed contract grants identical access on UC and Snowflake, except where the
+    engine provably cannot express the distinction (those are classified, not hidden)."""
     model, pm = _model(), _priv_map()
     issues = cross_backend_issues(model, pm)
-    assert issues == [], "cross-backend access divergence:\n" + "\n".join(str(i) for i in issues)
+    divergences = [i for i in issues if i.kind != "engine_limitation"]
+    assert divergences == [], "cross-backend access divergence:\n" + "\n".join(str(i) for i in divergences)
+
+
+def test_every_engine_limitation_is_documented_and_only_on_external_stages():
+    """An `engine_limitation` must never become a dumping ground for mistranslations."""
+    model, pm = _model(), _priv_map()
+    limits = [i for i in cross_backend_issues(model, pm) if i.kind == "engine_limitation"]
+    assert limits, "expected the known external-stage over-grant to be surfaced, not silent"
+    for i in limits:
+        # Only external locations, only an ADDED capability, never a lost one.
+        assert i.object_type == "external_location"
+        assert not (i.uc_access - i.snowflake_access), f"a lost capability was misfiled: {i}"
+        assert engine_limitation(i.object_type, i.snowflake_access - i.uc_access)
 
 
 def test_no_object_principal_loses_access_on_snowflake():

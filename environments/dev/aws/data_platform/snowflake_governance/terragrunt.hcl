@@ -2,10 +2,6 @@ include "root" {
   path = find_in_parent_folders()
 }
 
-# Temporarily skipped: grants reference the Databricks-only federated catalog + the
-# deferred external stages. Re-enable after fixing those + the storage integration.
-skip = true
-
 locals {
   cfg = read_terragrunt_config(find_in_parent_folders("config.hcl")).locals
 
@@ -37,6 +33,12 @@ generate "providers" {
       # at plan/apply time — no secrets in code (the platform's secrets-at-runtime discipline).
       organization_name = "${local.cfg.snowflake_organization}"
       account_name      = "${local.cfg.snowflake_account}"
+    }
+
+    # The storage integration is a two-way trust: Snowflake mints an IAM user, and an AWS
+    # role must trust it. Both halves are applied here so the trust can never half-exist.
+    provider "aws" {
+      region = "${local.cfg.aws_region}"
     }
   EOF
 }

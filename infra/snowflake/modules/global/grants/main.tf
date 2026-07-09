@@ -5,15 +5,22 @@
 # applies is provably access-equivalent to the Unity Catalog backend
 # (scripts/snowflake_backend.py, tests/test_snowflake_backend.py).
 #
-# Privileges are listed explicitly (never `all_privileges = true`) so the grant is
-# least-privilege by construction; the analyzer gate (policy_analyzer.py) has already
-# vetted the abstract contract before either backend applies.
+# Privileges are listed explicitly, so a grant is least-privilege by construction. The one
+# exception is the contract's own ALL_PRIVILEGES — an explicit choice in the domain JSON
+# (only metastore_admins hold it), not a shortcut taken here; the analyzer gate
+# (policy_analyzer.py) has already vetted the abstract contract before either backend applies.
 #
 # Snowflake data-access privileges live on tables, not on the containing schema, so a
 # schema-level SELECT/MODIFY in the contract fans out to ALL + FUTURE tables in the schema
 # (the two `*_tables_*` kinds), while USAGE/CREATE stay on the schema itself.
 
 locals {
+  # The contract's ALL_PRIVILEGES maps to the literal "ALL PRIVILEGES", which is valid SQL
+  # but not a value the provider accepts inside `privileges` — Snowflake reports the
+  # expanded privilege list on read, so the resource would never converge. The provider's
+  # own `all_privileges` flag is the faithful representation.
+  is_all_privileges = { for g in var.grant_instances : g.key => contains(g.privileges, "ALL PRIVILEGES") }
+
   by_kind = {
     database             = { for g in var.grant_instances : g.key => g if g.kind == "database" }
     schema               = { for g in var.grant_instances : g.key => g if g.kind == "schema" }
@@ -28,7 +35,8 @@ resource "snowflake_grant_privileges_to_account_role" "on_database" {
   for_each = local.by_kind.database
 
   account_role_name = each.value.role_name
-  privileges        = each.value.privileges
+  all_privileges    = local.is_all_privileges[each.key] ? true : null
+  privileges        = local.is_all_privileges[each.key] ? null : each.value.privileges
 
   on_account_object {
     object_type = "DATABASE"
@@ -41,7 +49,8 @@ resource "snowflake_grant_privileges_to_account_role" "on_schema" {
   for_each = local.by_kind.schema
 
   account_role_name = each.value.role_name
-  privileges        = each.value.privileges
+  all_privileges    = local.is_all_privileges[each.key] ? true : null
+  privileges        = local.is_all_privileges[each.key] ? null : each.value.privileges
 
   on_schema {
     schema_name = each.value.schema
@@ -53,7 +62,8 @@ resource "snowflake_grant_privileges_to_account_role" "on_schema_tables_all" {
   for_each = local.by_kind.schema_tables_all
 
   account_role_name = each.value.role_name
-  privileges        = each.value.privileges
+  all_privileges    = local.is_all_privileges[each.key] ? true : null
+  privileges        = local.is_all_privileges[each.key] ? null : each.value.privileges
 
   on_schema_object {
     all {
@@ -68,7 +78,8 @@ resource "snowflake_grant_privileges_to_account_role" "on_schema_tables_future" 
   for_each = local.by_kind.schema_tables_future
 
   account_role_name = each.value.role_name
-  privileges        = each.value.privileges
+  all_privileges    = local.is_all_privileges[each.key] ? true : null
+  privileges        = local.is_all_privileges[each.key] ? null : each.value.privileges
 
   on_schema_object {
     future {
@@ -83,7 +94,8 @@ resource "snowflake_grant_privileges_to_account_role" "on_stage" {
   for_each = local.by_kind.stage
 
   account_role_name = each.value.role_name
-  privileges        = each.value.privileges
+  all_privileges    = local.is_all_privileges[each.key] ? true : null
+  privileges        = local.is_all_privileges[each.key] ? null : each.value.privileges
 
   on_schema_object {
     object_type = "STAGE"

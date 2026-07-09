@@ -14,10 +14,19 @@ locals {
   # ── Decode the domain JSON strings ────────────────────────────────────────
   catalogs   = jsondecode(var.catalogs_json)
   ext_locs   = jsondecode(var.external_locations_json)
-  cat_grants = jsondecode(var.catalog_grants_json)
   sch_grants = jsondecode(var.managed_schema_grants_json)
   vol_grants = jsondecode(var.volume_grants_json)
   loc_grants = jsondecode(var.ext_loc_grants_json)
+
+  # A FEDERATED catalog is a Databricks-only construct — a Lakehouse Federation view onto a
+  # live engine — so it has no Snowflake database to attach grants to. `catalogs_json` is
+  # already filtered to MANAGED upstream and `managed_schema_grants_json` likewise; the
+  # catalog grants arrive unfiltered, so apply the same rule here.
+  managed_catalog_names = toset([for c in local.catalogs : c.catalog_name])
+  cat_grants = [
+    for e in jsondecode(var.catalog_grants_json) : e
+    if contains(local.managed_catalog_names, e.catalog_name)
+  ]
 
   role_prefix = upper(var.environment)
 
@@ -141,7 +150,29 @@ locals {
     ]
   ])
 
-  grant_instances = concat(local.catalog_instances, local.schema_instances, local.volume_instances, local.loc_instances)
+  raw_grant_instances = concat(local.catalog_instances, local.schema_instances, local.volume_instances, local.loc_instances)
+
+  # Fragments are per abstract privilege, so one principal can produce several fragments for
+  # the same object (READ_VOLUME and WRITE_VOLUME both land on one internal stage). Emitting
+  # them as separate grant resources is wrong twice over: two resources would each manage a
+  # subset of the same role/object grant, and Snowflake rejects WRITE on an internal stage
+  # unless READ is granted in the same statement. Merge on (role, kind, object) so each
+  # target becomes exactly one GRANT with the union of its privileges.
+  merge_key = { for g in local.raw_grant_instances : g.key => "${g.role_name}|${g.kind}|${g.object_name}|${g.schema}" }
+
+  grant_instances = [
+    for k in distinct(values(local.merge_key)) : {
+      key         = k
+      role_name   = split("|", k)[0]
+      kind        = split("|", k)[1]
+      object_name = split("|", k)[2]
+      schema      = split("|", k)[3]
+      privileges = distinct(flatten([
+        for g in local.raw_grant_instances : g.privileges
+        if local.merge_key[g.key] == k
+      ]))
+    }
+  ]
 }
 
 # ── Fan-out to the cloud-neutral Snowflake modules ──────────────────────────
@@ -166,10 +197,13 @@ module "schema" {
 module "external_stage" {
   source                   = "../../../../snowflake/modules/global/external_stage"
   database                 = local.managed_db
-  storage_integration_name = var.storage_integration_name
-  external_stages          = [] # deferred: needs the Snowflake storage integration (S3<->Snowflake IAM trust); RBAC+masking are the core
+  storage_integration_name = module.storage_integration.integration_name
+  external_stages          = local.external_stages
   internal_stages          = local.internal_stages
-  depends_on               = [module.schema]
+
+  # The stage itself is created by a CREATE STAGE that Snowflake does not validate against
+  # S3 — so wait for the IAM trust to exist, or the first read of the stage would 403.
+  depends_on = [module.schema, aws_iam_role_policy_attachment.snowflake_s3]
 }
 
 module "grants" {

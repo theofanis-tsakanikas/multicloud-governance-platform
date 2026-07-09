@@ -1,3 +1,10 @@
+# ┌─ SIMULATED SOURCE SYSTEM ─────────────────────────────────────────────┐
+# │ Not part of the governance platform. It stands in for an operational │
+# │ database owned by an application team, so the federated catalog has  │
+# │ a live engine to discover. In production this layer is deleted and   │
+# │ the connector points at the team's existing endpoint. See ADR-0014.  │
+# └──────────────────────────────────────────────────────────────────────┘
+
 include "root" {
   path = find_in_parent_folders()
 }
