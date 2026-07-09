@@ -8,21 +8,39 @@ locals {
 # External ID = aws_account_id (static, predictable, never changes).
 data "aws_iam_policy_document" "trust_policy" {
   statement {
+    sid     = "UnityCatalogAssumeRole"
     effect  = "Allow"
     actions = ["sts:AssumeRole"]
 
     principals {
-      type = "AWS"
-      identifiers = [
-        local.master_uc_arn,
-        local.self_role_arn,
-      ]
+      type        = "AWS"
+      identifiers = [local.master_uc_arn]
     }
 
     condition {
       test     = "StringEquals"
       variable = "sts:ExternalId"
       values   = [var.aws_account_id]
+    }
+  }
+
+  # Self-assumption for UC credential vending. A role cannot list itself as a
+  # principal before it exists (AWS rejects "Invalid principal"), so the principal
+  # is the account root and a condition restricts the trust to this role only.
+  statement {
+    sid     = "ExplicitSelfRoleAssumption"
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${var.aws_account_id}:root"]
+    }
+
+    condition {
+      test     = "ArnLike"
+      variable = "aws:PrincipalArn"
+      values   = [local.self_role_arn]
     }
   }
 }
