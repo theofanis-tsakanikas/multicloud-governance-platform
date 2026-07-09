@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/theofanis-tsakanikas/multicloud-governance-platform/schema/domain.grants.schema.json",
+  "title": "Domain grants config (v1)",
+  "description": "Databricks Unity Catalog RBAC for one domain. Consumed by the dbx_governance terragrunt.hcl via jsondecode(file(...)). The privilege enums are NOT enforced here (they are object-type-specific and validated in scripts/validate_domains.py); this schema covers shape + IDE autocomplete.",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "$schema": { "type": "string" },
+    "external_location_grants": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/targetGrants" }
+    },
+    "catalog_grants": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/targetGrants" }
+    },
+    "schema_grants": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/targetGrants" }
+    },
+    "volume_grants": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/targetGrants" }
+    }
+  },
+  "$defs": {
+    "targetGrants": {
+      "type": "object",
+      "required": ["grants"],
+      "additionalProperties": true,
+      "description": "One securable (named by location_name | catalog_name | schema | volume) and the grants on it.",
+      "properties": {
+        "location_name": { "type": "string", "minLength": 1 },
+        "catalog_name": { "type": "string", "minLength": 1 },
+        "schema": { "type": "string", "minLength": 1 },
+        "volume": { "type": "string", "minLength": 1 },
+        "grants": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/grant" }
+        }
+      }
+    },
+    "grant": {
+      "type": "object",
+      "required": ["principal", "privileges"],
+      "additionalProperties": false,
+      "properties": {
+        "principal": {
+          "description": "Databricks group / principal the privileges are granted to.",
+          "type": "string",
+          "minLength": 1
+        },
+        "privileges": {
+          "description": "Unity Catalog privileges. Validity per object type is checked by scripts/validate_domains.py.",
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

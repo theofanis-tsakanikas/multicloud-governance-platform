@@ -6,7 +6,7 @@ locals {
   cfg = read_terragrunt_config(find_in_parent_folders("config.hcl")).locals
 
   # Fetch seed credentials (initial admin credentials, set once manually)
-  seed = jsondecode(run_cmd(
+  seed = jsondecode(run_cmd("--terragrunt-quiet",
     "aws", "secretsmanager", "get-secret-value",
     "--secret-id", local.cfg.seed_credentials_id,
     "--query", "SecretString",
@@ -51,7 +51,7 @@ inputs = {
   kms_deletion_window     = local.cfg.kms_deletion_window
   spn_suffix              = local.cfg.spn_suffix
   admin_group_name        = local.cfg.admin_group_name
-  metastore_admins        = local.cfg.metastore_admins
+  metastore_admins        = local.cfg.metastore_admins_aws
   identity_groups         = local.cfg.identity_groups
   initial_client_id       = local.seed.client_id
   initial_client_secret   = local.seed.client_secret

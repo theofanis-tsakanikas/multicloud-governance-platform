@@ -1,0 +1,135 @@
+{
+  "_comment": "Golden corpus for the access-policy analyzer. Each case is a minimal but COMPLETE domain (infra + grants) crafted to trip exactly one rule (or none). tests/test_golden_policy.py materializes each into a temp repo, runs run_analysis, and asserts: every rule in `expect_rules` is present, and the set of gating (unacknowledged HIGH) rules equals `expect_gating`. This turns the governance gate from 'code' into 'provably-correct code'.",
+  "cases": [
+    {
+      "name": "public_principal_on_pii",
+      "cloud": "AWS",
+      "infra": {
+        "cloud": "AWS", "domain": "g",
+        "catalogs": [{"catalog_name": "c", "type": "MANAGED", "owner": "data_engineers", "schemas": [{"schema_name": "cust", "classification": "pii"}]}]
+      },
+      "grants": {
+        "schema_grants": [{"schema": "c.cust", "grants": [{"principal": "account users", "privileges": ["SELECT"]}]}]
+      },
+      "expect_rules": ["PUBLIC_PRINCIPAL", "PII_BROAD_READ"],
+      "expect_gating": ["PUBLIC_PRINCIPAL", "PII_BROAD_READ"]
+    },
+    {
+      "name": "pii_broad_read_nonadmin",
+      "cloud": "AWS",
+      "infra": {
+        "cloud": "AWS", "domain": "g",
+        "catalogs": [{"catalog_name": "c", "type": "MANAGED", "owner": "data_engineers", "schemas": [{"schema_name": "cust", "classification": "pii"}]}]
+      },
+      "grants": {
+        "schema_grants": [{"schema": "c.cust", "grants": [{"principal": "business_users", "privileges": ["USE_SCHEMA", "SELECT"]}]}]
+      },
+      "expect_rules": ["PII_BROAD_READ"],
+      "expect_gating": ["PII_BROAD_READ"]
+    },
+    {
+      "name": "pii_write_nonadmin",
+      "cloud": "Azure",
+      "infra": {
+        "cloud": "Azure", "domain": "g",
+        "catalogs": [{"catalog_name": "c", "type": "MANAGED", "owner": "data_engineers", "schemas": [{"schema_name": "cust", "classification": "pii"}]}]
+      },
+      "grants": {
+        "schema_grants": [{"schema": "c.cust", "grants": [{"principal": "analysts", "privileges": ["MODIFY"]}]}]
+      },
+      "expect_rules": ["PII_WRITE"],
+      "expect_gating": ["PII_WRITE"]
+    },
+    {
+      "name": "sensitive_all_privileges",
+      "cloud": "GCP",
+      "infra": {
+        "cloud": "GCP", "domain": "g",
+        "catalogs": [{"catalog_name": "c", "type": "MANAGED", "owner": "data_engineers", "schemas": [{"schema_name": "fin", "classification": "confidential"}]}]
+      },
+      "grants": {
+        "schema_grants": [{"schema": "c.fin", "grants": [{"principal": "analysts", "privileges": ["ALL_PRIVILEGES"]}]}]
+      },
+      "expect_rules": ["SENSITIVE_ALL_PRIVILEGES"],
+      "expect_gating": ["SENSITIVE_ALL_PRIVILEGES"]
+    },
+    {
+      "name": "manage_nonadmin_medium",
+      "cloud": "AWS",
+      "infra": {
+        "cloud": "AWS", "domain": "g",
+        "catalogs": [{"catalog_name": "c", "type": "MANAGED", "owner": "data_engineers", "schemas": [{"schema_name": "ops", "classification": "internal"}]}]
+      },
+      "grants": {
+        "schema_grants": [{"schema": "c.ops", "grants": [{"principal": "analysts", "privileges": ["USE_SCHEMA", "MANAGE"]}]}]
+      },
+      "expect_rules": ["MANAGE_NONADMIN"],
+      "expect_gating": []
+    },
+    {
+      "name": "all_privileges_sprawl_medium",
+      "cloud": "AWS",
+      "infra": {
+        "cloud": "AWS", "domain": "g",
+        "external_locations": [{"location_name": "loc_g", "path": "p/"}],
+        "catalogs": [{"catalog_name": "c", "type": "MANAGED", "owner": "data_engineers", "schemas": [{"schema_name": "ops", "classification": "internal"}]}]
+      },
+      "grants": {
+        "external_location_grants": [{"location_name": "loc_g", "grants": [{"principal": "analysts", "privileges": ["ALL_PRIVILEGES"]}]}]
+      },
+      "expect_rules": ["ALL_PRIVILEGES_NONADMIN"],
+      "expect_gating": []
+    },
+    {
+      "name": "unclassified_schema_low",
+      "cloud": "GCP",
+      "infra": {
+        "cloud": "GCP", "domain": "g",
+        "catalogs": [{"catalog_name": "c", "type": "MANAGED", "owner": "data_engineers", "schemas": [{"schema_name": "misc"}]}]
+      },
+      "grants": {},
+      "expect_rules": ["UNCLASSIFIED_SCHEMA"],
+      "expect_gating": []
+    },
+    {
+      "name": "unowned_catalog_low",
+      "cloud": "Azure",
+      "infra": {
+        "cloud": "Azure", "domain": "g",
+        "catalogs": [{"catalog_name": "c", "type": "MANAGED", "schemas": [{"schema_name": "ops", "classification": "internal"}]}]
+      },
+      "grants": {},
+      "expect_rules": ["UNOWNED_CATALOG"],
+      "expect_gating": []
+    },
+    {
+      "name": "federated_pii_info",
+      "cloud": "AWS",
+      "infra": {
+        "cloud": "AWS", "domain": "g",
+        "catalogs": [{"catalog_name": "c", "type": "FEDERATED", "owner": "data_engineers", "connection_name": "conn", "schemas": [{"schema_name": "ext", "classification": "pii"}]}]
+      },
+      "grants": {
+        "schema_grants": [{"schema": "c.ext", "grants": [{"principal": "metastore_admins", "privileges": ["ALL_PRIVILEGES"]}]}]
+      },
+      "expect_rules": ["FEDERATED_PII"],
+      "expect_gating": []
+    },
+    {
+      "name": "clean_least_privilege",
+      "cloud": "AWS",
+      "infra": {
+        "cloud": "AWS", "domain": "g",
+        "catalogs": [{"catalog_name": "c", "type": "MANAGED", "owner": "data_engineers", "schemas": [{"schema_name": "gold", "classification": "internal"}]}]
+      },
+      "grants": {
+        "schema_grants": [{"schema": "c.gold", "grants": [
+          {"principal": "analysts", "privileges": ["USE_SCHEMA", "SELECT"]},
+          {"principal": "metastore_admins", "privileges": ["ALL_PRIVILEGES"]}
+        ]}]
+      },
+      "expect_rules": [],
+      "expect_gating": []
+    }
+  ]
+}

@@ -23,6 +23,7 @@ Enterprise-grade, fully automated Databricks Unity Catalog governance across AWS
 - [Quick start](#quick-start)
 - [CI/CD](#cicd)
 - [Adding a new domain](#adding-a-new-domain)
+- [Governance copilot](#governance-copilot)
 - [After a full destroy](#after-a-full-destroy)
 
 ---
@@ -39,8 +40,16 @@ This project is a reference implementation of production-grade, multi-cloud data
 | **OIDC-based CI with no long-lived credentials** | GitHub Actions assumes an AWS IAM role via OIDC; Azure uses federated identity; GCP seeds from AWS Secrets Manager |
 | **Cross-cloud Delta Sharing** | GCP marketing catalog is shared to the AWS metastore using dual Databricks provider aliases and native HCL logic |
 | **Responsible-AI governance copilot** | A deterministic least-privilege / PII analyzer gates CI, generates EU-AI-Act / GDPR documentation from the config, and grounds a single cross-cloud Genie NL layer — trust-first, LLM bounded ([docs/governance/](docs/governance/README.md)) |
-| **Security scanning in CI** | Checkov and tfsec run on every PR against `infra/`; pre-commit hooks enforce the same checks locally |
+| **Provable governance, two engines** | The policy gate is backed by a golden test corpus and an independent OPA/Rego re-implementation ([policy/opa/](policy/opa/README.md)); findings publish as SARIF to the GitHub Security tab |
+| **Engine-agnostic enforcement (Unity Catalog + Snowflake)** | The same domain JSON compiles to *two* enforcement backends via one shared privilege map; a per-engine consistency check proves identical least-privilege on both, and `terraform validate` runs offline ([ADR-0011](docs/adr/0011-snowflake-enforcement-backend.md), `scripts/snowflake_backend.py`) |
+| **The gate as a reusable tool** | The deterministic analyzer ships as an installable `govgate` CLI + composite [GitHub Action](actions/govgate/) — point it at any repo's grants JSON, get SARIF and a PR-gating exit code ([ADR-0012](docs/adr/0012-govgate-packaging.md)) |
+| **Versioned config contract** | Domain JSON is validated against published [JSON Schema](schema/README.md) (Draft 2020-12) with editor autocomplete, on top of the structural validator |
+| **Governance telemetry + FinOps** | Trendable [metrics](docs/governance/metrics.json) (posture/coverage/expiring exceptions) and a multi-cloud [cost + carbon floor](docs/governance/COST.md) that fills Infracost's Databricks/Azure/GCP blind spots |
+| **Security scanning in CI** | Checkov, tfsec, gitleaks, plus an SBOM + vulnerability scan ([sbom.yml](.github/workflows/sbom.yml)) on every change; pre-commit hooks enforce the same locally |
 | **Cost estimation in CI** | Infracost posts an AWS infrastructure cost breakdown as a PR comment on every change |
+| **Governance over data in motion** | A deterministic synthetic-data generator + a real bronze→silver→gold medallion (stdlib `sqlite3`, offline) prove the claims: PII is minimised out of gold, observed data is reconciled against declared classification, and one KPI table spans all three clouds ([pipelines/](pipelines/README.md)) |
+| **Self-contained dashboard** | A static, no-JS, no-server [governance dashboard](docs/governance/dashboard/index.html) renders posture, PII map, data reconciliation and cost from the committed artifacts — published to GitHub Pages |
+| **Decisions on the record** | Every significant choice is captured as an [ADR](docs/adr/README.md); a [dev container](.devcontainer/README.md) + `make demo` runs the whole offline governance story in ~30s, no cloud |
 
 Full architecture detail, dependency graphs, and design decisions are in [ARCHITECTURE.md](ARCHITECTURE.md). Operational gotchas and secrets flow are in [CLAUDE.md](CLAUDE.md).
 
@@ -63,6 +72,7 @@ Full architecture detail, dependency graphs, and design decisions are in [ARCHIT
 - **Remote state** in S3 with DynamoDB locking
 - **Secrets** fetched at plan/apply time from AWS Secrets Manager — never stored in code
 - **Domain governance** defined in JSON, loaded natively by Terragrunt — no custom code
+- **Two enforcement backends** from that one contract: Databricks Unity Catalog and Snowflake (`snowflakedb/snowflake` v2), provably access-equivalent
 
 ## Prerequisites
 
@@ -105,11 +115,13 @@ GitHub Actions workflows in `.github/workflows/`:
 | Workflow | Trigger |
 |---|---|
 | `dbx-validate.yml` | Every PR touching `infra/**`, `environments/**`, or `terragrunt.hcl` — fmt, validate, Checkov, tfsec, Infracost |
-| `dbx-config-validate.yml` | PR touching domains/scripts/docs — **credential-free**: domain validator + the access-policy gate + report/Genie `--check` + pytest |
+| `dbx-config-validate.yml` | PR touching domains/scripts/schema/policy/docs — **credential-free**: domain + JSON-Schema validation, the access-policy gate (+ SARIF + expiry warning), the OPA/conftest cross-check, report/Genie/metrics/cost/data-profile/dashboard `--check`, and pytest |
 | `dbx-bootstrap.yml` | Manual: bootstrap AWS or GCP |
 | `dbx-deploy.yml` | Manual: deploy one or all clouds |
 | `dbx-destroy.yml` | Manual: destroy with "DESTROY" confirmation |
 | `dbx-drift.yml` | Weekly schedule: `terragrunt plan -detailed-exitcode` per cloud; opens a `drift` issue on differences |
+| `sbom.yml` | Push / weekly: generate an SPDX SBOM (Syft) + scan deps for CVEs (Grype) → Security tab |
+| `pages.yml` | Push to main: rebuild + publish the static governance dashboard to GitHub Pages |
 
 Required GitHub secrets: `DBX_DEPLOY_ROLE_ARN`, `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`
 
@@ -118,18 +130,29 @@ Required GitHub secrets: `DBX_DEPLOY_ROLE_ARN`, `AZURE_CLIENT_ID`, `AZURE_TENANT
 1. Add `environments/dev/domains/<cloud>/<domain>_infra.json` (classify schemas with `classification`, set the catalog `owner`)
 2. Add `environments/dev/domains/<cloud>/<domain>_grants.json`
 3. Update the `domain_path` locals in the relevant `data_platform/dbx_governance/terragrunt.hcl`
-4. Run `make policy-scan` to check the new grants against the least-privilege / PII rules, then `make governance-report`
+4. Run `make policy-scan` to check the new grants against the least-privilege / PII rules, then regenerate every committed artifact: `make governance-report && make data && make dashboard` (CI `--check`s them all, so commit the result)
 5. Run `make apply LAYER=<cloud>/data_platform/dbx_governance`
 
 ## Governance copilot
 
-The platform ships a Responsible-AI governance layer over the catalog — a deterministic access-policy analyzer (CI gate), auto-generated EU-AI-Act / GDPR documentation, and a single cross-cloud Genie NL interface grounded on that analysis. All offline and credential-free. See [docs/governance/](docs/governance/README.md) and the generated [REPORT.md](docs/governance/REPORT.md).
+The platform ships a Responsible-AI governance layer over the catalog — a deterministic access-policy analyzer (CI gate), auto-generated EU-AI-Act / GDPR documentation, and a single cross-cloud Genie NL interface grounded on that analysis. It also runs **governance over data in motion** ([pipelines/](pipelines/README.md)): a real bronze→silver→gold medallion (offline `sqlite3`) that proves PII-minimisation and reconciles observed data against the declared classification, surfaced in a self-contained [governance dashboard](docs/governance/dashboard/index.html). All offline and credential-free. See [docs/governance/](docs/governance/README.md) and the generated [REPORT.md](docs/governance/REPORT.md).
 
 ```bash
+make demo                 # run the whole offline governance pipeline end-to-end (no cloud, ~30s)
+make demo-data            # data in motion: generate → medallion → profile → dashboard
 make policy-scan          # least-privilege / PII analysis (fails on unacknowledged HIGH)
-make governance-report    # regenerate the governance docs + Genie grounding pack
+make governance-report    # regenerate the governance docs + metrics + cost + Genie pack
+make metrics              # governance telemetry (posture / coverage / expiring exceptions)
+make cost-estimate        # multi-cloud + Databricks cost & carbon floor
+make opa                  # cross-check the gate with the OPA/Rego policy (needs conftest)
+make policy-sarif         # write policy.sarif for the GitHub Security tab
+make data                 # synthetic data → medallion (bronze/silver/gold) → profile
+make dashboard            # render the static, self-contained governance dashboard
 ```
 
 ## After a full destroy
 
-Update `deployment_id_<cloud>` in `environments/dev/config.hcl` to prevent resource name collisions on re-deploy.
+Resource names are **stable** (no `deployment_id` suffix). A re-deploy generally works as-is;
+only if a just-destroyed Databricks object is still in a soft-deleted state might you hit a
+transient name collision — wait for it to purge (or purge it via the Databricks API) and
+re-apply. See [ADR-0013](docs/adr/0013-stable-names-over-deployment-id-suffix.md).

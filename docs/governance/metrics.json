@@ -1,0 +1,44 @@
+{
+  "generated_at": "2026-06-28",
+  "posture": {
+    "open_high": 0,
+    "open_medium": 6,
+    "open_low": 0,
+    "info": 2,
+    "accepted_risks": 2,
+    "gating": 0
+  },
+  "coverage": {
+    "schemas": 12,
+    "schemas_classified": 12,
+    "schemas_classified_pct": 100.0,
+    "catalogs": 6,
+    "catalogs_owned": 6,
+    "catalogs_owned_pct": 100.0
+  },
+  "pii": {
+    "datasets": 2,
+    "in_federated_storage": 2
+  },
+  "footprint": {
+    "clouds": [
+      "AWS",
+      "AZURE",
+      "GCP"
+    ],
+    "domains": [
+      "sales",
+      "supply_chain",
+      "marketing"
+    ],
+    "objects": 29,
+    "grants": 66
+  },
+  "exceptions": {
+    "total": 2,
+    "expired": 0,
+    "expiring_within_30d": 0,
+    "expiring_within_60d": 0,
+    "expiring_within_90d": 0
+  }
+}

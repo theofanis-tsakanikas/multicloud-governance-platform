@@ -1,0 +1,13 @@
+{
+  "_comment": "A deliberately UNSAFE grounding pack used to prove the Rego policy actually denies. `conftest test` against this must report 3 failures (one per rule). See policy/opa/README.md.",
+  "objects": [
+    { "object_type": "catalog", "name": "demo", "owner": "data_engineers", "classification": null },
+    { "object_type": "schema", "name": "demo.customers", "owner": null, "classification": "pii" }
+  ],
+  "access_matrix": [
+    { "cloud": "AWS", "object_type": "schema", "object": "demo.customers", "principal": "account users", "privileges": ["SELECT"], "classification": "pii", "reads_data": true },
+    { "cloud": "AWS", "object_type": "schema", "object": "demo.customers", "principal": "analysts", "privileges": ["SELECT"], "classification": "pii", "reads_data": true },
+    { "cloud": "AWS", "object_type": "schema", "object": "demo.customers", "principal": "analysts", "privileges": ["ALL_PRIVILEGES"], "classification": "pii", "reads_data": true }
+  ],
+  "policy_findings": []
+}

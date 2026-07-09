@@ -1,6 +1,6 @@
 # 1. Create the Storage Credential in Unity Catalog
 resource "databricks_storage_credential" "external" {
-  name = "${var.gcp_storage_credential_name}_${var.deployment_id}"
+  name = "${var.gcp_storage_credential_name}"
 
   # Uses the Databricks-managed Service Account (System Managed)
   databricks_gcp_service_account {

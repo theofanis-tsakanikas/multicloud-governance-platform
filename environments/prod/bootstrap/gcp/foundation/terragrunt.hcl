@@ -5,7 +5,7 @@ include "root" {
 locals {
   cfg = read_terragrunt_config(find_in_parent_folders("config.hcl")).locals
 
-  seed = jsondecode(run_cmd(
+  seed = jsondecode(run_cmd("--terragrunt-quiet",
     "aws", "secretsmanager", "get-secret-value",
     "--secret-id", local.cfg.gcp_seed_secret_arn,
     "--query", "SecretString",
@@ -51,7 +51,6 @@ inputs = {
   terraform_sa_account  = local.cfg.terraform_sa_account
   spn_suffix            = local.cfg.spn_suffix
   admin_group_name      = local.cfg.admin_group_name
-  metastore_admins      = local.cfg.metastore_admins
   identity_groups       = local.cfg.identity_groups
   service_list          = local.cfg.gcp_service_list
   dbx_sa_secret_id      = local.cfg.gcp_sa_secret_id

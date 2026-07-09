@@ -9,11 +9,11 @@ locals {
   loc_map = {
     for loc in local.external_locations_data : loc.location_name => merge(loc, {
       # Path calculation for Azure: abfss://container@account.dfs.core.windows.net/path
-      calculated_url = "abfss://${loc.container}@${var.azure_storage_account_name}.dfs.core.windows.net/${trim(loc.path, "/")}/${var.deployment_id_azure}/"
+      calculated_url = "abfss://${loc.container}@${var.azure_storage_account_name}.dfs.core.windows.net/${trim(loc.path, "/")}/"
 
-      # Unique Name Calculation (Injecting the deployment_id_azure)
+      # Stable external-location name (derived from location_name)
       # If loc.location_name is "sales_raw", the final result will be "sales_raw_a1b2c3d4"
-      unique_name = "${loc.location_name}_${var.deployment_id_azure}"
+      unique_name = "${loc.location_name}"
     })
   }
 
@@ -32,8 +32,8 @@ locals {
       # 1. Calculation of Catalog Storage Root
       calculated_storage_root = cat.type == "MANAGED" ? (
         lookup(cat, "storage_root", null) != null ?
-        "abfss://${cat.container}@${var.azure_storage_account_name}.dfs.core.windows.net/${trim(cat.storage_root, "/")}/${var.deployment_id_azure}/" :
-        "abfss://${var.managed_storage_container}@${var.azure_storage_account_name}.dfs.core.windows.net/${trim(var.managed_storage_root, "/")}/${var.deployment_id_azure}/"
+        "abfss://${cat.container}@${var.azure_storage_account_name}.dfs.core.windows.net/${trim(cat.storage_root, "/")}/" :
+        "abfss://${var.managed_storage_container}@${var.azure_storage_account_name}.dfs.core.windows.net/${trim(var.managed_storage_root, "/")}/"
       ) : null
 
       # 2. Calculation of Volume Storage Locations inside schemas
@@ -42,7 +42,7 @@ locals {
           volumes = [
             for v in lookup(s, "volumes", []) : merge(v, {
               calculated_storage_location = lookup(v, "volume_type", "MANAGED") == "EXTERNAL" ? (
-                "abfss://${v.container}@${var.azure_storage_account_name}.dfs.core.windows.net/${trim(v.location_path, "/")}/${var.deployment_id_azure}/${trim(v.volume_path, "/")}/"
+                "abfss://${v.container}@${var.azure_storage_account_name}.dfs.core.windows.net/${trim(v.location_path, "/")}/${trim(v.volume_path, "/")}/"
               ) : null
             })
           ]

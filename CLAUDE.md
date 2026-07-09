@@ -11,7 +11,7 @@ Full architecture detail and dependency graphs are in [ARCHITECTURE.md](ARCHITEC
 ```
 .
 ├── terragrunt.hcl              # Root: S3 remote state + DynamoDB lock (inherited by all children)
-├── Makefile                    # validate / plan / apply / destroy + policy-scan / governance-report (ENV=dev|prod)
+├── Makefile                    # validate / plan / apply / destroy + governance copilot + data/dashboard targets (ENV=dev|prod); `make demo` / `make demo-data`
 ├── environments/
 │   ├── dev/                    # dev environment (config.hcl, domains, bootstrap, per-cloud stacks)
 │   │   ├── config.hcl          # Single source of truth for every config value
@@ -19,12 +19,23 @@ Full architecture detail and dependency graphs are in [ARCHITECTURE.md](ARCHITEC
 │   │   └── domains/{aws,azure,gcp}/  # Domain JSON (infra + grants per domain; schemas carry classification/PII)
 │   └── prod/                   # prod environment — file-for-file mirror of dev (own config.hcl)
 ├── scripts/                    # Offline governance copilot (no cloud, no creds, CI-gated):
-│   ├── validate_domains.py     #   domain-config schema/consistency/wiring validator
+│   ├── validate_domains.py     #   domain-config schema/consistency/wiring validator (+ optional JSON Schema)
 │   ├── governance_model.py     #   shared parser: domain JSON → objects + grants + classification
-│   ├── policy_analyzer.py      #   deterministic least-privilege / PII gate (fails CI on unacknowledged HIGH)
+│   ├── policy_analyzer.py      #   deterministic least-privilege / PII gate (HIGH-gating); --format sarif, --warn-expiring
 │   ├── governance_report.py    #   generates docs/governance/REPORT.md + grounding pack
+│   ├── governance_metrics.py   #   trendable telemetry → docs/governance/metrics.json (CI --check)
+│   ├── cost_estimate.py        #   multi-cloud + Databricks cost & carbon floor → docs/governance/COST.md (CI --check)
+│   ├── catalog_drift.py        #   reconcile declared grants vs live Unity Catalog (deferred --live)
 │   └── genie_space.py          #   Genie governance-space SQL + grounding-contract instructions (deferred deploy)
-├── docs/governance/            # Generated: REPORT.md (EU-AI-Act/GDPR doc) + governance_context.json + genie/
+├── pipelines/                  # Level B — governance over data in motion (offline, stdlib sqlite3):
+│   ├── generate_data.py        #   deterministic synthetic data shaped by the governance model
+│   ├── medallion.py            #   bronze→silver→gold + cross-cloud KPI table (PII-minimised gold)
+│   ├── profile_data.py         #   observed PII vs declared classification → docs/governance/data_profile.json
+│   └── databricks/             #   the same medallion as Spark SQL for the live platform (deferred)
+├── schema/                     # Versioned JSON Schema (Draft 2020-12) for domain config + IDE autocomplete
+├── policy/opa/                 # Independent OPA/Rego re-implementation of the gating rules (CI cross-check)
+├── docs/adr/                   # Architecture Decision Records (the decision ledger)
+├── docs/governance/            # Generated: REPORT.md + governance_context.json + metrics.json + COST.md + data_profile.json + dashboard/ + genie/
 └── infra/
     ├── aws/modules/            # Pure Terraform modules — no provider.tf, no backend.tf
     ├── azure/modules/
@@ -145,16 +156,19 @@ Domain governance is defined in JSON, loaded natively by Terragrunt, and passed 
 
 ## GitHub Actions workflows
 
-All six workflows live in `.github/workflows/`. The `bootstrap`, `deploy`, and `destroy` workflows target the `dev` GitHub Environment (configure manual approval gates there if needed).
+All nine workflows live in `.github/workflows/`. The `bootstrap`, `deploy`, and `destroy` workflows target the `dev` GitHub Environment (configure manual approval gates there if needed).
 
 | Workflow | File | Trigger | Required secrets |
 |---|---|---|---|
 | Validate | `dbx-validate.yml` | PR touching `infra/**`, `environments/**`, `terragrunt.hcl`, `dbx-validate.yml` | `DBX_DEPLOY_ROLE_ARN` |
-| Config validate | `dbx-config-validate.yml` | PR touching domains/scripts/docs/governance — **no cloud creds**: runs `validate_domains` + the `policy_analyzer` gate + report/Genie `--check` + pytest | — |
+| Config validate | `dbx-config-validate.yml` | PR touching domains/scripts/schema/policy/docs/tests — **no cloud creds**: `validate_domains` + JSON-Schema check, the `policy_analyzer` gate (+ SARIF upload + expiry warning), the OPA/conftest cross-check, report/Genie/metrics/cost/data-profile/dashboard `--check`, and pytest | — |
 | Drift detection | `dbx-drift.yml` | Weekly schedule (+ manual) — `terragrunt run-all plan -detailed-exitcode` per cloud; opens/updates a `drift`-labelled issue | `DBX_DEPLOY_ROLE_ARN` |
 | Bootstrap | `dbx-bootstrap.yml` | Manual (`workflow_dispatch`) | `DBX_DEPLOY_ROLE_ARN` |
 | Deploy | `dbx-deploy.yml` | Manual (`workflow_dispatch`) | `DBX_DEPLOY_ROLE_ARN`, `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID` |
 | Destroy | `dbx-destroy.yml` | Manual — requires typing `DESTROY` to confirm | Same as Deploy |
+| Secret scan | `gitleaks.yml` | PR + push — scans the diff for committed credentials/keys | — |
+| SBOM & supply-chain | `sbom.yml` | Push to main / PR (deps) / weekly — SPDX SBOM (Syft) + CVE scan (Grype) → Security tab | — |
+| Publish dashboard | `pages.yml` | Push to main — rebuilds + publishes the static governance dashboard to GitHub Pages | — |
 
 **Validate** and **Config validate** are the two PR-gating workflows (`dbx-config-validate` is credential-free and also runs the access-policy gate). **Validate** runs in parallel across three jobs:
 - `validate (aws/azure/gcp)` matrix — `terraform fmt`, `terragrunt hclfmt`, `terragrunt validate`, Checkov, tfsec
@@ -181,15 +195,13 @@ make apply-azure     # depends on bootstrap/aws/platform outputs
 make apply-gcp       # depends on both bootstrap/aws/platform and bootstrap/gcp/platform
 ```
 
-### 2. `deployment_id_*` must be rotated after a full destroy
+### 2. Resource names are stable (no `deployment_id` suffix) — mind soft-deletes on re-deploy
 
-`deployment_id_aws`, `deployment_id_azure`, and `deployment_id_gcp` in `config.hcl` are embedded in Databricks object names (catalogs, external locations, storage credentials). After a destroy, some Databricks control-plane objects may linger in a soft-deleted state. Re-deploying with the same suffix causes name-collision errors on those objects.
+Databricks object names (catalogs, external locations, storage credentials) are **stable** — derived from the domain config, with **no** random suffix. This is the production-correct choice: names are meaningful, referenceable, and idempotent.
 
-**Fix:** Update the relevant `deployment_id_*` to a new 8-character hex string before re-deploying:
-```bash
-openssl rand -hex 4   # generates e.g. "a3f9c1b2"
-```
-Then update `config.hcl` and apply. The README has a reminder note for this.
+**Caveat:** after a `destroy`, some Databricks control-plane objects can linger briefly in a soft-deleted state. Re-deploying the **same** stable name before that purges can hit a name-collision. If it happens, wait for the soft-delete to purge (or purge it via the Databricks API) and re-apply.
+
+*(Earlier versions injected a rotating `deployment_id` suffix into every name to sidestep this. That was removed in favour of stable names — see [ADR-0013](docs/adr/0013-stable-names-over-deployment-id-suffix.md).)*
 
 ### 3. `dbx_workspace` and `managed_warehouse` are no-ops in public mode
 
@@ -210,7 +222,7 @@ The `infracost` job in `dbx-validate.yml` runs against `infra/aws/modules`. The 
 - Azure and GCP resources — limited Infracost coverage for those providers
 - Any resources created via `environments/dev/` Terragrunt wiring (no resource definitions there)
 
-The estimate is useful as a floor for infrastructure cost awareness, not a full platform cost projection.
+The estimate is useful as a floor for infrastructure cost awareness, not a full platform cost projection. **These exact gaps are now filled by `scripts/cost_estimate.py`** (offline, deterministic), which prices Databricks compute + all three clouds into one figure and a carbon floor → `docs/governance/COST.md` (CI `--check`).
 
 ### 6. `databricks-platform-v2` appears in git history
 
@@ -234,10 +246,23 @@ Operational notes:
   `"owner"`. Terraform ignores both — the modules consume the JSON via
   `jsondecode` + `merge`/`lookup`, so unknown keys pass through untouched. Adding
   them does **not** change any `apply`.
-- **`docs/governance/` is generated, not hand-written.** `governance_report.py` and
-  `genie_space.py` regenerate it; CI asserts it is in sync (`--check`). After
-  editing any domain JSON, run `make governance-report` and commit the result, or
-  the `--check` step fails.
+- **`docs/governance/` is generated, not hand-written.** `governance_report.py`,
+  `genie_space.py`, `governance_metrics.py`, and `cost_estimate.py` regenerate it
+  (REPORT.md, governance_context.json, genie/, metrics.json, COST.md); CI asserts
+  each is in sync (`--check`). After editing any domain JSON, run
+  `make governance-report` and commit the result, or the `--check` steps fail.
+  `make demo` runs the whole offline pipeline; `make opa` cross-checks the gate
+  with the independent Rego policy in `policy/opa/`.
+
+- **Data pipelines (`pipelines/`) are offline and deterministic.** `make data`
+  generates synthetic data (shaped by the governance model), runs a real
+  bronze→silver→gold medallion in stdlib `sqlite3`, and profiles observed PII
+  against declared classification → `docs/governance/data_profile.json`. The bulk
+  warehouse under `pipelines/data/` is git-ignored; only the deterministic
+  `data_profile.json` and the static `dashboard/index.html` are committed, and CI
+  asserts both are in sync (`--check`). `make dashboard` re-renders the dashboard;
+  `make demo-data` runs the whole Level-A+B flow. On the live platform the same
+  transformations run as Spark SQL (`pipelines/databricks/`, deferred).
 - **Exceptions are time-bound.** `environments/dev/policy_exceptions.json` entries
   have an `expires` date. An expired exception stops suppressing its finding, which
   will then fail CI — that is intentional (it forces re-review), not a bug.

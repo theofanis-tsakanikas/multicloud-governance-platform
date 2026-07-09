@@ -5,7 +5,7 @@ include "root" {
 locals {
   cfg = read_terragrunt_config(find_in_parent_folders("config.hcl")).locals
 
-  spn = jsondecode(run_cmd(
+  spn = jsondecode(run_cmd("--terragrunt-quiet",
     "aws", "secretsmanager", "get-secret-value",
     "--secret-id", local.cfg.spn_secret_id,
     "--query", "SecretString",
@@ -47,5 +47,4 @@ inputs = {
   spn_client_id             = local.spn.client_id
   spn_client_secret         = local.spn.client_secret
   iam_role_arn              = dependency.iam.outputs.iam_role_arn
-  deployment_id_aws         = local.cfg.deployment_id_aws
 }

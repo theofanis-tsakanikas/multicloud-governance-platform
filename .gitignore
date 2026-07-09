@@ -26,6 +26,8 @@ __pycache__/
 venv/
 .venv/
 *.egg-info/
+build/
+dist/
 .pytest_cache/
 .ruff_cache/
 
@@ -35,8 +37,21 @@ Thumbs.db
 
 # IDE
 .idea/
-.vscode/
+# Ignore per-user VS Code state, but keep the shared, repo-wide editor config
+# (domain-JSON schema mapping + recommended extensions) so autocomplete works
+# out of the box. A negation only works if the parent dir isn't itself ignored,
+# hence `.vscode/*` rather than `.vscode/`.
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
 *.swp
+
+# Generated pipeline data (Level B) — bulk warehouse is regenerated on demand;
+# only the deterministic docs/governance/data_profile.json + dashboard are committed.
+pipelines/data/
+
+# 📓 Local notes / study material (PDFs, overview + concepts — local only)
+notes/
 
 # === Pre-publish security baseline (added 2026-06-22) ===
 PRE-PUBLISH.md

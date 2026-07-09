@@ -87,16 +87,42 @@ the risk re-surfaces for review. The committed config carries two: the CRM team
 reading customer PII, and data science reading pseudonymised web PII — each with a
 DPIA reference and an expiry. That is the auditable who/what/why/until.
 
+## Provability, telemetry & FinOps (the layers around the core)
+
+The deterministic core is wrapped in tooling that makes it *provable*, *trackable*,
+and *costed* — all offline:
+
+| Concern | What | Where |
+|---|---|---|
+| **Provably correct** | A golden corpus of crafted violations asserts every rule fires (and clean config stays quiet). | `tests/golden/corpus.json` |
+| **Second opinion** | The three gating rules re-implemented in **OPA/Rego** — two engines must agree the config is clean. | [`policy/opa/`](../../policy/opa/README.md) |
+| **Platform-native findings** | The analyzer emits **SARIF 2.1.0**, so findings appear in the GitHub Security tab with accepted risks shown as suppressions. | `policy_analyzer.py --format sarif` |
+| **Versioned contract** | Domain JSON validated against published **JSON Schema** (+ IDE autocomplete), on top of the structural validator. | [`schema/`](../../schema/README.md) |
+| **Telemetry** | Trendable posture / coverage / PII / exception-timeline metrics — diff governance health between PRs. | [`metrics.json`](metrics.json) |
+| **Cost & carbon** | A multi-cloud + Databricks cost + carbon **floor** that fills Infracost's blind spots. | [`COST.md`](COST.md) |
+| **Live drift** | Reconcile the *declared* grants against the *live* Unity Catalog (deferred — SDK + creds). | `scripts/catalog_drift.py` |
+| **Expiry foresight** | A non-gating warning when an exception is about to expire, before the risk re-opens and breaks a build. | `policy_analyzer.py --warn-expiring` |
+| **Governance over data in motion** | A real bronze→silver→gold medallion (offline sqlite) proves PII-minimisation in gold and reconciles observed PII against the declared classification. | [`pipelines/`](../../pipelines/README.md) → `data_profile.json` |
+| **Self-contained dashboard** | A static, no-JS, no-server page rendering posture / PII / data reconciliation / cost from the committed artifacts; published to GitHub Pages. | [`dashboard/index.html`](dashboard/index.html) |
+
 ## Commands
 
 ```bash
+make demo                 # the entire offline governance pipeline end-to-end (no cloud, ~30s)
+make demo-data            # data in motion: generate → medallion → profile → dashboard
+make dashboard            # render the static governance dashboard (docs/governance/dashboard/)
 make policy-scan          # deterministic analysis; exits non-zero on unacknowledged HIGH
-make governance-report    # regenerate REPORT.md + governance_context.json + Genie artifacts
-make genie-space          # regenerate just the Genie artifacts
+make governance-report    # regenerate REPORT.md + context + metrics + cost + Genie artifacts
+make metrics              # print governance telemetry
+make cost-estimate        # regenerate the cost + carbon floor
+make opa                  # OPA/Rego cross-check (needs conftest)
 
-python scripts/policy_analyzer.py --format json     # machine-readable findings
-python scripts/policy_analyzer.py --strict          # also gate on MEDIUM
-python scripts/governance_report.py --check          # CI: fail if docs drift from config
+python scripts/policy_analyzer.py --format json      # machine-readable findings
+python scripts/policy_analyzer.py --format sarif      # SARIF for the Security tab
+python scripts/policy_analyzer.py --strict            # also gate on MEDIUM
+python scripts/policy_analyzer.py --warn-expiring 30  # warn on soon-to-expire exceptions
+python scripts/governance_report.py --check           # CI: fail if docs drift from config
+python scripts/catalog_drift.py --live                # reconcile vs live UC (needs SDK + creds)
 ```
 
 CI (`.github/workflows/dbx-config-validate.yml`, offline, no cloud creds) runs the

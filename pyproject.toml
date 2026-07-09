@@ -6,10 +6,28 @@
 # It is never invoked by the Terraform/Terragrunt apply path. See docs/TESTING.md.
 
 [project]
-name = "databricks-uc-domain-validator"
-version = "0.1.0"
-description = "Offline pre-flight validator for Databricks UC domain governance JSON config"
+name = "govgate"
+version = "0.2.0"
+description = "Engine-agnostic governance gate: fail a PR on least-privilege / PII violations in Unity Catalog & Snowflake domain grants (SARIF)."
 requires-python = ">=3.9"
+
+# The deterministic access-policy analyzer, packaged as an installable CLI + GitHub Action
+# (actions/govgate). Point it at any repo's environments/*/domains grants JSON; it emits
+# text / JSON / SARIF and exits non-zero on an unacknowledged HIGH finding. The stdlib-only
+# design means zero runtime dependencies. See docs/adr/0012-govgate-packaging.md.
+[project.scripts]
+govgate = "policy_analyzer:main"
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+# The gate is three flat modules under scripts/ (analyzer + model parser + config validator).
+py-modules = ["policy_analyzer", "governance_model", "validate_domains"]
+
+[tool.setuptools.package-dir]
+"" = "scripts"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
