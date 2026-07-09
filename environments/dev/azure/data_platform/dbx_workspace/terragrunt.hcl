@@ -5,7 +5,7 @@ include "root" {
 locals {
   cfg = read_terragrunt_config(find_in_parent_folders("config.hcl")).locals
 
-  spn = jsondecode(run_cmd(
+  spn = jsondecode(run_cmd("--terragrunt-quiet",
     "aws", "secretsmanager", "get-secret-value",
     "--secret-id", local.cfg.spn_secret_id,
     "--query", "SecretString",

@@ -33,7 +33,7 @@ remote_state {
 terraform {
   # Prevent accidental destruction without explicit --terragrunt-no-auto-approve
   extra_arguments "retry_lock" {
-    commands = get_terraform_commands_that_need_locking()
+    commands  = get_terraform_commands_that_need_locking()
     arguments = ["-lock-timeout=20m"]
   }
 }
