@@ -42,3 +42,14 @@ variable "admin_group_name" {
   description = "The display name of the admin group (e.g., 'metastore_admins') used for Unity Catalog grants."
   type        = string
 }
+
+variable "spn_client_id" {
+  description = "Databricks automation SP client id (workspace OAuth)."
+  type        = string
+}
+
+variable "spn_client_secret" {
+  description = "Databricks automation SP client secret (workspace OAuth)."
+  type        = string
+  sensitive   = true
+}

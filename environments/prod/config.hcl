@@ -42,7 +42,7 @@ locals {
   # Bootstrap Secrets ARN (seed credentials for first-time setup)
   seed_credentials_arn = "arn:aws:secretsmanager:eu-central-1:111111111111:secret:databricks/bootstrap/seed_credentials-XXXXXX" # TODO
   seed_credentials_id  = "databricks/bootstrap/seed_credentials"
-  spn_secret_id        = "databricks/spn"
+  spn_secret_id        = "databricks/spn/prod/spn_credentials"
 
   # Bootstrap config
   metastore_iam_role_name      = "dbx-metastore-role"

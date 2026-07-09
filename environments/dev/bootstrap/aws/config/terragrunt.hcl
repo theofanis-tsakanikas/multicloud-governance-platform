@@ -34,9 +34,7 @@ generate "provider_databricks" {
   if_exists = "overwrite_terragrunt"
   contents  = <<-EOF
     provider "databricks" {
-      alias         = "workspace"
       host          = "${dependency.platform.outputs.serverless_workspace_url}"
-      account_id    = "${local.cfg.dbx_account_id}"
       client_id     = var.spn_client_id
       client_secret = var.spn_client_secret
     }
