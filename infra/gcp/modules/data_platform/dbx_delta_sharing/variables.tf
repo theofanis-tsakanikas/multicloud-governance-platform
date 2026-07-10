@@ -65,3 +65,10 @@ variable "gcp_provider_name" {
   type        = string
   description = "The Delta Sharing Organization Name of the GCP Metastore, as it appears in the AWS Providers list."
 }
+# Consumed by the google provider block Terragrunt generates, not by any resource
+# here. Terraform still requires the declaration.
+variable "provider_key" {
+  description = "Seed service-account key JSON used by the generated google provider."
+  type        = string
+  sensitive   = true
+}

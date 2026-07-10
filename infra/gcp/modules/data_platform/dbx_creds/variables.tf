@@ -38,3 +38,11 @@ variable "spn_client_secret" {
   type        = string
   sensitive   = true
 }
+
+# Consumed by the google provider block Terragrunt generates, not by any resource
+# here. Terraform still requires the declaration.
+variable "provider_key" {
+  description = "Seed service-account key JSON used by the generated google provider."
+  type        = string
+  sensitive   = true
+}
