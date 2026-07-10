@@ -13,14 +13,6 @@ locals {
     "--region", local.cfg.aws_region
   ))
 
-  sql_secret = run_cmd("--terragrunt-quiet",
-    "az", "keyvault", "secret", "show",
-    "--vault-name", dependency.foundation.outputs.key_vault_name,
-    "--name", local.cfg.sql_password_name,
-    "--query", "value",
-    "--output", "tsv"
-  )
-
   domain_path        = "${get_terragrunt_dir()}/../../../domains/azure"
   infra              = jsondecode(file("${local.domain_path}/supply_infra.json"))
   federated_catalogs = [for c in local.infra.catalogs : c if c.type == "FEDERATED"]
@@ -62,7 +54,9 @@ inputs = {
   spn_client_secret  = local.spn.client_secret
   sql_server_host    = dependency.mssql.outputs.sql_server_fqdn
   sql_admin_user     = local.cfg.sql_admin_user
-  sql_admin_password = trimspace(local.sql_secret)
+  # Same password, taken from the layer that generates it rather than re-read
+  # from Key Vault at parse time (see the mssql_schemas layer for why).
+  sql_admin_password = dependency.mssql.outputs.sql_admin_password
   sql_password_name  = local.cfg.sql_password_name
   connection_name    = local.federated_catalogs[0].connection_name
   sql_database_name  = local.cfg.sql_database_name
