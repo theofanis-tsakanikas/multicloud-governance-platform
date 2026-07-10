@@ -1,5 +1,25 @@
 name: DBX Platform — Destroy
 
+# Destroy is the mirror of Deploy, and it is not symmetric with it. Two differences
+# drive everything below:
+#
+#   1. It runs the layers in REVERSE. data_platform holds the Databricks objects
+#      that depend on the storage credential, which depends on the IAM role, which
+#      depends on the network. Unwind in the order you wound.
+#
+#   2. Skipping a layer is not free. In a deploy, a skipped layer is one that is
+#      already there. In a destroy, a skipped layer is a live resource whose state
+#      you are about to orphan. Every skip is printed as a warning.
+#
+# `mode: plan` shows exactly what would be removed and removes nothing. For an
+# irreversible operation that is worth more than any resume switch, so it is the
+# default.
+#
+# The bootstrap stack is deliberately NOT destroyable from here. It owns the
+# metastore, the service principal and the secrets every other layer authenticates
+# with; unwinding it is a different and riskier operation than unwinding a cloud
+# stack, and it is not part of the deploy/destroy loop this workflow serves.
+
 on:
   workflow_dispatch:
     inputs:
@@ -8,15 +28,26 @@ on:
         required: true
         type: choice
         options: [aws, azure, gcp]
-      layer:
-        description: "Specific layer (optional). Empty = full stack destroy."
+
+      mode:
+        description: "plan = show what would be destroyed, change nothing. destroy = do it."
+        required: true
+        type: choice
+        options: [plan, destroy]
+        default: plan
+
+      start_from:
+        description: "Begin at this layer and continue DOWNWARDS to foundation. Layers above it are left standing."
+        required: true
+        type: choice
+        options: [data_platform, integration, storage, security, network, foundation]
+        default: data_platform
+
+      confirm:
+        description: "Type DESTROY to confirm (ignored when mode = plan)"
         required: false
         type: string
         default: ""
-      confirm:
-        description: "Type DESTROY to confirm"
-        required: true
-        type: string
 
 permissions:
   id-token: write
@@ -33,21 +64,37 @@ jobs:
     steps:
       - name: Check confirmation
         run: |
+          if [ "${{ inputs.mode }}" = "plan" ]; then
+            echo "::notice::mode=plan — nothing will be destroyed."
+            exit 0
+          fi
           if [ "${{ inputs.confirm }}" != "DESTROY" ]; then
-            echo "::error::You must type DESTROY exactly to proceed."
+            echo "::error::mode=destroy requires typing DESTROY exactly."
             exit 1
           fi
-          echo "Confirmation accepted. Proceeding with destroy of ${{ inputs.cloud }}/${{ inputs.layer || 'full stack' }}."
+          echo "::warning::Destroying ${{ inputs.cloud }} from ${{ inputs.start_from }} downwards."
 
   destroy:
-    name: Destroy ${{ inputs.cloud }} ${{ inputs.layer || '(full stack)' }}
+    name: ${{ inputs.mode }} ${{ inputs.cloud }} from ${{ inputs.start_from }}
     runs-on: ubuntu-latest
     needs: guard
     environment: dev
 
+    env:
+      # snowflake_governance lives under aws/data_platform, so an AWS destroy has to
+      # authenticate to Snowflake exactly as the AWS deploy does. Without these the
+      # provider fails before it can drop the database, the roles or the resource
+      # monitor — leaving them orphaned, and the monitor still counting credits.
+      SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+      SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+      SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+
     steps:
       - uses: actions/checkout@v4
 
+      # Required for every cloud, not just AWS: remote state lives in S3, and the
+      # Azure and GCP seed credentials are read from AWS Secrets Manager at parse
+      # time (CLAUDE.md gotcha #5).
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -65,19 +112,34 @@ jobs:
       - name: Setup Terraform + Terragrunt
         run: |
           wget -q "https://releases.hashicorp.com/terraform/${{ env.TF_VERSION }}/terraform_${{ env.TF_VERSION }}_linux_amd64.zip" -O tf.zip
-          unzip -q tf.zip && mv terraform /usr/local/bin/
+          unzip -q tf.zip && sudo mv terraform /usr/local/bin/
           wget -q "https://github.com/gruntwork-io/terragrunt/releases/download/v${{ env.TERRAGRUNT_VERSION }}/terragrunt_linux_amd64" \
-            -O /usr/local/bin/terragrunt
-          chmod +x /usr/local/bin/terragrunt
+            -O tg && chmod +x tg && sudo mv tg /usr/local/bin/terragrunt
 
-      - name: Destroy — ${{ inputs.cloud }} ${{ inputs.layer || 'full stack' }}
-        working-directory: environments/dev/${{ inputs.cloud }}/${{ inputs.layer }}
+      - name: ${{ inputs.mode }} — ${{ inputs.cloud }}
+        working-directory: environments/dev/${{ inputs.cloud }}
         run: |
-          if [ -n "${{ inputs.layer }}" ]; then
-            terragrunt destroy --terragrunt-non-interactive -auto-approve
-          else
-            terragrunt run-all destroy --terragrunt-non-interactive -auto-approve
-          fi
+          # Reverse of the deploy order. run-all resolves the fine-grained order
+          # inside each directory from the dependency graph.
+          LAYERS="data_platform integration storage security network foundation"
+
+          reached=0
+          for dir in $LAYERS; do
+            if [ "$dir" = "${{ inputs.start_from }}" ]; then reached=1; fi
+            if [ "$reached" -eq 0 ]; then
+              echo "::warning::LEFT STANDING: $dir (start_from=${{ inputs.start_from }}). Its resources still exist."
+              continue
+            fi
+            [ -d "$dir" ] || { echo "::notice::no $dir layer in ${{ inputs.cloud }}"; continue; }
+
+            echo "::group::${{ inputs.mode }} $dir"
+            if [ "${{ inputs.mode }}" = "plan" ]; then
+              terragrunt run-all plan -destroy --terragrunt-non-interactive --terragrunt-working-dir "$dir"
+            else
+              terragrunt run-all destroy --terragrunt-non-interactive -auto-approve --terragrunt-working-dir "$dir"
+            fi
+            echo "::endgroup::"
+          done
         env:
           ARM_USE_OIDC: ${{ inputs.cloud == 'azure' }}
           ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
@@ -85,10 +147,25 @@ jobs:
           ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Summary
+        if: always()
         run: |
-          echo "### Destroy Complete" >> $GITHUB_STEP_SUMMARY
-          echo "- Cloud: **${{ inputs.cloud }}**" >> $GITHUB_STEP_SUMMARY
-          echo "- Layer: **${{ inputs.layer || 'full stack' }}**" >> $GITHUB_STEP_SUMMARY
-          echo "- Triggered by: **${{ github.actor }}**" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "> Update \`deployment_id_${{ inputs.cloud }}\` in \`config.hcl\` before re-deploying." >> $GITHUB_STEP_SUMMARY
+          {
+            echo "### ${{ inputs.mode }} — ${{ inputs.cloud }}"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Cloud | \`${{ inputs.cloud }}\` |"
+            echo "| Mode | \`${{ inputs.mode }}\` |"
+            echo "| Started at | \`${{ inputs.start_from }}\` (and downwards) |"
+            echo "| Triggered by | @${{ github.actor }} |"
+            echo ""
+            if [ "${{ inputs.mode }}" = "destroy" ]; then
+              echo "> Databricks object names are stable (ADR-0013). After a destroy some"
+              echo "> control-plane objects linger briefly in a soft-deleted state, so"
+              echo "> re-deploying the same name immediately can collide. Wait for the purge,"
+              echo "> or purge via the API."
+              echo ">"
+              echo "> The bootstrap stack was not touched: it still owns the metastore, the"
+              echo "> service principal and the secrets."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
