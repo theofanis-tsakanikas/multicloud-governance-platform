@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-28",
+  "generated_at": "2026-07-10",
   "summary": {
     "clouds": [
       "AWS",
@@ -11,8 +11,8 @@
       "supply_chain",
       "marketing"
     ],
-    "object_count": 29,
-    "grant_count": 66,
+    "object_count": 30,
+    "grant_count": 70,
     "pii_objects": 2,
     "policy_counts": {
       "HIGH": 0,
@@ -173,6 +173,15 @@
       "object_type": "schema",
       "name": "supplies_azure.silver",
       "classification": "confidential",
+      "owner": null,
+      "catalog_type": "MANAGED"
+    },
+    {
+      "cloud": "AZURE",
+      "domain": "supply_chain",
+      "object_type": "schema",
+      "name": "supplies_azure.gold",
+      "classification": "internal",
       "owner": null,
       "catalog_type": "MANAGED"
     },
@@ -864,6 +873,59 @@
         "ALL_PRIVILEGES"
       ],
       "classification": "confidential",
+      "reads_data": false
+    },
+    {
+      "cloud": "AZURE",
+      "domain": "supply_chain",
+      "object_type": "schema",
+      "object": "supplies_azure.gold",
+      "principal": "data_engineers",
+      "privileges": [
+        "USE_SCHEMA",
+        "CREATE_TABLE",
+        "SELECT",
+        "MODIFY"
+      ],
+      "classification": "internal",
+      "reads_data": true
+    },
+    {
+      "cloud": "AZURE",
+      "domain": "supply_chain",
+      "object_type": "schema",
+      "object": "supplies_azure.gold",
+      "principal": "analysts",
+      "privileges": [
+        "USE_SCHEMA",
+        "SELECT"
+      ],
+      "classification": "internal",
+      "reads_data": true
+    },
+    {
+      "cloud": "AZURE",
+      "domain": "supply_chain",
+      "object_type": "schema",
+      "object": "supplies_azure.gold",
+      "principal": "business_users",
+      "privileges": [
+        "USE_SCHEMA",
+        "SELECT"
+      ],
+      "classification": "internal",
+      "reads_data": true
+    },
+    {
+      "cloud": "AZURE",
+      "domain": "supply_chain",
+      "object_type": "schema",
+      "object": "supplies_azure.gold",
+      "principal": "metastore_admins",
+      "privileges": [
+        "ALL_PRIVILEGES"
+      ],
+      "classification": "internal",
       "reads_data": false
     },
     {

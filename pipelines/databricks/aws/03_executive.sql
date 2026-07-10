@@ -18,7 +18,7 @@ sales AS (
 ),
 supply AS (
   SELECT region, avg_lead_days, inventory_units, below_reorder_pct
-  FROM   supplies_azure.silver.supply_by_region
+  FROM   supplies_azure.gold.supply_by_region
 )
 SELECT
   s.region,
@@ -30,7 +30,13 @@ SELECT
     WHEN sup.avg_lead_days > 20 AND sup.below_reorder_pct > 40 THEN 'HIGH'
     WHEN sup.avg_lead_days > 15 OR  sup.below_reorder_pct > 25 THEN 'MEDIUM'
     ELSE 'LOW'
-  END AS stockout_risk
+  END AS stockout_risk,
+  -- The number an executive acts on: revenue sitting behind a fragile supply chain.
+  ROUND(s.revenue * CASE
+    WHEN sup.avg_lead_days > 20 AND sup.below_reorder_pct > 40 THEN 1.00
+    WHEN sup.avg_lead_days > 15 OR  sup.below_reorder_pct > 25 THEN 0.40
+    ELSE 0.00
+  END, 2) AS revenue_at_risk
 FROM sales s
 JOIN mktg   m   ON m.region   = s.region
 JOIN supply sup ON sup.region = s.region

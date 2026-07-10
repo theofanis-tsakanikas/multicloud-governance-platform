@@ -37,7 +37,7 @@ governance_dashboard.py  →  docs/governance/dashboard/index.html  (Level A)
 | Step | Governance claim it turns into a checked fact |
 |---|---|
 | `generate_data.py` | Data shape is **derived from the governance model**, not invented — a `pii` schema gets real PII columns. |
-| `medallion.py` (silver→gold) | **PII-minimisation**: email/phone/IP live in silver and are projected away at gold. |
+| `medallion.py` (silver→gold) | **PII-minimisation**: the `pii`-classified source schemas carry email/phone/IP, and gold projects them away. |
 | `medallion.py` (`global_kpis`) | **One plane across clouds**: GCP marketing gold joins AWS sales gold — Delta Sharing, executed (see [ADR-0009](../docs/adr/0009-cross-cloud-delta-sharing.md)). |
 | `profile_data.py` | **Declared vs observed**: detects PII in the actual data and reconciles it against the declared `classification` — catching drift a declaration-only model can't. |
 
@@ -65,9 +65,21 @@ One-click via a **Databricks Asset Bundle** ([`databricks/databricks.yml`](datab
 creates the Jobs; then you click **Run** (or `./bundle.sh run aws`). Two workspaces
 (separate Databricks accounts), so two jobs:
 
+On the live platform the PII boundary is drawn one step earlier than it is offline,
+and more strongly: **the PII never enters the lakehouse at all**. `sales_aws.bronze`
+is a federated read of `sales_rds_fed.orders` (no identities); silver joins
+`sales_rds_fed.crm` only for `segment` and signup cohort. To reach an identity you
+query the FOREIGN catalog directly, where `crm` is `pii` and granted to
+`crm_managers` alone. Declared classification and observed data therefore agree —
+declare `sales_aws.silver` as `pii` and the analyzer gate fails, as it should.
+
+The source system seeds itself ([`sources/rds/seed.sql`](sources/rds/seed.sql),
+ADR-0014); the platform never runs DDL against it.
+
 | Path | Role |
 |---|---|
-| `databricks/aws/01_seed.sql`, `02_medallion.sql`, `03_executive.sql` | seed → medallion → **executive cross-cloud view** (sales + supply + Delta-shared marketing) |
+| `sources/rds/seed.sql` | the **simulated OLTP source** — 800 customers (PII) + 6 000 orders, deterministic |
+| `databricks/aws/01_seed.sql`, `02_medallion.sql`, `03_executive.sql` | federated ingest → medallion → **executive cross-cloud view** (sales + supply + Delta-shared marketing) |
 | `databricks/aws/04_dashboard_queries.sql` | tiles for the Databricks **AI/BI dashboard** |
 | `databricks/aws/results_notebook.py` | presentation notebook — **only queries the gold tables** (the recording), with inline charts |
 | `databricks/gcp/01_seed.sql`, `02_medallion.sql` | marketing bronze→silver→gold (then Delta-shared to AWS) |

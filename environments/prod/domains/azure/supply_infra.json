@@ -5,13 +5,13 @@
   "managed_storage_root": "supply-chain/managed/",
   "external_locations": [
     {
-      "location_name": "loc_supply_raw", 
+      "location_name": "loc_supply_raw",
       "container": "databricks-project",
       "path": "supply-chain/raw/"
     },
     {
       "location_name": "loc_supply_managed",
-      "container": "databricks-project", 
+      "container": "databricks-project",
       "path": "supply-chain/managed/"
     }
   ],
@@ -26,15 +26,24 @@
         {
           "schema_name": "bronze",
           "classification": "confidential",
-          "volumes": [{
-            "volume_name": "supplies_landing_zone",
-            "container": "databricks-project",
-            "location_path": "supply-chain/raw/",
-            "volume_path": "landing/",
-            "volume_type": "EXTERNAL"
-            }]
+          "volumes": [
+            {
+              "volume_name": "supplies_landing_zone",
+              "container": "databricks-project",
+              "location_path": "supply-chain/raw/",
+              "volume_path": "landing/",
+              "volume_type": "EXTERNAL"
+            }
+          ]
         },
-        {"schema_name": "silver", "classification": "confidential"}
+        {
+          "schema_name": "silver",
+          "classification": "confidential"
+        },
+        {
+          "schema_name": "gold",
+          "classification": "internal"
+        }
       ]
     },
     {
@@ -44,8 +53,14 @@
       "connection_name": "azure_sql_conn",
       "database_name": "sqldb-product-catalog",
       "schemas": [
-        { "schema_name": "inventory", "classification": "confidential" },
-        { "schema_name": "orders", "classification": "confidential" }
+        {
+          "schema_name": "inventory",
+          "classification": "confidential"
+        },
+        {
+          "schema_name": "orders",
+          "classification": "confidential"
+        }
       ]
     }
   ]

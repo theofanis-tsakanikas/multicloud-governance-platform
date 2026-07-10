@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-06-28",
+  "generated_at": "2026-07-10",
   "summary": {
-    "governed_schemas": 12,
-    "rows_profiled": 1440,
+    "governed_schemas": 13,
+    "rows_profiled": 1560,
     "schemas_with_pii": 2,
     "classification_drift": 0,
     "gold_tables": 7,
@@ -64,6 +64,15 @@
       "rows": 120,
       "columns": 5,
       "declared_classification": "confidential",
+      "observed_pii_columns": [],
+      "consistent": true
+    },
+    {
+      "cloud": "AZURE",
+      "schema": "supplies_azure.gold",
+      "rows": 120,
+      "columns": 4,
+      "declared_classification": "internal",
       "observed_pii_columns": [],
       "consistent": true
     },

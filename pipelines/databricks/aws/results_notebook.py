@@ -69,8 +69,24 @@
 
 # COMMAND ----------
 # MAGIC %md
-# MAGIC ### (optional contrast) the PII *is* there in silver — governed, not lost
+# MAGIC ### …and neither does silver. The PII never entered the lakehouse at all.
 # COMMAND ----------
 # MAGIC %sql
-# MAGIC SELECT customer_id, region, customer_email   -- email present in silver, absent in gold
-# MAGIC FROM sales_aws.silver.sales_clean LIMIT 5;
+# MAGIC -- Expect ZERO rows here too: silver holds a pseudonymous customer_id and a
+# MAGIC -- segment, never an identity.
+# MAGIC SELECT table_name, column_name
+# MAGIC FROM sales_aws.information_schema.columns
+# MAGIC WHERE table_schema = 'silver'
+# MAGIC   AND lower(column_name) RLIKE 'email|phone|ssn|full_name';
+
+# COMMAND ----------
+# MAGIC %md
+# MAGIC ### The identities exist — in the source system, queried in place
+# MAGIC `sales_rds_fed` is a FEDERATED catalog over the live Postgres. Its `crm`
+# MAGIC schema is classified `pii` and granted only to `crm_managers`. Nothing was
+# MAGIC copied; Unity Catalog enforces the boundary at query time.
+# COMMAND ----------
+# MAGIC %sql
+# MAGIC SELECT segment, count(*) AS customers   -- aggregate only; no identity leaves the source
+# MAGIC FROM sales_rds_fed.crm.customers
+# MAGIC GROUP BY segment ORDER BY customers DESC;

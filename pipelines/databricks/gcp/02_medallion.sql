@@ -1,14 +1,15 @@
 -- ============================================================================
 -- GCP · 02 MEDALLION  ·  bronze → silver → gold for marketing
--- Governance proof: PII (user_email, ip_address) stays in SILVER, dropped in GOLD.
+-- Governance proof: no PII is written here at all. Identities stay in the federated
+-- source `marketing_bq_fed.web` (classified `pii`), queried in place, never copied.
 -- gold_marketing_by_region is then Delta-shared to the AWS metastore.
 -- ============================================================================
 
--- ---- silver (KEEPS user_email + ip_address — governed) ----
+-- ---- silver (pseudonymous: visitor_id, never an identity) ----
 CREATE OR REPLACE TABLE marketing_gcp.intelligence.web_clean AS
 SELECT DISTINCT
   session_id, region,
-  user_email, ip_address,               -- PII
+  visitor_id,                           -- pseudonym; the identity behind it is in marketing_bq_fed.web
   campaign_id, CAST(spend AS DOUBLE) AS spend, event_date
 FROM marketing_gcp.intelligence.web_raw
 WHERE region IS NOT NULL;
@@ -22,4 +23,4 @@ SELECT region,
 FROM marketing_gcp.intelligence.web_clean
 GROUP BY region;
 
--- Proof: DESCRIBE marketing_gcp.intelligence.gold_marketing_by_region;  -- no email / ip
+-- Proof: DESCRIBE marketing_gcp.intelligence.web_clean;  -- no email / ip, even in silver

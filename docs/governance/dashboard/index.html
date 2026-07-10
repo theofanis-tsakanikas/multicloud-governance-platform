@@ -3,7 +3,7 @@
 <title>Governance Dashboard — Multi-Cloud Governance Platform</title>
 <style>:root{--bg:#0d1426;--panel:#141d33;--ink:#e7ecf5;--mut:#8a9bc0;--line:#23304a}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}.wrap{max-width:1080px;margin:0 auto;padding:32px 20px 64px}h1{font-size:26px;margin:0 0 4px}h2{font-size:16px;margin:32px 0 12px;color:var(--mut);text-transform:uppercase;letter-spacing:.06em}.sub{color:var(--mut);margin:0 0 8px}.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}.num{font-size:30px;font-weight:700;line-height:1} .lbl{color:var(--mut);font-size:13px;margin-top:6px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px}.bar{width:100%;height:8px;display:block;margin:6px 0 2px}table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}th{color:var(--mut);font-weight:600} code{background:#1b2640;padding:1px 6px;border-radius:5px;font-size:13px}.pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:600}.ok{background:#10341f;color:#3ddc97} .bad{background:#3a1620;color:#ff5c5c} .warn{background:#3a2e12;color:#f5c451}.two{display:grid;gap:14px;grid-template-columns:1fr 1fr} @media(max-width:720px){.two{grid-template-columns:1fr}}.foot{color:var(--mut);font-size:13px;margin-top:40px;border-top:1px solid var(--line);padding-top:16px}</style></head><body><div class='wrap'>
 <h1>Multi-Cloud Governance Dashboard</h1>
-<p class='sub'>One governance plane across <b>AWS, AZURE, GCP</b> · 3 domains · 29 governed objects · 66 grants</p>
+<p class='sub'>One governance plane across <b>AWS, AZURE, GCP</b> · 3 domains · 30 governed objects · 70 grants</p>
 <p><span class='pill ok'>GATE: PASSING</span> &nbsp; <span class='sub'>deterministic least-privilege / PII analysis</span></p>
 <h2>Policy posture</h2><div class='grid'>
 <div class="card"><div class="num" style="color:#3ddc97">0</div><div class="lbl">Gating (unack. HIGH)</div></div>
@@ -13,7 +13,7 @@
 <div class="card"><div class="num" style="color:#8a9bc0">2</div><div class="lbl">Accepted risks</div></div>
 </div>
 <h2>Governance coverage</h2><div class='two'>
-<div class='panel'><b>100.0%</b> schemas classified <span class='sub'>(12/12)</span><svg viewBox="0 0 100 8" preserveAspectRatio="none" class="bar"><rect width="100" height="8" rx="4" fill="#23304a"/><rect width="100.0" height="8" rx="4" fill="#3ddc97"/></svg></div>
+<div class='panel'><b>100.0%</b> schemas classified <span class='sub'>(13/13)</span><svg viewBox="0 0 100 8" preserveAspectRatio="none" class="bar"><rect width="100" height="8" rx="4" fill="#23304a"/><rect width="100.0" height="8" rx="4" fill="#3ddc97"/></svg></div>
 <div class='panel'><b>100.0%</b> catalogs owned <span class='sub'>(6/6)</span><svg viewBox="0 0 100 8" preserveAspectRatio="none" class="bar"><rect width="100" height="8" rx="4" fill="#23304a"/><rect width="100.0" height="8" rx="4" fill="#7aa2f7"/></svg></div>
 </div>
 <h2>PII map — where personal data lives & who reads it</h2><div class='panel'><table>
@@ -23,14 +23,14 @@
 </table></div>
 <h2>Data reconciliation — declared vs observed</h2>
 <div class='grid'>
-<div class="card"><div class="num" style="color:#e7ecf5">1,440</div><div class="lbl">Rows profiled</div></div>
-<div class="card"><div class="num" style="color:#e7ecf5">12</div><div class="lbl">Governed schemas</div></div>
+<div class="card"><div class="num" style="color:#e7ecf5">1,560</div><div class="lbl">Rows profiled</div></div>
+<div class="card"><div class="num" style="color:#e7ecf5">13</div><div class="lbl">Governed schemas</div></div>
 <div class="card"><div class="num" style="color:#f5c451">2</div><div class="lbl">Schemas with PII</div></div>
 <div class="card"><div class="num" style="color:#e7ecf5">7</div><div class="lbl">Gold tables</div></div>
 </div>
 <p style='margin-top:12px'>Gold layer: <span class='pill ok'>PII-minimised</span> &nbsp; Classification: <span class='pill ok'>no drift</span> <span class='sub'>(observed PII columns match their declared classification)</span></p>
 <h2>Accepted risks &amp; exception timeline</h2><div class='panel'>
-<p class='sub'>2 documented exceptions · 0 expire ≤30d · 0 ≤60d · 0 ≤90d · 0 expired</p>
+<p class='sub'>2 documented exceptions · 0 expire ≤30d · 0 ≤60d · 1 ≤90d · 0 expired</p>
 <table><tr><th>Rule</th><th>Object</th><th>Principal</th><th>Justification</th></tr>
 <tr><td>PII_BROAD_READ</td><td><code>schema:sales_rds_fed.crm</code></td><td>crm_managers</td><td>CRM operations team requires read access to customer records to service accounts. Access is read-only (SELECT), scoped to the crm_managers group, and covered by DPIA-2026-014.</td></tr>
 <tr><td>PII_BROAD_READ</td><td><code>schema:marketing_bq_fed.web</code></td><td>data_scientists</td><td>Web analytics PII is pseudonymised at source; data scientists use it for aggregate modelling only. Accepted risk pending the migration to a fully anonymised feature view (tracked in DPIA-2026-021).</td></tr>

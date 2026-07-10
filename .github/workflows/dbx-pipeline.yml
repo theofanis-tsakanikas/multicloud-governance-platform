@@ -77,6 +77,24 @@ jobs:
           echo "DATABRICKS_${CLOUD^^}_HOST=$HOST"     >> "$GITHUB_ENV"
           echo "WAREHOUSE_ID=$WID"                    >> "$GITHUB_ENV"
 
+      # The simulated source system seeds itself (ADR-0014). It is not part of the
+      # governance platform, so it runs here rather than in Terraform — and it must
+      # run before the medallion, whose bronze layer reads it through the FOREIGN
+      # catalog `sales_rds_fed`. Idempotent: the script drops and recreates.
+      - name: Seed the source system (Postgres)
+        if: ${{ inputs.cloud == 'aws' }}
+        run: |
+          set -euo pipefail
+          PGHOST=$(aws rds describe-db-instances --db-instance-identifier sales-db-instance \
+            --query 'DBInstances[0].Endpoint.Address' --output text)
+          PGPASSWORD=$(aws secretsmanager get-secret-value --secret-id "sales/rds-secret" \
+            --query SecretString --output text | jq -r .password)
+          echo "::add-mask::$PGPASSWORD"
+          export PGHOST PGPASSWORD PGSSLMODE=require
+          psql -U sales_admin -d salesdb -v ON_ERROR_STOP=1 -q -f pipelines/sources/rds/seed.sql
+          psql -U sales_admin -d salesdb -c \
+            "SELECT 'customers' AS t, count(*) FROM crm.customers UNION ALL SELECT 'orders', count(*) FROM orders.orders;"
+
       - name: Deploy the bundle (creates notebooks + jobs in the workspace)
         working-directory: pipelines/databricks
         run: databricks bundle deploy -t ${{ inputs.cloud }} --var "warehouse_id=${WAREHOUSE_ID}"

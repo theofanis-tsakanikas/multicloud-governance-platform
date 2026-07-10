@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-28",
+  "generated_at": "2026-07-10",
   "posture": {
     "open_high": 0,
     "open_medium": 6,
@@ -9,8 +9,8 @@
     "gating": 0
   },
   "coverage": {
-    "schemas": 12,
-    "schemas_classified": 12,
+    "schemas": 13,
+    "schemas_classified": 13,
     "schemas_classified_pct": 100.0,
     "catalogs": 6,
     "catalogs_owned": 6,
@@ -31,14 +31,14 @@
       "supply_chain",
       "marketing"
     ],
-    "objects": 29,
-    "grants": 66
+    "objects": 30,
+    "grants": 70
   },
   "exceptions": {
     "total": 2,
     "expired": 0,
     "expiring_within_30d": 0,
     "expiring_within_60d": 0,
-    "expiring_within_90d": 0
+    "expiring_within_90d": 1
   }
 }
