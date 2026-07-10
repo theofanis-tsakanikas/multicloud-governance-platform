@@ -37,11 +37,10 @@ resource "azurerm_key_vault_access_policy" "main_access" {
   storage_permissions = ["Get"]
 }
 
-# Grants modern Azure RBAC permissions for secret consumption
-resource "azurerm_role_assignment" "databricks_kv_access" {
-  for_each = toset(local.privileged_ids)
-
-  scope                = azurerm_key_vault.main.id
-  role_definition_name = "Key Vault Secrets User"
-  principal_id         = each.value
-}
+# NOTE: no azurerm_role_assignment here.
+#
+# This vault is access-policy based -- `enable_rbac_authorization` is unset, which
+# means false -- so the access policies above are what actually govern access. A
+# "Key Vault Secrets User" role assignment would grant nothing extra, while
+# requiring `Microsoft.Authorization/roleAssignments/write` from whoever runs the
+# apply. Least privilege applies to the deployer too.

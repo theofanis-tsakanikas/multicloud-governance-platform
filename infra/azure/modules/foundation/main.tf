@@ -10,6 +10,10 @@ resource "random_id" "kv_suffix" {
   byte_length = 3
 }
 
+resource "random_id" "adls_suffix" {
+  byte_length = 4
+}
+
 locals {
   # Key Vault names are globally unique DNS names AND are soft-deleted for 90 days
   # on destroy. A stable name would therefore block the next deploy for three
@@ -17,6 +21,10 @@ locals {
   # where global uniqueness forces a suffix (buckets, SQL servers) — this is that
   # case, and the soft-delete window makes it not merely nice but necessary.
   key_vault_name = "${var.prefix_key_vault_name}-${var.environment}-${random_id.kv_suffix.hex}"
+
+  # Storage account names are globally unique DNS labels, lowercase alphanumeric,
+  # 3-24 chars. "adls" is unsurprisingly already taken by someone. 4 + 8 = 12.
+  adls_name = "${var.adls_name}${random_id.adls_suffix.hex}"
 }
 
 module "resource_group" {
@@ -27,7 +35,7 @@ module "resource_group" {
 
 module "adls_account" {
   source                  = "./adls_account"
-  adls_name               = var.adls_name
+  adls_name               = local.adls_name
   azure_containers        = var.azure_containers
   resource_group_name     = module.resource_group.resource_group_name
   resource_group_location = var.location
