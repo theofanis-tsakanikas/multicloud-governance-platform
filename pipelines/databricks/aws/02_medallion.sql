@@ -14,20 +14,37 @@
 -- ============================================================================
 
 -- ---- sales silver: clean orders, enriched with the pseudonymous customer dim ----
+-- Four transformations, each rejecting or repairing real defects in the source:
+--   1. DISTINCT            -> collapses the 40 replayed orders
+--   2. region IS NOT NULL  -> drops ~120 orders whose region never resolved
+--   3. amount > 0          -> drops ~61 refunds/cancellations (not revenue)
+--   4. COALESCE(segment)   -> keeps ~28 orphan orders (customer erased) as 'unknown'
+--                             rather than silently dropping revenue on a join miss
 CREATE OR REPLACE TABLE sales_aws.silver.sales_clean AS
 SELECT DISTINCT
   o.order_id,
   o.region,
   o.customer_id,
-  c.segment,                                    -- enterprise | mid_market | smb
-  YEAR(c.signup_date) AS signup_year,           -- cohort, not an identifier
+  COALESCE(c.segment, 'unknown')      AS segment,      -- enterprise | mid_market | smb | unknown
+  YEAR(c.signup_date)                 AS signup_year,  -- cohort, not an identifier
   o.product_sku,
-  CAST(o.amount AS DOUBLE) AS amount,
+  CAST(o.amount AS DOUBLE)            AS amount,
   o.order_date
 FROM sales_aws.bronze.sales_raw AS o
 LEFT JOIN sales_rds_fed.crm.customers AS c      -- federated join; PII columns NOT selected
        ON c.customer_id = o.customer_id
 WHERE o.region IS NOT NULL AND o.amount > 0;
+
+-- ---- data quality: what silver rejected, and why (auditable, not hidden) ----
+CREATE OR REPLACE TABLE sales_aws.silver.sales_rejects AS
+SELECT 'null_region'      AS reason, COUNT(*) AS rows FROM sales_aws.bronze.sales_raw WHERE region IS NULL
+UNION ALL
+SELECT 'non_positive_amount', COUNT(*) FROM sales_aws.bronze.sales_raw WHERE amount <= 0
+UNION ALL
+SELECT 'duplicate_replay', (SELECT COUNT(*) FROM sales_aws.bronze.sales_raw)
+                         - (SELECT COUNT(*) FROM (SELECT DISTINCT * FROM sales_aws.bronze.sales_raw))
+UNION ALL
+SELECT 'orphan_customer', COUNT(*) FROM sales_aws.silver.sales_clean WHERE segment = 'unknown';
 
 -- ---- gold 1 · revenue by region — "where is the money?" ----
 CREATE OR REPLACE TABLE sales_aws.gold.sales_by_region AS

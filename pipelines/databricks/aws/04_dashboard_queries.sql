@@ -2,9 +2,9 @@
 -- AWS · 04 DASHBOARD QUERIES  ·  tiles for the Databricks AI/BI Dashboard
 -- SQL Editor → paste query → Run → add to an AI/BI Dashboard. Zero PII exposed.
 --
--- Every tile answers a decision, not a curiosity. The last three are the
--- governance proof: gold carries no PII, silver carries none either, and the PII
--- that does exist never left the source system.
+-- Every tile answers a decision, not a curiosity. Tile 10 audits data quality;
+-- the last three are the governance proof: gold carries no PII, silver carries
+-- none either, and the PII that does exist never left the source system.
 -- ============================================================================
 
 -- TILE 1 · Revenue by region                          [BAR: x=region, y=revenue]
@@ -50,18 +50,24 @@ SELECT region, marketing_spend, sessions, revenue, orders, marketing_roi,
        avg_lead_days, inventory_units, stockout_risk, revenue_at_risk
 FROM sales_aws.gold.executive_cross_cloud ORDER BY revenue DESC;
 
+-- TILE 10 · Data quality — what silver rejected, and why   [BAR: x=reason, y=rows]
+-- The source is a real OLTP system: it replays orders, loses regions, issues
+-- refunds, and erases customers. Bronze copies it faithfully; silver rejects on
+-- the record. 6 040 bronze rows -> 5 820 silver rows.
+SELECT reason, rows FROM sales_aws.silver.sales_rejects ORDER BY rows DESC;
+
 -- ─────────────────────────── GOVERNANCE PROOF ───────────────────────────────
 
--- TILE 10 · Gold carries zero PII                     [TABLE, expect 0 rows]
+-- TILE 11 · Gold carries zero PII                     [TABLE, expect 0 rows]
 SELECT table_name, column_name FROM sales_aws.information_schema.columns
 WHERE table_schema = 'gold' AND lower(column_name) RLIKE 'email|phone|ip|ssn|name';
 
--- TILE 11 · Neither does SILVER — the PII never entered the lakehouse
+-- TILE 12 · Neither does SILVER — the PII never entered the lakehouse
 --                                                     [TABLE, expect 0 rows]
 SELECT table_name, column_name FROM sales_aws.information_schema.columns
 WHERE table_schema = 'silver' AND lower(column_name) RLIKE 'email|phone|ssn|full_name';
 
--- TILE 12 · …because it is still in the source system, governed in place
+-- TILE 13 · …because it is still in the source system, governed in place
 -- The identities exist and are queryable — through the FEDERATED catalog, where
 -- `sales_rds_fed.crm` is classified `pii` and granted only to crm_managers.
 -- Run this as an analyst and it fails: that is the boundary doing its job.

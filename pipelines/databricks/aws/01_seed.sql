@@ -18,9 +18,21 @@
 -- deployed yet; once it is, this becomes a read from `supply_sql_master`.
 
 -- ------------------------------------------------ sales bronze (AWS, federated)
--- A plain SELECT across a FOREIGN catalog. Filters and projections push down to
--- Postgres; only the selected columns cross the wire. No data is duplicated at
--- the source.
+-- Be precise about what moves and what does not.
+--
+--   * This CTAS *does* copy: 6 040 order rows are read out of Postgres and
+--     written as a Delta table under the catalog's storage_root in S3
+--     (databricks-project/sales/managed-zone/). Bronze is a real, materialised
+--     copy — that is what an ingest layer is.
+--   * What never moves is the PII. `crm.customers` is not read here at all, and
+--     where silver joins it, only `segment` and the signup year are projected.
+--   * An ad-hoc query against `sales_rds_fed` (e.g. dashboard tile 13) moves
+--     nothing at all: the filter and aggregate push down and only the result
+--     rows come back.
+--
+-- Bronze is a faithful copy: no filtering, no de-duplication. The source is
+-- dirty on purpose (NULL regions, refunds, replays, orphan customers) and
+-- cleaning it is silver's job, where the rejects can be counted.
 CREATE OR REPLACE TABLE sales_aws.bronze.sales_raw AS
 SELECT
   o.order_id,
