@@ -32,7 +32,20 @@ resource "google_service_account" "federation" {
   description  = "Read-only BigQuery identity used by the marketing_bq_fed foreign catalog."
 }
 
-# Least privilege: read the data, and run the queries that read it. Nothing else.
+# Least privilege, and it takes three roles rather than the one obvious one.
+#
+#   dataViewer      read the tables
+#   jobUser         submit the queries that read them
+#   readSessionUser open a BigQuery Storage Read API session
+#
+# The third is easy to miss and impossible to guess: Databricks reads a federated
+# BigQuery table through the Storage Read API, not through the query API, and
+# jobUser does not carry bigquery.readsessions.create. Without it the medallion
+# fails at the first SELECT with PERMISSION_DENIED, long after the catalog has
+# been created and the schemas discovered.
+#
+# All three together are still far short of roles/bigquery.admin: this identity
+# can read, and cannot create, alter or delete anything.
 resource "google_project_iam_member" "federation_bq_data" {
   project = var.project_id
   role    = "roles/bigquery.dataViewer"
@@ -42,6 +55,12 @@ resource "google_project_iam_member" "federation_bq_data" {
 resource "google_project_iam_member" "federation_bq_jobs" {
   project = var.project_id
   role    = "roles/bigquery.jobUser"
+  member  = "serviceAccount:${google_service_account.federation.email}"
+}
+
+resource "google_project_iam_member" "federation_bq_read_sessions" {
+  project = var.project_id
+  role    = "roles/bigquery.readSessionUser"
   member  = "serviceAccount:${google_service_account.federation.email}"
 }
 
