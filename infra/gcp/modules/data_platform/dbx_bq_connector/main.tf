@@ -13,6 +13,6 @@ resource "databricks_connection" "bigquery" {
 
   options = {
     GoogleServiceAccountKeyJson = var.bq_key
-    ProjectId                   = var.project_id
+    projectId                   = var.project_id
   }
 }

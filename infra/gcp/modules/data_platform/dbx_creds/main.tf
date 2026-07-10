@@ -21,8 +21,18 @@ resource "databricks_grants" "external_creds" {
   }
 }
 
+# Databricks mints the credential's service account in its own project, and IAM
+# rejects a member it has not yet seen ("Service account db-uc-credential-...
+# does not exist"). Give the identity time to propagate before granting it a role.
+resource "time_sleep" "credential_sa_propagation" {
+  depends_on      = [databricks_storage_credential.external]
+  create_duration = "60s"
+}
+
 # 3. Grant the NEW system email permission to "impersonate" your Service Account
 resource "google_service_account_iam_member" "external_creds_impersonation" {
+  depends_on = [time_sleep.credential_sa_propagation]
+
   # The ID of your existing SA (the one created during bootstrap)
   service_account_id = var.dbx_sa_id
 
