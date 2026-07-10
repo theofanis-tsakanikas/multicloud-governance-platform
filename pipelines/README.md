@@ -73,12 +73,30 @@ query the FOREIGN catalog directly, where `crm` is `pii` and granted to
 `crm_managers` alone. Declared classification and observed data therefore agree —
 declare `sales_aws.silver` as `pii` and the analyzer gate fails, as it should.
 
-The source system seeds itself ([`sources/rds/seed.sql`](sources/rds/seed.sql),
-ADR-0014); the platform never runs DDL against it.
+**All three** bronze layers are federated reads now. Nothing is synthesised inside
+Databricks:
+
+| bronze | reads | through |
+|---|---|---|
+| `sales_aws.bronze.sales_raw` | Postgres `orders.orders` | `sales_rds_fed` |
+| `supplies_azure.bronze.supply_raw` | Azure SQL `orders` ⋈ `inventory` | `supply_sql_master` |
+| `marketing_gcp.intelligence.web_raw` | BigQuery `analytics.sessions` | `marketing_bq_fed` |
+
+Each source also holds a schema the medallion **never opens**: `crm` (Postgres) and
+`web` (BigQuery) are classified `pii` and stay where they are.
+
+The source systems seed themselves ([`sources/`](sources/), ADR-0014); the platform
+never runs DDL against them. Seeding happens in the **pipeline run**, gated by
+`seed_sources` — not in the deploy, because the deploy does not need rows:
+`warm_foreign_catalog` asks for `SHOW SCHEMAS`, and the Azure stack deployed green
+with its schemas empty. A real deployment sets `seed_sources: false` and the
+application teams' data is already there.
 
 | Path | Role |
 |---|---|
-| `sources/rds/seed.sql` | the **simulated OLTP source** — 800 customers (PII) + 6 000 orders, deterministic |
+| `sources/rds/seed.sql` | simulated OLTP source (AWS) — 800 customers (PII) + 6 040 orders |
+| `sources/azure_sql/seed.sql` | simulated ERP (Azure) — 24 stock rows + 4 040 purchase orders |
+| `sources/bigquery/seed.sql` | simulated analytics warehouse (GCP) — 20 000 sessions + 4 000 visitors (PII) |
 | `databricks/aws/01_seed.sql`, `02_medallion.sql`, `03_executive.sql` | federated ingest → medallion → **executive cross-cloud view** (sales + supply + Delta-shared marketing) |
 | `databricks/aws/04_dashboard_queries.sql` | tiles for the Databricks **AI/BI dashboard** |
 | `databricks/aws/results_notebook.py` | presentation notebook — **only queries the gold tables** (the recording), with inline charts |

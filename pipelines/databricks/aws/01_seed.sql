@@ -15,8 +15,8 @@
 -- Seeding the source itself is the application's job, not the platform's:
 -- see pipelines/sources/rds/seed.sql and ADR-0014.
 --
--- Supply is still synthesised below because its source system (Azure SQL) is not
--- deployed yet; once it is, this becomes a read from `supply_sql_master`.
+-- The same holds for supply below: it is read from `supply_sql_master`, the
+-- FOREIGN catalog over Azure SQL, seeded by pipelines/sources/azure_sql/seed.sql.
 
 -- ------------------------------------------------ sales bronze (AWS, federated)
 -- Be precise about what moves and what does not.
@@ -44,51 +44,25 @@ SELECT
   o.order_date
 FROM sales_rds_fed.orders.orders AS o;
 
--- ---------------------------------------------------------------- supply (Azure)
--- Each market has its own supply posture, so `stockout_risk` in 03 is a finding
--- rather than noise. Lead time and stock cover are market properties here; the
--- jitter only stops the numbers looking synthetic.
+-- ------------------------------------------- supply bronze (Azure, federated)
+-- The supply chain lives in Azure SQL. `supply_sql_master` federates it, and this
+-- joins ACROSS its two schemas — orders and inventory — in one query, from a
+-- Databricks workspace on AWS. Neither schema is copied into Azure storage; the
+-- join predicate pushes down and only the result rows cross the wire.
 --
---   Netherlands / Germany / France : short lead, deep stock  -> LOW
---   Spain / Italy                  : long lead              -> MEDIUM
---   Poland                         : longest lead AND thin stock -> HIGH
---
--- Volume follows the sales weighting (30/22/15/13/12/8), so a market's supply
--- sample size matches its commercial size.
+-- inventory.stock carries no PII and orders.purchase_orders carries none either;
+-- supply chain data is `confidential`, not `pii`. There is nothing to leave behind.
 CREATE OR REPLACE TABLE supplies_azure.bronze.supply_raw AS
-WITH base AS (
-  SELECT
-    id,
-    CASE
-      WHEN id % 100 <  30 THEN 'Germany'
-      WHEN id % 100 <  52 THEN 'France'
-      WHEN id % 100 <  67 THEN 'Netherlands'
-      WHEN id % 100 <  80 THEN 'Spain'
-      WHEN id % 100 <  92 THEN 'Italy'
-      ELSE                     'Poland'
-    END AS market
-  FROM range(4000) AS t(id)
-)
 SELECT
-  concat('shp_', lpad(cast(id AS STRING), 6, '0'))                            AS shipment_id,
-  market,
-  concat('sup_', cast(rand()*40 AS INT))                                      AS supplier_id,
-  element_at(array('SKU-A','SKU-B','SKU-C','SKU-D'), cast(rand()*4 AS INT)+1)  AS product_sku,
-  cast(rand()*480 + 20 AS INT)                                                AS units,
-  -- Base lead time per market + 0..6 days of jitter.
-  cast(CASE market
-         WHEN 'Netherlands' THEN 6
-         WHEN 'Germany'     THEN 8
-         WHEN 'France'      THEN 9
-         WHEN 'Spain'       THEN 14
-         WHEN 'Italy'       THEN 17
-         ELSE                    23   -- Poland
-       END + rand()*6 AS INT)                                                 AS lead_days,
-  -- Poland runs thin: on_hand is drawn from 0..280, below a reorder band of
-  -- 120..300, so ~60% of its shipments sit under the reorder point and the
-  -- HIGH threshold (lead > 20 AND below_reorder > 40%) is met, not approached.
-  -- Everywhere else on_hand starts at 400, above the whole band -> 0% below.
-  cast(CASE WHEN market = 'Poland' THEN rand()*280 ELSE rand()*2000 + 400 END AS INT) AS on_hand,
-  cast(rand()*180 + 120 AS INT)                                              AS reorder_point,
-  date_add(current_date(), -cast(rand()*90 AS INT))                           AS ship_date
-FROM base;
+  po.po_id        AS shipment_id,
+  po.market,
+  po.supplier_id,
+  po.sku          AS product_sku,
+  CAST(po.units     AS INT) AS units,
+  CAST(po.lead_days AS INT) AS lead_days,
+  CAST(st.on_hand       AS INT) AS on_hand,
+  CAST(st.reorder_point AS INT) AS reorder_point,
+  po.ship_date
+FROM      supply_sql_master.orders.purchase_orders AS po
+LEFT JOIN supply_sql_master.inventory.stock        AS st
+       ON st.sku = po.sku AND st.market = po.market;

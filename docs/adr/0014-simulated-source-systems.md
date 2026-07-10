@@ -55,8 +55,17 @@ authoring its schema.**
   application's data model, and it is the part of this repo that would not exist
   in production.
 
-`rds_schemas` / `mssql_schemas` / `bq_datasets` exist solely so the federated
+`rds_schemas` / `mssql_schemas` / `storage/bigquery` exist solely so the federated
 catalog has something to discover.
+
+**When the data arrives, and why it is not at apply time.** The seed scripts live
+in `pipelines/sources/` and run as the first steps of the *pipeline*, behind a
+`seed_sources` switch that a real deployment sets to `false`. They are not part of
+the deploy, and not because it would be untidy: the deploy does not need them.
+`warm_foreign_catalog` asks the foreign catalog for `SHOW SCHEMAS`, not for rows —
+the Azure stack deployed green with `inventory` and `orders` completely empty. Data
+belongs to the run; schemas belong to the infrastructure. Putting an `INSERT` in a
+governance platform's `apply` would erase the very boundary this record draws.
 
 ## Consequences
 
