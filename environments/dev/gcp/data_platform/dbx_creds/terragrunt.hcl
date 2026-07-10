@@ -22,8 +22,10 @@ locals {
   ))
 }
 
-dependency "bootstrap_platform" {
-  config_path = "../../../bootstrap/aws/platform"
+# The GCS storage credential lives in the GCP metastore, so every Databricks
+# call here goes to the GCP account and its workspace.
+dependency "bootstrap_gcp_platform" {
+  config_path = "../../../bootstrap/gcp/platform"
 }
 
 dependency "bootstrap_gcp" {
@@ -43,8 +45,8 @@ generate "providers" {
   if_exists = "overwrite_terragrunt"
   contents  = <<-EOF
     provider "databricks" {
-      host          = "${dependency.bootstrap_platform.outputs.serverless_workspace_url}"
-      account_id    = "${local.cfg.dbx_account_id}"
+      host          = "${dependency.bootstrap_gcp_platform.outputs.gcp_serverless_workspace_url}"
+      account_id    = "${local.cfg.gcp_dbx_account_id}"
       client_id     = var.spn_client_id
       client_secret = var.spn_client_secret
     }
@@ -58,15 +60,16 @@ generate "providers" {
 
 inputs = {
   environment                 = local.cfg.environment
-  serverless_workspace_host   = dependency.bootstrap_platform.outputs.serverless_workspace_url
-  dbx_account_id              = local.cfg.dbx_account_id
-  spn_client_id               = local.spn.client_id
-  spn_client_secret           = local.spn.client_secret
+  serverless_workspace_host   = dependency.bootstrap_gcp_platform.outputs.gcp_serverless_workspace_url
+  dbx_account_id              = local.cfg.gcp_dbx_account_id
+  spn_client_id               = local.gcp_seed.client_id
+  spn_client_secret           = local.gcp_seed.client_secret
   provider_key                = local.gcp_seed.provider_key
   project_id                  = local.cfg.gcp_project_id
   gcs_bucket_name             = dependency.foundation.outputs.gcs_bucket_name
   dbx_sa_email                = dependency.bootstrap_gcp.outputs.dbx_sa_email
   gcp_storage_credential_name = local.cfg.gcp_storage_credential_name
+  admin_group_name            = local.cfg.admin_group_name
   wif_pool_id                 = local.cfg.gcp_wif_pool_id
   provider_id                 = local.cfg.gcp_provider_id
 }

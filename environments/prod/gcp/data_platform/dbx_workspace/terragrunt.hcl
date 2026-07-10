@@ -56,8 +56,8 @@ generate "providers" {
 inputs = {
   gcp_databricks_host    = local.cfg.gcp_databricks_host
   gcp_dbx_account_id     = local.cfg.gcp_dbx_account_id
-  gcp_spn_client_id      = local.spn.client_id
-  gcp_spn_client_secret  = local.spn.client_secret
+  gcp_spn_client_id      = local.gcp_seed.client_id
+  gcp_spn_client_secret  = local.gcp_seed.client_secret
   provider_key           = local.gcp_seed.provider_key
   region                 = local.cfg.aws_region
   dbx_aws_account_id     = local.cfg.dbx_aws_account_id

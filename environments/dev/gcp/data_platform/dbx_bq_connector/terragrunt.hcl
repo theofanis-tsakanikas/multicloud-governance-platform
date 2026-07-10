@@ -60,8 +60,8 @@ generate "providers" {
 inputs = {
   gcp_serverless_workspace_host = dependency.bootstrap_gcp_platform.outputs.gcp_serverless_workspace_url
   gcp_dbx_account_id            = local.cfg.gcp_dbx_account_id
-  gcp_spn_client_id             = local.spn.client_id
-  gcp_spn_client_secret         = local.spn.client_secret
+  gcp_spn_client_id             = local.gcp_seed.client_id
+  gcp_spn_client_secret         = local.gcp_seed.client_secret
   provider_key                  = local.gcp_seed.provider_key
   connection_name               = local.federated_catalogs[0].connection_name
   project_id                    = local.cfg.gcp_project_id
