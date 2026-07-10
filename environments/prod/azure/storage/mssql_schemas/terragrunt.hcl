@@ -12,14 +12,6 @@ include "root" {
 locals {
   cfg = read_terragrunt_config(find_in_parent_folders("config.hcl")).locals
 
-  sql_secret = jsondecode(run_cmd("--terragrunt-quiet",
-    "az", "keyvault", "secret", "show",
-    "--vault-name", dependency.foundation.outputs.key_vault_name,
-    "--name", local.cfg.sql_password_name,
-    "--query", "value",
-    "--output", "tsv"
-  ))
-
   domain_path = "${get_terragrunt_dir()}/../../../domains/azure"
   infra       = jsondecode(file("${local.domain_path}/supply_infra.json"))
 
@@ -62,6 +54,6 @@ inputs = {
   sql_server_fqdn    = dependency.mssql.outputs.sql_server_fqdn
   sql_database_name  = local.cfg.sql_database_name
   sql_admin_user     = local.cfg.sql_admin_user
-  sql_admin_password = trimspace(local.sql_secret)
+  sql_admin_password = dependency.mssql.outputs.sql_admin_password
   mssql_schemas      = local.schemas_to_create
 }
