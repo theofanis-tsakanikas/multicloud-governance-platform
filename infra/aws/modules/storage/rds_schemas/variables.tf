@@ -7,3 +7,9 @@ variable "password" {
   type        = string
   sensitive   = true
 }
+
+variable "drop_cascade" {
+  description = "DROP SCHEMA ... CASCADE on destroy, taking the application's tables with it. dev only."
+  type        = bool
+  default     = false
+}

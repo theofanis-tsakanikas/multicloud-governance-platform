@@ -65,4 +65,6 @@ inputs = {
   password     = local.rds_secret.password
   rds_port     = local.cfg.rds_port
   rds_schemas  = local.schemas_to_create
+  # dev is torn down and rebuilt; prod leaves this false (see the module).
+  drop_cascade = true
 }
