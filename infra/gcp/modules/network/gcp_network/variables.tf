@@ -38,3 +38,9 @@ variable "vpn_gw_name" {
   description = "The name of the HA VPN Gateway."
   type        = string
 }
+
+variable "is_private_connection" {
+  description = "Private mode adds the HA VPN gateway to AWS and the private DNS zone for restricted googleapis. The VPC, subnet and firewall are free and are created either way."
+  type        = bool
+  default     = false
+}

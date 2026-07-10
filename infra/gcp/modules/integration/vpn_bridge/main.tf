@@ -1,3 +1,13 @@
+# `locals` is a top-level block: it was nested inside the external-VPN-gateway
+# resource, which Terraform rejects outright ("block type name locals is reserved").
+# This module has never been validated.
+locals {
+  # Every AWS VPN connection exposes two tunnel endpoints; GCP wants them flat.
+  aws_ips = flatten([
+    for conn in aws_vpn_connection.aws_to_gcp : [conn.tunnel1_address, conn.tunnel2_address]
+  ])
+}
+
 # --- AWS SIDE ---
 
 # 1. Customer Gateway in AWS
@@ -48,13 +58,6 @@ resource "google_compute_external_vpn_gateway" "aws_gw" {
 
   description = "VPN Gateway pointing to AWS"
 
-  # Local helper to flatten all public IPs from both tunnels of all AWS VPN connections
-  locals {
-    aws_ips = flatten([
-      for conn in aws_vpn_connection.aws_to_gcp : [conn.tunnel1_address, conn.tunnel2_address]
-    ])
-  }
-
   # Dynamic block that registers each AWS public IP to a GCP interface
   dynamic "interface" {
     for_each = local.aws_ips
@@ -71,7 +74,7 @@ resource "google_compute_vpn_tunnel" "tunnels" {
   count                           = length(local.aws_ips)
   name                            = "gcp-tunnel-${count.index}"
   region                          = var.location
-  vpn_gateway                     = var.gcp_ha_vpn_gw_id # ID from the network module
+  vpn_gateway                     = var.gcp_vpn_gw_id # ID from the network module
   peer_external_gateway           = google_compute_external_vpn_gateway.aws_gw.id
   peer_external_gateway_interface = count.index
   shared_secret                   = aws_vpn_connection.aws_to_gcp[floor(count.index / 2)].tunnel1_preshared_key

@@ -46,4 +46,13 @@ inputs = {
   gcs_bucket_name = dependency.foundation.outputs.gcs_bucket_name
   network_name    = local.cfg.network_name
   subnetwork_name = local.cfg.subnetwork_name
+
+  # Public mode: this layer is a no-op. Private mode also needs the VPN endpoints,
+  # which come from the network layer.
+  is_private_connection = local.cfg.is_private_connection_gcp
+  gcp_vpc_id            = dependency.network.outputs.gcp_vpc_id
+  gcp_vpn_gw_id         = dependency.network.outputs.gcp_vpn_gw_id
+  gcp_vpn_gw_ips        = dependency.network.outputs.gcp_vpn_gw_ips
+  aws_vpn_gw_id         = dependency.network.outputs.aws_vpn_gw_id
+  databricks_vpc_id     = dependency.network.outputs.vpc_id
 }

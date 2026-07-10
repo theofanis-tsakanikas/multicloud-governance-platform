@@ -44,7 +44,7 @@ dependency "bootstrap_config" {
 # apply first — the federated catalog and the remote schemas must exist
 # before Databricks can resolve them when applying these grants.
 dependencies {
-  paths = ["../dbx_governance", "../bq_datasets"]
+  paths = ["../dbx_governance", "../../storage"]
 }
 
 terraform {

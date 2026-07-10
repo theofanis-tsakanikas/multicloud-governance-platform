@@ -15,7 +15,12 @@ locals {
 
   domain_path = "${get_terragrunt_dir()}/../../domains/gcp"
   infra       = jsondecode(file("${local.domain_path}/marketing_infra.json"))
-  datasets    = [for c in local.infra.catalogs : c.catalog_name if c.type == "FEDERATED"]
+  # BigQuery datasets are the FEDERATED catalog's schemas (analytics, web) —
+  # not the catalog name. The catalog is the BigQuery *project*.
+  datasets = flatten([
+    for c in local.infra.catalogs : [for s in lookup(c, "schemas", []) : s.schema_name]
+    if c.type == "FEDERATED"
+  ])
 }
 
 terraform {

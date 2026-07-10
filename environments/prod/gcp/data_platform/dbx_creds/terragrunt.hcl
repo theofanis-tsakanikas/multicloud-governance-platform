@@ -35,7 +35,7 @@ dependency "foundation" {
 }
 
 terraform {
-  source = "../../../../../infra/gcp/modules/data_platform//gcp_storage_credentials"
+  source = "../../../../../infra/gcp/modules/data_platform//dbx_creds"
 }
 
 generate "providers" {

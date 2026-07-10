@@ -35,6 +35,8 @@ resource "google_compute_firewall" "allow_aws_traffic" {
 
 # 4. Google's High Availability (HA) VPN Gateway
 resource "google_compute_ha_vpn_gateway" "gcp_vpn_gw" {
+  count = var.is_private_connection ? 1 : 0
+
   name    = var.vpn_gw_name
   network = google_compute_network.gcp_vpc.id
   region  = var.location
@@ -45,12 +47,18 @@ resource "google_compute_ha_vpn_gateway" "gcp_vpn_gw" {
 # 5. Private DNS Zone for Google APIs
 # Forces traffic to googleapis.com to stay within the Google network
 resource "google_dns_managed_zone" "googleapis" {
+  count = var.is_private_connection ? 1 : 0
+
   name        = "googleapis-private-zone"
   dns_name    = "googleapis.com."
   description = "Private zone for Google APIs"
   project     = var.project_id
 
-  visibility {
+  # `visibility` is an argument, not a block; the networks belong to
+  # private_visibility_config. As written this module could never have validated.
+  visibility = "private"
+
+  private_visibility_config {
     networks {
       network_url = google_compute_network.gcp_vpc.id
     }
@@ -59,18 +67,22 @@ resource "google_dns_managed_zone" "googleapis" {
 
 # Route all Google API calls to the Restricted IP range (Restricted VIP)
 resource "google_dns_record_set" "restricted_apis" {
+  count = var.is_private_connection ? 1 : 0
+
   name         = "*.googleapis.com."
   type         = "A"
   ttl          = 300
-  managed_zone = google_dns_managed_zone.googleapis.name
+  managed_zone = google_dns_managed_zone.googleapis[0].name
   # Standard Restricted VIP addresses for Google Cloud
   rrdatas = ["199.36.153.4", "199.36.153.5", "199.36.153.6", "199.36.153.7"]
 }
 
 resource "google_dns_record_set" "cname_googleapis" {
+  count = var.is_private_connection ? 1 : 0
+
   name         = "googleapis.com."
   type         = "A"
   ttl          = 300
-  managed_zone = google_dns_managed_zone.googleapis.name
+  managed_zone = google_dns_managed_zone.googleapis[0].name
   rrdatas      = ["199.36.153.4", "199.36.153.5", "199.36.153.6", "199.36.153.7"]
 }

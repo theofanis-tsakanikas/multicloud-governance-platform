@@ -39,4 +39,9 @@ inputs = {
   gcp_subnet_cidr = local.cfg.gcp_subnet_cidr
   network_name    = local.cfg.network_name
   subnetwork_name = local.cfg.subnetwork_name
+
+  region                = local.cfg.aws_region
+  databricks_vpc_cidr   = local.cfg.databricks_vpc_cidr
+  databricks_subnets    = local.cfg.databricks_subnets
+  is_private_connection = local.cfg.is_private_connection_gcp
 }

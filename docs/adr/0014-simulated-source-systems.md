@@ -40,7 +40,7 @@ Concretely, two layers per cloud are marked as *simulated source system* and are
 |---|---|
 | AWS | `storage/rds` (the `sales-db-instance` Postgres), `storage/rds_schemas` (`crm`, `orders`) |
 | Azure | `storage/mssql`, `storage/mssql_schemas` |
-| GCP | `data_platform/bq_datasets` |
+| GCP | `storage/bigquery` (the `analytics` and `web` datasets) |
 
 Everything downstream of them — the `databricks_connection`, the FOREIGN catalog,
 the schema grants, the classification model, the policy analyzer — is platform
