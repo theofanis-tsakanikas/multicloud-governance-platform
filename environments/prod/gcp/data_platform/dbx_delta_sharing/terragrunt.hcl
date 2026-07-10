@@ -54,15 +54,13 @@ dependency "bootstrap_gcp_platform" {
   config_path = "../../../bootstrap/gcp/platform"
 }
 
-dependency "aws_governance" {
-  config_path = "../../../aws/data_platform/dbx_governance"
-}
-
 # Ordering-only: dbx_governance exposes no outputs, so it cannot be a
 # `dependency` block (Terragrunt requires outputs there) — but its catalogs
 # must exist before this layer applies.
 dependencies {
-  paths = ["../dbx_governance"]
+  # The AWS governance layer must have created its catalogs before a GCP catalog
+  # is shared into that metastore. Like the GCP one, it exposes no outputs.
+  paths = ["../dbx_governance", "../../../aws/data_platform/dbx_governance"]
 }
 
 terraform {
