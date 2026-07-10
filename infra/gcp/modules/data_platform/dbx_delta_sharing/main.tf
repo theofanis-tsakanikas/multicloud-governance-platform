@@ -15,6 +15,15 @@ module "gcp_side" {
   aws_db_recipient        = var.aws_db_recipient
 }
 
+# Creating the recipient on the GCP metastore causes a provider object to appear
+# on the AWS metastore. That materialisation crosses two Databricks accounts and is
+# not immediate: mounting the catalog straight away fails with
+# "Provider 'gcp:europe-west3:...' does not exist".
+resource "time_sleep" "provider_propagation" {
+  depends_on      = [module.gcp_side]
+  create_duration = "90s"
+}
+
 # 2. Mount the GCP Share as a Catalog in AWS
 # This module creates a 'Provider' object and a shared catalog in the AWS environment.
 module "aws_catalog_mount" {
@@ -24,6 +33,7 @@ module "aws_catalog_mount" {
   gcp_metastore_id      = var.gcp_metastore_id
   gcp_provider_name     = var.gcp_provider_name
 
-  # Ensure the GCP Share exists before attempting to mount it in AWS
-  depends_on = [module.gcp_side]
+  # Ensure the GCP Share exists — and that the provider it creates on the AWS
+  # metastore has propagated — before attempting to mount it.
+  depends_on = [module.gcp_side, time_sleep.provider_propagation]
 }
