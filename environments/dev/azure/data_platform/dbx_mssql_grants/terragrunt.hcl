@@ -27,7 +27,7 @@ locals {
 }
 
 dependency "bootstrap_platform" {
-  config_path = "../../../../bootstrap/aws/platform"
+  config_path = "../../../bootstrap/aws/platform"
 }
 
 dependency "dbx_mssql_connector" {
@@ -36,7 +36,7 @@ dependency "dbx_mssql_connector" {
 
 # The SQL warehouse that warms the foreign catalog before grants apply.
 dependency "bootstrap_config" {
-  config_path = "../../../../bootstrap/aws/config"
+  config_path = "../../../bootstrap/aws/config"
 }
 
 # Ordering-only: these layers expose no outputs, so they cannot be a

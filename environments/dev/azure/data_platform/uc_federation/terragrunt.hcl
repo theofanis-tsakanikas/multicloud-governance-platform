@@ -20,7 +20,7 @@ locals {
 }
 
 dependency "bootstrap_platform" {
-  config_path = "../../../../bootstrap/aws/platform"
+  config_path = "../../../bootstrap/aws/platform"
 }
 
 # Ordering-only: dbx_governance exposes no outputs, so it cannot be a

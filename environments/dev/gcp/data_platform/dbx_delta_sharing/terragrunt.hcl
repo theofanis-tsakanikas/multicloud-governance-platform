@@ -55,7 +55,7 @@ dependency "bootstrap_gcp_platform" {
 }
 
 dependency "aws_governance" {
-  config_path = "../../../../aws/data_platform/dbx_governance"
+  config_path = "../../../aws/data_platform/dbx_governance"
 }
 
 # Ordering-only: dbx_governance exposes no outputs, so it cannot be a

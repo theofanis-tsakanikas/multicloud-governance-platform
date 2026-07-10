@@ -47,7 +47,7 @@ dependency "dbx_mssql_connector" {
 }
 
 dependency "bootstrap_platform" {
-  config_path = "../../../../bootstrap/aws/platform"
+  config_path = "../../../bootstrap/aws/platform"
 }
 
 terraform {

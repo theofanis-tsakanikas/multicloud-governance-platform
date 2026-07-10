@@ -37,7 +37,7 @@ dependency "dbx_creds" {
 }
 
 dependency "bootstrap_platform" {
-  config_path = "../../../../bootstrap/aws/platform"
+  config_path = "../../../bootstrap/aws/platform"
 }
 
 terraform {
