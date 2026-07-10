@@ -1,0 +1,7 @@
+terraform {
+  required_providers {
+    azurerm = { source = "hashicorp/azurerm" }
+    azuread = { source = "hashicorp/azuread" }
+    msgraph = { source = "microsoft/msgraph" }
+  }
+}

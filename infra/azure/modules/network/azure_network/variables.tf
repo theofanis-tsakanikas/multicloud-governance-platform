@@ -37,3 +37,8 @@ variable "gateway_subnet_prefix" {
   description = "The address prefix for the dedicated GatewaySubnet used by the Azure Virtual Network Gateway."
   type        = list(string)
 }
+variable "is_private_connection" {
+  description = "Private mode creates the Site-to-Site VPN gateway. In public mode the VNet and subnets are still created (they are free), but the VpnGw1 gateway (~EUR 140/month) and its static public IP are not."
+  type        = bool
+  default     = false
+}

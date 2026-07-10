@@ -15,11 +15,11 @@ output "endpoint_subnet_id" {
 }
 
 output "azure_vpn_public_ip" {
-  description = "The Public IP address for the Azure VPN Gateway"
-  value       = azurerm_public_ip.vpn_gw_pip.ip_address
+  description = "Public IP of the Azure VPN Gateway; null in public mode (no gateway)."
+  value       = one(azurerm_public_ip.vpn_gw_pip[*].ip_address)
 }
 
 output "azure_vpn_gw_id" {
-  description = "The ID of the Azure Virtual Network Gateway"
-  value       = azurerm_virtual_network_gateway.vpn_gw.id
+  description = "ID of the Azure Virtual Network Gateway; null in public mode."
+  value       = one(azurerm_virtual_network_gateway.vpn_gw[*].id)
 }

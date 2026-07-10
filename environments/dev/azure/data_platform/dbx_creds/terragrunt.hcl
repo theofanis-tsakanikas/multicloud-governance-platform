@@ -27,7 +27,7 @@ dependency "bootstrap_platform" {
 }
 
 terraform {
-  source = "../../../../../infra/azure/modules/data_platform//azure_storage_credentials"
+  source = "../../../../../infra/azure/modules/data_platform//azure_storage_credential"
 }
 
 generate "providers" {

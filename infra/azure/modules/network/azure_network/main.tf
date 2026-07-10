@@ -70,8 +70,10 @@ resource "azurerm_subnet_network_security_group_association" "endpoint_nsg_assoc
   network_security_group_id = azurerm_network_security_group.sql_nsg.id
 }
 
-# Public IP for the VPN Gateway
+# Public IP for the VPN Gateway — private mode only.
 resource "azurerm_public_ip" "vpn_gw_pip" {
+  count = var.is_private_connection ? 1 : 0
+
   name                = "pip-vpn-gateway"
   location            = var.location
   resource_group_name = var.resource_group_name
@@ -81,7 +83,12 @@ resource "azurerm_public_ip" "vpn_gw_pip" {
 
 # The Virtual Network Gateway
 # The "engine" that handles the Site-to-Site VPN tunnel to AWS
+# The Virtual Network Gateway is the single most expensive resource in the Azure
+# stack (VpnGw1, ~EUR 140/month, billed whether or not a tunnel is up). It exists
+# only to carry the Site-to-Site VPN to AWS, which only private mode needs.
 resource "azurerm_virtual_network_gateway" "vpn_gw" {
+  count = var.is_private_connection ? 1 : 0
+
   name                = "vgw-azure-to-aws"
   location            = var.location
   resource_group_name = var.resource_group_name
@@ -92,7 +99,7 @@ resource "azurerm_virtual_network_gateway" "vpn_gw" {
 
   ip_configuration {
     name                          = "vnetGatewayConfig"
-    public_ip_address_id          = azurerm_public_ip.vpn_gw_pip.id
+    public_ip_address_id          = azurerm_public_ip.vpn_gw_pip[0].id
     private_ip_address_allocation = "Dynamic"
     subnet_id                     = azurerm_subnet.gateway_subnet.id
   }
