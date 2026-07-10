@@ -13,6 +13,14 @@ locals {
     "--region", local.cfg.aws_region
   ))
 
+  gcp_seed = jsondecode(run_cmd("--terragrunt-quiet",
+    "aws", "secretsmanager", "get-secret-value",
+    "--secret-id", local.cfg.gcp_seed_secret_arn,
+    "--query", "SecretString",
+    "--output", "text",
+    "--region", local.cfg.aws_region
+  ))
+
   domain_path = "${get_terragrunt_dir()}/../../../domains/gcp"
   infra       = jsondecode(file("${local.domain_path}/marketing_infra.json"))
   grants      = jsondecode(file("${local.domain_path}/marketing_grants.json"))

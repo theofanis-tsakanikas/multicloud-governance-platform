@@ -12,6 +12,14 @@ locals {
     "--output", "text",
     "--region", local.cfg.aws_region
   ))
+
+  gcp_seed = jsondecode(run_cmd("--terragrunt-quiet",
+    "aws", "secretsmanager", "get-secret-value",
+    "--secret-id", local.cfg.gcp_seed_secret_arn,
+    "--query", "SecretString",
+    "--output", "text",
+    "--region", local.cfg.aws_region
+  ))
 }
 
 dependency "bootstrap_gcp_platform" {
