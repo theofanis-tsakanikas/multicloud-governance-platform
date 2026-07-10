@@ -15,8 +15,4 @@ module "managed_warehouse" {
   managed_max_num_clusters   = var.managed_max_num_clusters
   managed_auto_stop_mins     = var.managed_auto_stop_mins
   managed_serverless_compute = var.managed_serverless_compute
-
-  providers = {
-    databricks = databricks.uc_mws
-  }
 }
