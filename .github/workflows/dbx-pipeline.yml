@@ -184,3 +184,27 @@ jobs:
         if: ${{ inputs.run_job }}
         working-directory: pipelines/databricks
         run: databricks bundle run "medallion_${{ inputs.cloud }}" -t ${{ inputs.cloud }} --var "warehouse_id=${WAREHOUSE_ID}"
+
+      # `bundle deploy` creates the AI/BI dashboard as a DRAFT. Publishing is a
+      # separate step the bundle does not do, so without this the dashboard opens
+      # in the editor rather than as a clean published page. Publish it here, so the
+      # moment the AWS run finishes the dashboard is live at its /published URL.
+      # AWS only (the dashboard is scoped to the AWS target); non-fatal.
+      - name: Publish the executive dashboard (AWS only)
+        if: ${{ inputs.cloud == 'aws' }}
+        run: |
+          set -euo pipefail
+          # The CLI authenticates with M2M OAuth, so mint a bearer token the REST
+          # API accepts from the same client_id/secret the bundle used.
+          TOK=$(curl -s -X POST "$DATABRICKS_HOST/oidc/v1/token" \
+            -u "$DATABRICKS_CLIENT_ID:$DATABRICKS_CLIENT_SECRET" \
+            -d 'grant_type=client_credentials&scope=all-apis' | jq -r .access_token)
+          DID=$(curl -s -H "Authorization: Bearer $TOK" \
+            "$DATABRICKS_HOST/api/2.0/lakeview/dashboards?page_size=100" \
+            | jq -r '.dashboards[]? | select(.display_name | contains("Multi-Cloud Executive View")) | .dashboard_id' | head -1)
+          if [ -z "$DID" ]; then echo "::warning::dashboard not found — skipping publish"; exit 0; fi
+          curl -s -X POST -H "Authorization: Bearer $TOK" -H 'Content-Type: application/json' \
+            "$DATABRICKS_HOST/api/2.0/lakeview/dashboards/$DID/published" \
+            -d "{\"warehouse_id\":\"$WAREHOUSE_ID\"}" >/dev/null \
+            && echo "::notice::dashboard published → $DATABRICKS_HOST/dashboardsv3/$DID/published" \
+            || echo "::warning::publish call failed (dashboard still deployed as draft)"
