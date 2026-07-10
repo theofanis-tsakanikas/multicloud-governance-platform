@@ -25,6 +25,18 @@ on:
         options: [skip, public, private]
         default: skip
 
+      # Debugging aid, NOT the normal path. Terraform is idempotent, so a full run
+      # is always correct — but re-running four already-applied layers to reach the
+      # fifth costs minutes per iteration. Starting later runs that layer AND every
+      # layer after it; the skipped layers' outputs are read from remote state, so
+      # they must already be applied. Leave at `foundation` for a real deploy.
+      start_from:
+        description: "Start from this layer (and continue to the end). Use `foundation` for a full deploy."
+        required: true
+        type: choice
+        options: [foundation, network, security, storage, integration, data_platform]
+        default: foundation
+
 permissions:
   id-token: write
   contents: read
@@ -73,7 +85,13 @@ jobs:
           # at parse time; run-all within each dir resolves the fine-grained order.
           # (run-all across the WHOLE cloud fails on a fresh env: it parses secret-
           # fetching layers before the secret-creating layer has applied.)
+          reached=0
           for dir in foundation network security storage integration data_platform; do
+            if [ "$dir" = "${{ inputs.start_from }}" ]; then reached=1; fi
+            if [ "$reached" -eq 0 ]; then
+              echo "::notice::skipping $dir (start_from=${{ inputs.start_from }}); its outputs are read from remote state"
+              continue
+            fi
             [ -d "$dir" ] || continue
             echo "::group::apply $dir"
             terragrunt run-all apply --terragrunt-non-interactive -auto-approve --terragrunt-working-dir "$dir"
@@ -120,7 +138,13 @@ jobs:
           # at parse time; run-all within each dir resolves the fine-grained order.
           # (run-all across the WHOLE cloud fails on a fresh env: it parses secret-
           # fetching layers before the secret-creating layer has applied.)
+          reached=0
           for dir in foundation network security storage integration data_platform; do
+            if [ "$dir" = "${{ inputs.start_from }}" ]; then reached=1; fi
+            if [ "$reached" -eq 0 ]; then
+              echo "::notice::skipping $dir (start_from=${{ inputs.start_from }}); its outputs are read from remote state"
+              continue
+            fi
             [ -d "$dir" ] || continue
             echo "::group::apply $dir"
             terragrunt run-all apply --terragrunt-non-interactive -auto-approve --terragrunt-working-dir "$dir"
@@ -165,7 +189,13 @@ jobs:
           # at parse time; run-all within each dir resolves the fine-grained order.
           # (run-all across the WHOLE cloud fails on a fresh env: it parses secret-
           # fetching layers before the secret-creating layer has applied.)
+          reached=0
           for dir in foundation network security storage integration data_platform; do
+            if [ "$dir" = "${{ inputs.start_from }}" ]; then reached=1; fi
+            if [ "$reached" -eq 0 ]; then
+              echo "::notice::skipping $dir (start_from=${{ inputs.start_from }}); its outputs are read from remote state"
+              continue
+            fi
             [ -d "$dir" ] || continue
             echo "::group::apply $dir"
             terragrunt run-all apply --terragrunt-non-interactive -auto-approve --terragrunt-working-dir "$dir"
