@@ -70,11 +70,14 @@ locals {
   admin_group_name             = "metastore_admins"
 
   # ─── Azure ───────────────────────────────────────────────────────────────
-  azure_location                = "West Europe"
-  prefix_key_vault_name         = "kv-datalake"
-  admin_object_id               = "00000000-0000-0000-0000-000000000000" # TODO: production Entra admin object id
-  adls_name                     = "adls"
-  azure_containers              = ["raw", "managed", "gold"]
+  azure_location        = "West Europe"
+  prefix_key_vault_name = "kv-datalake"
+  admin_object_id       = "00000000-0000-0000-0000-000000000000" # TODO: production Entra admin object id
+  adls_name             = "adls"
+  # One container per platform, mirroring the single S3 bucket on AWS. The zone
+  # (raw / managed / gold) is a path inside it, exactly as the domain JSON
+  # declares: abfss://databricks-project@<acct>/supply-chain/raw/
+  azure_containers              = ["databricks-project"]
   databricks_app_name           = "databricks-connector"
   role_names                    = ["Storage Blob Data Contributor", "Reader"]
   sql_server_name               = "sql-federation-master-prod"
