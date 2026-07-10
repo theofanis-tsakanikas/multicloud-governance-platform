@@ -83,7 +83,20 @@ ADR-0014); the platform never runs DDL against it.
 | `databricks/aws/04_dashboard_queries.sql` | tiles for the Databricks **AI/BI dashboard** |
 | `databricks/aws/results_notebook.py` | presentation notebook — **only queries the gold tables** (the recording), with inline charts |
 | `databricks/gcp/01_seed.sql`, `02_medallion.sql` | marketing bronze→silver→gold (then Delta-shared to AWS) |
-| [`snowflake/masking_demo.sql`](snowflake/masking_demo.sql) | analyst-vs-admin PII masking, live on Snowflake |
+| [`snowflake/read_gold_zone.sql`](snowflake/read_gold_zone.sql) | **zero-copy**: Snowflake reads the Parquet gold Databricks wrote to S3 |
+| [`snowflake/masking_demo.sql`](snowflake/masking_demo.sql) | analyst-vs-admin PII masking, live on Snowflake (in an explicitly ungoverned `demo` schema) |
+
+### Snowflake: a second engine, not a second copy
+
+`03_executive.sql` writes the executive table once more as Parquet into the
+`loc_sales_gold` external location. That is the same S3 prefix the Snowflake
+storage integration already has access to, so
+[`snowflake/read_gold_zone.sql`](snowflake/read_gold_zone.sql) queries those files
+**in place** through an external table. Nothing is ingested into Snowflake; there
+is no second copy to drift, and both engines enforce grants generated from the one
+`sales_grants.json`. `scripts/snowflake_backend.py --check` proves the two
+translations are access-equivalent, and reports the one distinction Snowflake
+cannot express (ADR-0011).
 
 Deploy+run from CI too: [`.github/workflows/dbx-pipeline.yml`](../.github/workflows/dbx-pipeline.yml).
 The full deploy → seed → run → present → **teardown** storyboard is in

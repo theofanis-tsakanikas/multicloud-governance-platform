@@ -41,3 +41,23 @@ FROM sales s
 JOIN mktg   m   ON m.market   = s.market
 JOIN supply sup ON sup.market = s.market
 ORDER BY s.revenue DESC;
+
+-- ============================================================================
+-- The same bytes, for a second engine.
+--
+-- `executive_cross_cloud` is a Delta table inside the catalog's managed storage,
+-- which only Databricks can read. This writes the same rows once more as Parquet,
+-- into the `loc_sales_gold` external location — the *same* S3 prefix the Snowflake
+-- storage integration already has access to (infra/aws/.../storage_integration.tf).
+--
+-- Snowflake then reads those files in place. Nothing is copied into Snowflake, no
+-- pipeline moves data between the engines, and both enforce the grants generated
+-- from the one `sales_grants.json`. See pipelines/snowflake/read_gold_zone.sql.
+--
+-- The path is inside loc_sales_gold, so Unity Catalog governs the write with the
+-- same external-location grants it governs everything else with.
+-- ============================================================================
+CREATE OR REPLACE TABLE sales_aws.gold.executive_export
+USING PARQUET
+LOCATION 's3://dbx-de-project-bucket-2026/databricks-project/sales/gold-zone/executive/'
+AS SELECT * FROM sales_aws.gold.executive_cross_cloud;

@@ -82,6 +82,19 @@ check.
   be circular; it is broken by deriving the IAM role's ARN as a string (account id + a chosen
   name), so the integration never waits on the role resource to exist.
 
+**Snowflake reads the data; it never receives it**
+
+`03_executive.sql` writes the executive gold table once more as Parquet into the
+`loc_sales_gold` external location, and Snowflake queries those files in place
+through the external stage the storage integration backs. There is no ingestion
+step, no second copy, and nothing to drift.
+
+This is not merely cheaper. Copying the gold layer into Snowflake would have made
+the platform hold two versions of the same governed data, and — for any table
+carrying PII — two versions of the PII, in an engine whose masking is enforced at
+query time rather than at rest. One set of bytes, governed once, read by two
+engines is the stronger claim and the safer design.
+
 **The one place the engines are not equivalent — and it is the engine's limit, not the map's**
 
 A Snowflake *external* stage exposes exactly one privilege, `USAGE`, and it permits `COPY` in
