@@ -25,7 +25,9 @@ generate "providers" {
   path      = "provider.tf"
   if_exists = "overwrite_terragrunt"
   contents  = <<-EOF
-    provider "azurerm"  { features {} }
+    provider "azurerm" {
+      features {}
+    }
     provider "azuread"  {}
     provider "random"   {}
   EOF

@@ -65,7 +65,9 @@ generate "providers" {
       client_id     = var.spn_client_id
       client_secret = var.spn_client_secret
     }
-    provider "azurerm" { features {} }
+    provider "azurerm" {
+      features {}
+    }
     provider "time" {}
   EOF
 }

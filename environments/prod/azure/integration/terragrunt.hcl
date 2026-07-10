@@ -29,7 +29,9 @@ generate "providers" {
   if_exists = "overwrite_terragrunt"
   contents  = <<-EOF
     provider "aws"      { region = "${local.cfg.aws_region}" }
-    provider "azurerm"  { features {} }
+    provider "azurerm" {
+      features {}
+    }
     provider "azuread"  {}
   EOF
 }
