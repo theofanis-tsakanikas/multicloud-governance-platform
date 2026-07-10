@@ -181,6 +181,29 @@ jobs:
             -O /usr/local/bin/terragrunt
           chmod +x /usr/local/bin/terragrunt
 
+      # The GCP seed service-account key lives in AWS Secrets Manager, not in GCP —
+      # the bootstrap has to reach GCP before GCP's own secret store is usable
+      # (CLAUDE.md gotcha #5). Terraform gets it as `provider_key` through the
+      # generated provider; the gcloud CLI needs its own activation, because
+      # dbx_bq_connector resolves the BigQuery SA key with
+      # `gcloud secrets versions access` at plan time.
+      # The GCP seed service-account key lives in AWS Secrets Manager, not in GCP —
+      # the bootstrap has to reach GCP before GCP's own secret store is usable
+      # (CLAUDE.md gotcha #5). Terraform receives it as `provider_key` through the
+      # generated provider, but the gcloud CLI needs its own activation: the
+      # dbx_bq_connector layer resolves the BigQuery SA key with
+      # `gcloud secrets versions access` at plan time.
+      - name: Authenticate gcloud with the seed service account
+        run: |
+          set -euo pipefail
+          KEY_FILE="$RUNNER_TEMP/gcp-seed.json"
+          aws secretsmanager get-secret-value --secret-id "gcp/bootstrap/seed_credentials" \
+            --query SecretString --output text | jq -r '.provider_key' > "$KEY_FILE"
+          gcloud auth activate-service-account --key-file="$KEY_FILE" --quiet
+          gcloud config set project "$(jq -r '.project_id' "$KEY_FILE")" --quiet
+          rm -f "$KEY_FILE"
+          gcloud auth list --filter=status:ACTIVE --format='value(account)'
+
       - name: Apply — GCP
         working-directory: environments/dev/gcp
         run: |
