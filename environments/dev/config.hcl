@@ -72,13 +72,17 @@ locals {
   # One container per platform, mirroring the single S3 bucket on AWS. The zone
   # (raw / managed / gold) is a path inside it, exactly as the domain JSON
   # declares: abfss://databricks-project@<acct>/supply-chain/raw/
-  azure_containers              = ["databricks-project"]
-  databricks_app_name           = "databricks-connector"
-  role_names                    = ["Storage Blob Data Contributor", "Reader"]
-  sql_server_name               = "sql-federation-master"
-  sql_admin_user                = "sql_vault_admin"
-  sql_password_name             = "sql-admin-password"
-  sql_database_name             = "salesdb"
+  azure_containers    = ["databricks-project"]
+  databricks_app_name = "databricks-connector"
+  role_names          = ["Storage Blob Data Contributor", "Reader"]
+  sql_server_name     = "sql-federation-master"
+  sql_admin_user      = "sql_vault_admin"
+  sql_password_name   = "sql-admin-password"
+  # Must match `database_name` on the FEDERATED catalog in
+  # domains/azure/supply_infra.json — that value becomes the foreign catalog's
+  # `database` option, and the JDBC connection opens against it. "salesdb" was
+  # copied from the AWS config and named the wrong domain entirely.
+  sql_database_name             = "sqldb-product-catalog"
   mssql_port                    = 1433
   vnet_name                     = "vnet-data-platform"
   azure_vnet_cidr               = ["10.20.0.0/16"]
