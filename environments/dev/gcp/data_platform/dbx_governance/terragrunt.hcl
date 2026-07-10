@@ -67,6 +67,9 @@ generate "providers" {
   if_exists = "overwrite_terragrunt"
   contents  = <<-EOF
     provider "databricks" {
+      # Name the auth method explicitly: if ARM_* ever leaks into this job the
+      # provider would otherwise see two credentials and refuse to choose.
+      auth_type     = "oauth-m2m"
       alias         = "uc_mws"
       host          = "${dependency.bootstrap_gcp_platform.outputs.gcp_serverless_workspace_url}"
       account_id    = "${local.cfg.gcp_dbx_account_id}"

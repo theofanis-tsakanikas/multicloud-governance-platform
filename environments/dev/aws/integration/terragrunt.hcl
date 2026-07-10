@@ -42,6 +42,9 @@ generate "providers" {
       region = "${local.cfg.aws_region}"
     }
     provider "databricks" {
+      # Name the auth method explicitly: if ARM_* ever leaks into this job the
+      # provider would otherwise see two credentials and refuse to choose.
+      auth_type     = "oauth-m2m"
       alias         = "account"
       host          = "${local.cfg.databricks_host}"
       account_id    = "${local.cfg.dbx_account_id}"

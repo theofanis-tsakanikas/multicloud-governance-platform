@@ -109,6 +109,20 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      # ARM_* must exist ONLY for Azure. The databricks provider reads them as an
+      # Azure credential, finds client_id/client_secret as well, and refuses:
+      # "more than one authorization method configured: azure and oauth". Setting
+      # them at job level poisoned the GCP and AWS runs.
+      - name: Export ARM_* (Azure only)
+        if: inputs.cloud == 'azure'
+        run: |
+          {
+            echo "ARM_USE_OIDC=true"
+            echo "ARM_CLIENT_ID=${{ secrets.AZURE_CLIENT_ID }}"
+            echo "ARM_TENANT_ID=${{ secrets.AZURE_TENANT_ID }}"
+            echo "ARM_SUBSCRIPTION_ID=${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+          } >> "$GITHUB_ENV"
+
       - name: Setup Terraform + Terragrunt
         run: |
           wget -q "https://releases.hashicorp.com/terraform/${{ env.TF_VERSION }}/terraform_${{ env.TF_VERSION }}_linux_amd64.zip" -O tf.zip
@@ -140,11 +154,6 @@ jobs:
             fi
             echo "::endgroup::"
           done
-        env:
-          ARM_USE_OIDC: ${{ inputs.cloud == 'azure' }}
-          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Summary
         if: always()
