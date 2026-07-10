@@ -21,14 +21,24 @@ variables:
   warehouse_id:
     description: "SQL warehouse ID the medallion runs on (from your workspace)."
 
+# The targets carry no `workspace.host`. The Databricks CLI refuses variable
+# interpolation on authentication fields:
+#
+#   Interpolation is not supported for the field workspace.host. Please set the
+#   DATABRICKS_HOST environment variable if you wish to configure this field at
+#   runtime.
+#
+# which is exactly right, and exactly what the pipeline workflow already does: it
+# reads the workspace URL from the bootstrap Terraform outputs and exports
+# DATABRICKS_HOST. Hard-coding a host here would also mean committing two
+# workspace URLs that change on every re-bootstrap.
+#
+# A target therefore selects WHICH jobs to deploy, not where. The where comes from
+# the environment.
 targets:
   aws:
     default: true
-    workspace:
-      host: ${DATABRICKS_AWS_HOST} # e.g. https://dbc-xxxx.cloud.databricks.com
-  gcp:
-    workspace:
-      host: ${DATABRICKS_GCP_HOST} # e.g. https://xxxx.gcp.databricks.com
+  gcp: {}
 
 resources:
   jobs:

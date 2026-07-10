@@ -80,7 +80,6 @@ jobs:
           echo "DATABRICKS_HOST=$HOST"                >> "$GITHUB_ENV"
           echo "DATABRICKS_CLIENT_ID=$CID"            >> "$GITHUB_ENV"
           echo "DATABRICKS_CLIENT_SECRET=$CSEC"       >> "$GITHUB_ENV"
-          echo "DATABRICKS_${CLOUD^^}_HOST=$HOST"     >> "$GITHUB_ENV"
           echo "WAREHOUSE_ID=$WID"                    >> "$GITHUB_ENV"
 
       # ── Seeding the SIMULATED source systems (ADR-0014) ────────────────────

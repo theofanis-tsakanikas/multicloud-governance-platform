@@ -5,8 +5,9 @@
 #   ./bundle.sh deploy   <aws|gcp>   # uploads SQL + notebook, creates the Jobs
 #   ./bundle.sh run      <aws|gcp>   # runs the medallion job (the "click play")
 #
-# Prereqs: `databricks` CLI authenticated to the target workspace, and
-#   export DATABRICKS_AWS_HOST=...   DATABRICKS_GCP_HOST=...
+# Prereqs: `databricks` CLI authenticated to the target workspace.
+#   export DATABRICKS_HOST=<workspace url>   (the CLI's own variable — the bundle
+#   cannot interpolate it, and should not: it is an authentication field)
 # Pass the SQL warehouse id:  WAREHOUSE_ID=<id> ./bundle.sh deploy aws
 set -euo pipefail
 
