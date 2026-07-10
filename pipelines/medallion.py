@@ -11,7 +11,7 @@ Why this is on-thesis, not an analytics detour:
 
 * **gold is PII-minimised by construction.** The silver layer carries the PII
   columns from the federated CRM / web sources; the gold layer aggregates them
-  away (counts by country, revenue by region) — so the pipeline *demonstrates*
+  away (counts by country, revenue by market) — so the pipeline *demonstrates*
   the data-protection posture the governance layer asserts.
 * **the cross-cloud KPI table is the Delta Sharing story, executed.** GCP
   marketing gold is joined with AWS sales gold into one ``global_kpis`` table —
@@ -119,9 +119,9 @@ def build_gold(conn: sqlite3.Connection, silver: dict[str, str]) -> list[str]:
     # ---- AWS sales ---------------------------------------------------------
     if s("aws:sales_aws.silver"):
         make(
-            "gold__sales_revenue_by_region",
-            f"SELECT region, COUNT(*) AS sales, ROUND(SUM(CAST(revenue AS REAL)), 2) AS revenue "
-            f'FROM "{s("aws:sales_aws.silver")}" GROUP BY region ORDER BY revenue DESC',
+            "gold__sales_revenue_by_market",
+            f"SELECT market, COUNT(*) AS sales, ROUND(SUM(CAST(revenue AS REAL)), 2) AS revenue "
+            f'FROM "{s("aws:sales_aws.silver")}" GROUP BY market ORDER BY revenue DESC',
         )
     if s("aws:sales_rds_fed.crm") and s("aws:sales_rds_fed.orders"):
         # gold drops email/phone — PII stays in silver, gold keeps only pseudonymous id + country.
@@ -171,9 +171,9 @@ def build_gold(conn: sqlite3.Connection, silver: dict[str, str]) -> list[str]:
 
     # ---- Cross-cloud KPI table (the Delta Sharing story, executed) ---------
     parts = []
-    if "gold__sales_revenue_by_region" in gold:
+    if "gold__sales_revenue_by_market" in gold:
         parts.append(
-            "SELECT 'AWS' AS cloud, 'sales' AS domain, 'revenue' AS kpi, ROUND(SUM(revenue), 2) AS value FROM gold__sales_revenue_by_region"
+            "SELECT 'AWS' AS cloud, 'sales' AS domain, 'revenue' AS kpi, ROUND(SUM(revenue), 2) AS value FROM gold__sales_revenue_by_market"
         )
     if "gold__supply_supplier_leadtime" in gold:
         parts.append(

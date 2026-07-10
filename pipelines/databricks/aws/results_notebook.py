@@ -10,32 +10,32 @@
 # MAGIC > Deployed into your workspace by `databricks bundle deploy` — just open & play.
 
 # COMMAND ----------
-# MAGIC %md ## 1 · Revenue by region  (AWS sales gold)
+# MAGIC %md ## 1 · Revenue by market  (AWS sales gold)
 # COMMAND ----------
 # MAGIC %sql
-# MAGIC SELECT region, revenue, orders, customers
-# MAGIC FROM sales_aws.gold.sales_by_region
+# MAGIC SELECT market, revenue, orders, customers
+# MAGIC FROM sales_aws.gold.sales_by_market
 # MAGIC ORDER BY revenue DESC;
-# MAGIC -- 📊 BAR (x=region, y=revenue)
+# MAGIC -- 📊 BAR (x=market, y=revenue)
 
 # COMMAND ----------
 # MAGIC %md ## 2 · 🔗 Marketing demand — Delta-shared from GCP, queried on AWS
 # COMMAND ----------
 # MAGIC %sql
-# MAGIC SELECT region, marketing_spend, sessions, campaigns
-# MAGIC FROM marketing_share.marketing_gcp.gold_marketing_by_region   -- DELTA-SHARED from GCP
+# MAGIC SELECT market, marketing_spend, sessions, campaigns
+# MAGIC FROM marketing_share.marketing_gcp.gold_marketing_by_market   -- DELTA-SHARED from GCP
 # MAGIC ORDER BY marketing_spend DESC;
-# MAGIC -- 📊 BAR (x=region, y=marketing_spend)
+# MAGIC -- 📊 BAR (x=market, y=marketing_spend)
 
 # COMMAND ----------
 # MAGIC %md ## 3 · 🎯 THE Executive Cross-Cloud View — three clouds, one table
 # COMMAND ----------
 # MAGIC %sql
-# MAGIC SELECT region, marketing_spend, revenue, marketing_roi,
+# MAGIC SELECT market, marketing_spend, revenue, marketing_roi,
 # MAGIC        avg_lead_days, inventory_units, stockout_risk
 # MAGIC FROM sales_aws.gold.executive_cross_cloud
 # MAGIC ORDER BY revenue DESC;
-# MAGIC -- 📊 TABLE (colour `stockout_risk`)  +  a BAR of revenue by region
+# MAGIC -- 📊 TABLE (colour `stockout_risk`)  +  a BAR of revenue by market
 # MAGIC -- 🗣️ "Region X: strong demand (GCP) → revenue (AWS), but supply lead times
 # MAGIC --     high & inventory low (Azure) → stockout risk."
 
@@ -43,19 +43,19 @@
 # MAGIC %md ## 4 · Marketing ROI — is demand turning into profit?
 # COMMAND ----------
 # MAGIC %sql
-# MAGIC SELECT region, marketing_spend, revenue, marketing_roi
+# MAGIC SELECT market, marketing_spend, revenue, marketing_roi
 # MAGIC FROM sales_aws.gold.executive_cross_cloud
 # MAGIC ORDER BY marketing_roi DESC;
-# MAGIC -- 📊 BAR (x=region, y=marketing_roi)
+# MAGIC -- 📊 BAR (x=market, y=marketing_roi)
 
 # COMMAND ----------
 # MAGIC %md ## 5 · Supply risk — where can we not deliver?
 # COMMAND ----------
 # MAGIC %sql
-# MAGIC SELECT region, avg_lead_days, below_reorder_pct, stockout_risk
+# MAGIC SELECT market, avg_lead_days, below_reorder_pct, stockout_risk
 # MAGIC FROM sales_aws.gold.executive_cross_cloud
 # MAGIC ORDER BY below_reorder_pct DESC;
-# MAGIC -- 📊 TABLE (colour stockout_risk)  or  BAR (x=region, y=below_reorder_pct)
+# MAGIC -- 📊 TABLE (colour stockout_risk)  or  BAR (x=market, y=below_reorder_pct)
 
 # COMMAND ----------
 # MAGIC %md ## 6 · 🔒 Governance proof — the gold tables carry ZERO PII

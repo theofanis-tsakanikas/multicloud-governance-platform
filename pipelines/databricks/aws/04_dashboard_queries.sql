@@ -7,16 +7,16 @@
 -- none either, and the PII that does exist never left the source system.
 -- ============================================================================
 
--- TILE 1 · Revenue by region                          [BAR: x=region, y=revenue]
-SELECT region, revenue FROM sales_aws.gold.executive_cross_cloud ORDER BY revenue DESC;
+-- TILE 1 · Revenue by market                          [BAR: x=market, y=revenue]
+SELECT market, revenue FROM sales_aws.gold.executive_cross_cloud ORDER BY revenue DESC;
 
 -- TILE 2 · Marketing ROI (demand → revenue)           [BAR: colour by marketing_roi]
 -- Decision: where does the next marketing euro go?
-SELECT region, marketing_spend, revenue, marketing_roi
+SELECT market, marketing_spend, revenue, marketing_roi
 FROM sales_aws.gold.executive_cross_cloud ORDER BY marketing_roi DESC;
 
 -- TILE 3 · Supply risk                                [TABLE w/ conditional colour]
-SELECT region, avg_lead_days, below_reorder_pct, stockout_risk
+SELECT market, avg_lead_days, below_reorder_pct, stockout_risk
 FROM sales_aws.gold.executive_cross_cloud ORDER BY below_reorder_pct DESC;
 
 -- TILE 4 · Revenue at risk                            [COUNTER / big number]
@@ -25,7 +25,7 @@ SELECT ROUND(SUM(revenue_at_risk), 2) AS revenue_at_risk_eur
 FROM sales_aws.gold.executive_cross_cloud;
 
 -- TILE 5 · Demand vs delivery                         [SCATTER]
-SELECT region, sessions AS demand, inventory_units AS supply_capacity, revenue
+SELECT market, sessions AS demand, inventory_units AS supply_capacity, revenue
 FROM sales_aws.gold.executive_cross_cloud;
 
 -- TILE 6 · Customer segments worth retaining          [BAR: y=segment_revenue]
@@ -34,10 +34,10 @@ SELECT segment, SUM(customers) AS customers, ROUND(SUM(segment_revenue), 2) AS s
        SUM(at_risk_customers) AS at_risk_customers
 FROM sales_aws.gold.customer_value GROUP BY segment ORDER BY segment_revenue DESC;
 
--- TILE 7 · Product mix by region                      [STACKED BAR]
+-- TILE 7 · Product mix by market                      [STACKED BAR]
 -- Decision: which SKU to push, which to cut, and where?
-SELECT region, product_sku, revenue, pct_of_region_revenue
-FROM sales_aws.gold.product_performance ORDER BY region, revenue DESC;
+SELECT market, product_sku, revenue, pct_of_market_revenue
+FROM sales_aws.gold.product_performance ORDER BY market, revenue DESC;
 
 -- TILE 8 · Suppliers to renegotiate                   [TABLE, worst 10]
 -- Decision: which supplier contract is causing the stockout risk in tile 3?
@@ -46,12 +46,12 @@ FROM supplies_azure.gold.supplier_leadtime
 WHERE shipments >= 20 ORDER BY on_time_pct ASC LIMIT 10;
 
 -- TILE 9 · Headline — the whole story                 [TABLE]
-SELECT region, marketing_spend, sessions, revenue, orders, marketing_roi,
+SELECT market, marketing_spend, sessions, revenue, orders, marketing_roi,
        avg_lead_days, inventory_units, stockout_risk, revenue_at_risk
 FROM sales_aws.gold.executive_cross_cloud ORDER BY revenue DESC;
 
 -- TILE 10 · Data quality — what silver rejected, and why   [BAR: x=reason, y=rows]
--- The source is a real OLTP system: it replays orders, loses regions, issues
+-- The source is a real OLTP system: it replays orders, loses markets, issues
 -- refunds, and erases customers. Bronze copies it faithfully; silver rejects on
 -- the record. 6 040 bronze rows -> 5 820 silver rows.
 SELECT reason, rows FROM sales_aws.silver.sales_rejects ORDER BY rows DESC;

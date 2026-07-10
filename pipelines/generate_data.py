@@ -40,8 +40,11 @@ _EPOCH_DAYS = 20000  # days since 1970 → 2024-10-04, an arbitrary fixed anchor
 
 _FIRST = ["Maria", "Giorgos", "Eleni", "Nikos", "Sofia", "Dimitris", "Katerina", "Yannis", "Anna", "Kostas"]
 _LAST = ["Papadopoulos", "Nikolaou", "Georgiou", "Vasileiou", "Ioannou", "Makris", "Antoniou", "Pappas"]
-_COUNTRIES = ["GR", "DE", "FR", "NL", "IT", "ES"]
-_REGIONS = ["EU-South", "EU-West", "EU-North", "EU-Central"]
+# The six markets are the cross-cloud join key. Real country names, not cloud
+# region codes: a column called `region` in a multi-cloud repo reads as
+# eu-central-1, not as a sales territory.
+_MARKETS = ["Germany", "France", "Netherlands", "Spain", "Italy", "Poland"]
+_COUNTRIES = _MARKETS  # a customer's country is drawn from the same value domain
 _CHANNELS = ["search", "social", "email", "display"]
 _STATUSES = ["NEW", "SHIPPED", "CLOSED", "CANCELLED"]
 
@@ -87,7 +90,7 @@ def _columns_for(schema_fqn: str, classification: str | None):
         "sales_aws.silver": [
             ("sale_id", lambda r, i: f"sale_{i:05d}"),
             ("sale_date", lambda r, i: _date(r)),
-            ("region", lambda r, i: rng_pick(r, _REGIONS)),
+            ("market", lambda r, i: rng_pick(r, _MARKETS)),
             ("product_sku", lambda r, i: f"SKU-{r.randint(1000, 1099)}"),
             ("quantity", lambda r, i: str(r.randint(1, 9))),
             ("revenue", lambda r, i: f"{r.uniform(20, 1800):.2f}"),

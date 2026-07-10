@@ -70,7 +70,7 @@ def test_pii_detection():
     # negatives — dates / numbers / categories are not PII
     assert not _column_is_pii("sale_date", ["2024-08-15", "2024-09-01"])
     assert not _column_is_pii("revenue", ["123.45", "9.99"])
-    assert not _column_is_pii("region", ["EU-West", "EU-South"])
+    assert not _column_is_pii("market", ["Germany", "Netherlands"])
 
 
 def test_real_profile_is_consistent(tmp_path):

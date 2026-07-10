@@ -24,7 +24,7 @@ CREATE OR REPLACE TABLE sales.crm.customers AS
 SELECT
   'cust_' || seq4()                                   AS customer_id,
   'customer' || uniform(1, 99999, random()) || '@example.com' AS email,   -- PII
-  ARRAY_CONSTRUCT('EU-North','EU-South','EU-East','EU-West')[uniform(0,3,random())] AS region
+  ARRAY_CONSTRUCT('Germany','France','Netherlands','Spain','Italy','Poland')[uniform(0,5,random())] AS market
 FROM TABLE(generator(rowcount => 200));
 
 -- ── The masking policy (classification-driven) ─────────────────────────────
@@ -48,14 +48,14 @@ GRANT SELECT ON TABLE    sales.crm.customers TO ROLE analysts;
 
 -- 1) As ADMIN — sees the real email:
 USE ROLE metastore_admins;
-SELECT customer_id, region, email FROM sales.crm.customers LIMIT 5;
+SELECT customer_id, market, email FROM sales.crm.customers LIMIT 5;
 --   email → customer12345@example.com   ✅ full value
 
 -- 2) As ANALYST — same query, PII masked:
 USE ROLE analysts;
-SELECT customer_id, region, email FROM sales.crm.customers LIMIT 5;
+SELECT customer_id, market, email FROM sales.crm.customers LIMIT 5;
 --   email → ***MASKED***                🔒 protected
 
 -- 🗣️ Narrate: "Same contract as Databricks, enforced on Snowflake. The analyst
---            can analyse by region but can NEVER see the customer's email.
+--            can analyse by market but can NEVER see the customer's email.
 --            The governance is in the data layer — not a promise in a PDF."

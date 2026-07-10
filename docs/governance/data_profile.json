@@ -161,8 +161,8 @@
       "pii_columns": []
     },
     {
-      "table": "gold__sales_revenue_by_region",
-      "rows": 4,
+      "table": "gold__sales_revenue_by_market",
+      "rows": 6,
       "columns": 3,
       "pii_columns": []
     },
