@@ -9,3 +9,9 @@ variable "bucket_name" {
 }
 
 
+
+variable "force_destroy" {
+  description = "Delete objects and versions when the bucket is destroyed. dev only."
+  type        = bool
+  default     = false
+}

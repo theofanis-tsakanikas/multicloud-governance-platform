@@ -144,6 +144,28 @@ jobs:
           az sql server firewall-rule create -g "$RG" -s "$SRV" \
             -n "gh-runner-destroy" --start-ip-address "$IP" --end-ip-address "$IP" -o none
 
+      # rds_schemas holds `postgresql_schema` resources, and the postgres provider
+      # opens a connection to read them before it can destroy them. A stopped RDS
+      # instance refuses that connection, so the destroy of a database's schemas
+      # requires the database to be running -- even though the very next layer
+      # deletes the instance outright. The mirror of the Azure SQL firewall step.
+      - name: Start the RDS instance (AWS only)
+        if: inputs.cloud == 'aws'
+        run: |
+          set -euo pipefail
+          ID=sales-db-instance
+          STATUS=$(aws rds describe-db-instances --db-instance-identifier "$ID" \
+            --query 'DBInstances[0].DBInstanceStatus' --output text 2>/dev/null || echo "absent")
+          echo "::notice::$ID is $STATUS"
+          case "$STATUS" in
+            absent)   echo "nothing to start"; exit 0 ;;
+            available) exit 0 ;;
+            stopped)  aws rds start-db-instance --db-instance-identifier "$ID" >/dev/null ;;
+          esac
+          echo "waiting for $ID to become available (up to ~10 min)"
+          aws rds wait db-instance-available --db-instance-identifier "$ID"
+          echo "::notice::$ID is available"
+
       - name: Setup Terraform + Terragrunt
         run: |
           wget -q "https://releases.hashicorp.com/terraform/${{ env.TF_VERSION }}/terraform_${{ env.TF_VERSION }}_linux_amd64.zip" -O tf.zip

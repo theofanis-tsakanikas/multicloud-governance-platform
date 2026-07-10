@@ -26,4 +26,6 @@ inputs = {
   bucket_name           = local.cfg.bucket_name
   ecr_repo_name         = local.cfg.ecr_repo_name
   is_private_connection = local.cfg.is_private_connection_aws
+  # dev is torn down and rebuilt on purpose; prod leaves this false.
+  force_destroy = true
 }

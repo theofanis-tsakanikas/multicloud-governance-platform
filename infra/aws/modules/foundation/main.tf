@@ -9,7 +9,8 @@ module "ecr_registry" {
 }
 
 module "s3_buckets" {
-  source      = "./_components/s3_buckets"
-  environment = var.environment
-  bucket_name = var.bucket_name
+  source        = "./_components/s3_buckets"
+  environment   = var.environment
+  bucket_name   = var.bucket_name
+  force_destroy = var.force_destroy
 }

@@ -15,3 +15,9 @@ variable "is_private_connection" {
   type    = bool
   default = false
 }
+
+variable "force_destroy" {
+  description = "Delete the data bucket's objects and versions on destroy. dev only."
+  type        = bool
+  default     = false
+}

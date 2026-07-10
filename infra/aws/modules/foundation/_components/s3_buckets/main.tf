@@ -3,6 +3,16 @@ resource "aws_s3_bucket" "data_bucket" {
   # Name of the bucket passed from the orchestrator variables
   bucket = var.bucket_name
 
+  # Versioning is enabled below, so a `terraform destroy` on a bucket that ever
+  # held an object fails: the bucket is not empty, and the versions are not
+  # visible to a plain delete. force_destroy removes objects and versions with it.
+  #
+  # This is deliberately opt-in and OFF by default. dev turns it on because its
+  # bucket holds nothing but generated demo data and the platform's whole point is
+  # that it can be torn down and rebuilt. prod leaves it off: a bucket that
+  # silently deletes its own contents on `destroy` is not a bucket you want to own.
+  force_destroy = var.force_destroy
+
   # Resource tagging for cost tracking and management
   tags = {
     Name        = "Data Bucket"
