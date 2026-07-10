@@ -38,6 +38,16 @@ variables:
 targets:
   aws:
     default: true
+    # The dashboard reads sales_aws / supplies_azure / the delta-shared GCP gold,
+    # all of which live in the AWS metastore, so it belongs to the AWS target only.
+    # A top-level resource would try to deploy to the GCP workspace too, where those
+    # catalogs do not exist.
+    resources:
+      dashboards:
+        executive:
+          display_name: "[gov] Multi-Cloud Executive View"
+          file_path: ./aws/executive.lvdash.json
+          warehouse_id: ${var.warehouse_id}
   gcp: {}
 
 resources:

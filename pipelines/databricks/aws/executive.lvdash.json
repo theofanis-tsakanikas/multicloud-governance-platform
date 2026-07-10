@@ -1,0 +1,175 @@
+{
+  "datasets": [
+    {
+      "name": "exec",
+      "displayName": "executive_cross_cloud",
+      "queryLines": [
+        "SELECT market, revenue, orders, customers, marketing_spend, sessions,\n",
+        "       marketing_roi, avg_lead_days, inventory_units, below_reorder_pct,\n",
+        "       stockout_risk, revenue_at_risk\n",
+        "FROM sales_aws.gold.executive_cross_cloud"
+      ]
+    },
+    {
+      "name": "rejects",
+      "displayName": "sales_rejects",
+      "queryLines": [
+        "SELECT reason, rows FROM sales_aws.silver.sales_rejects ORDER BY rows DESC"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "executive",
+      "displayName": "Executive",
+      "layout": [
+        {
+          "widget": {
+            "name": "title",
+            "textbox_spec": "# Multi-Cloud Executive View\nThree clouds fused by market — revenue (AWS) · demand (GCP, Delta-shared) · supply risk (Azure)."
+          },
+          "position": { "x": 0, "y": 0, "width": 6, "height": 2 }
+        },
+        {
+          "widget": {
+            "name": "revenue_at_risk",
+            "queries": [
+              {
+                "name": "q",
+                "query": {
+                  "datasetName": "exec",
+                  "fields": [
+                    { "name": "sum(revenue_at_risk)", "expression": "SUM(`revenue_at_risk`)" }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": { "fieldName": "sum(revenue_at_risk)", "displayName": "Revenue at risk (EUR)" }
+              }
+            }
+          },
+          "position": { "x": 0, "y": 2, "width": 2, "height": 4 }
+        },
+        {
+          "widget": {
+            "name": "revenue_by_market",
+            "queries": [
+              {
+                "name": "q",
+                "query": {
+                  "datasetName": "exec",
+                  "fields": [
+                    { "name": "market", "expression": "`market`" },
+                    { "name": "sum(revenue)", "expression": "SUM(`revenue`)" }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": { "fieldName": "market", "scale": { "type": "categorical" }, "displayName": "Market" },
+                "y": { "fieldName": "sum(revenue)", "scale": { "type": "quantitative" }, "displayName": "Revenue" }
+              }
+            }
+          },
+          "position": { "x": 2, "y": 2, "width": 4, "height": 4 }
+        },
+        {
+          "widget": {
+            "name": "marketing_roi",
+            "queries": [
+              {
+                "name": "q",
+                "query": {
+                  "datasetName": "exec",
+                  "fields": [
+                    { "name": "market", "expression": "`market`" },
+                    { "name": "avg(marketing_roi)", "expression": "AVG(`marketing_roi`)" }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": { "fieldName": "market", "scale": { "type": "categorical" }, "displayName": "Market" },
+                "y": { "fieldName": "avg(marketing_roi)", "scale": { "type": "quantitative" }, "displayName": "Marketing ROI" }
+              }
+            }
+          },
+          "position": { "x": 0, "y": 6, "width": 3, "height": 5 }
+        },
+        {
+          "widget": {
+            "name": "supply_risk",
+            "queries": [
+              {
+                "name": "q",
+                "query": {
+                  "datasetName": "exec",
+                  "fields": [
+                    { "name": "market", "expression": "`market`" },
+                    { "name": "avg_lead_days", "expression": "`avg_lead_days`" },
+                    { "name": "below_reorder_pct", "expression": "`below_reorder_pct`" },
+                    { "name": "stockout_risk", "expression": "`stockout_risk`" }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 1,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  { "fieldName": "market", "displayName": "Market" },
+                  { "fieldName": "avg_lead_days", "displayName": "Avg lead days" },
+                  { "fieldName": "below_reorder_pct", "displayName": "% below reorder" },
+                  { "fieldName": "stockout_risk", "displayName": "Stockout risk" }
+                ]
+              }
+            }
+          },
+          "position": { "x": 3, "y": 6, "width": 3, "height": 5 }
+        },
+        {
+          "widget": {
+            "name": "data_quality",
+            "queries": [
+              {
+                "name": "q",
+                "query": {
+                  "datasetName": "rejects",
+                  "fields": [
+                    { "name": "reason", "expression": "`reason`" },
+                    { "name": "sum(rows)", "expression": "SUM(`rows`)" }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": { "fieldName": "reason", "scale": { "type": "categorical" }, "displayName": "Reject reason" },
+                "y": { "fieldName": "sum(rows)", "scale": { "type": "quantitative" }, "displayName": "Rows rejected" }
+              }
+            }
+          },
+          "position": { "x": 0, "y": 11, "width": 6, "height": 4 }
+        }
+      ]
+    }
+  ]
+}
