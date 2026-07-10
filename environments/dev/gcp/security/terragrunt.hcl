@@ -39,10 +39,12 @@ generate "provider_gcp" {
 }
 
 inputs = {
-  project_id      = local.cfg.gcp_project_id
-  location        = local.cfg.gcp_location
-  provider_key    = local.gcp_seed.provider_key
-  gcs_bucket_name = dependency.foundation.outputs.gcs_bucket_name
-  dbx_sa_email    = dependency.bootstrap_gcp.outputs.dbx_sa_email
-  uc_sa_email     = local.cfg.dbx_system_sa_gcp
+  project_id       = local.cfg.gcp_project_id
+  location         = local.cfg.gcp_location
+  provider_key     = local.gcp_seed.provider_key
+  gcs_bucket_name  = dependency.foundation.outputs.gcs_bucket_name
+  dbx_sa_email     = dependency.bootstrap_gcp.outputs.dbx_sa_email
+  uc_sa_email      = local.cfg.dbx_system_sa_gcp
+  federation_sa_id = local.cfg.gcp_service_account_id
+  bq_secret_id     = local.cfg.gcp_sa_secret_id
 }

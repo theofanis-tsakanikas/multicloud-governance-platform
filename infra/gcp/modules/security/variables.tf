@@ -30,3 +30,13 @@ variable "provider_key" {
   sensitive   = true
   default     = null
 }
+
+variable "federation_sa_id" {
+  description = "Account id of the BigQuery federation service account."
+  type        = string
+}
+
+variable "bq_secret_id" {
+  description = "Secret Manager secret holding the federation SA key."
+  type        = string
+}

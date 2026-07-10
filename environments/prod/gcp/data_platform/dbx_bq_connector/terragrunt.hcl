@@ -21,16 +21,15 @@ locals {
     "--region", local.cfg.aws_region
   ))
 
-  # BQ SA key fetched from GCP Secret Manager (requires gcloud ADC before apply)
-  gcp_bq_key = run_cmd("--terragrunt-quiet",
-    "gcloud", "secrets", "versions", "access", "latest",
-    "--secret", local.cfg.gcp_sa_secret_id,
-    "--project", local.cfg.gcp_project_id
-  )
-
   domain_path        = "${get_terragrunt_dir()}/../../../domains/gcp"
   infra              = jsondecode(file("${local.domain_path}/marketing_infra.json"))
   federated_catalogs = [for c in local.infra.catalogs : c if c.type == "FEDERATED"]
+}
+
+# The federation service-account key is created here, not read back from
+# Secret Manager at parse time.
+dependency "security" {
+  config_path = "../../security"
 }
 
 dependency "bootstrap_gcp_platform" {
@@ -72,6 +71,6 @@ inputs = {
   connection_name               = local.federated_catalogs[0].connection_name
   project_id                    = local.cfg.gcp_project_id
   cred_sa_email                 = dependency.bootstrap_gcp_foundation.outputs.dbx_sa_email
-  bq_key                        = local.gcp_bq_key
+  bq_key                        = dependency.security.outputs.bq_sa_key
   admin_group_name              = local.cfg.admin_group_name
 }

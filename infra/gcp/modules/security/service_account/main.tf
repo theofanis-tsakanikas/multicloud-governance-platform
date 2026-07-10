@@ -16,3 +16,52 @@ resource "google_project_iam_member" "sa_bq_access" {
   role   = "roles/bigquery.admin"
   member = "serviceAccount:${var.dbx_sa_email}"
 }
+# ─── The Lakehouse Federation identity for BigQuery ──────────────────────────
+#
+# Databricks authenticates to BigQuery with a service-account key (the connection
+# option is GoogleServiceAccountKeyJson), so the key has to exist. Nothing created
+# it: dbx_bq_connector read `bq_key` out of GCP Secret Manager and the secret was
+# never provisioned.
+#
+# Created here, in the security layer, alongside the other grants — and with the
+# two roles federation actually needs rather than roles/bigquery.admin.
+resource "google_service_account" "federation" {
+  project      = var.project_id
+  account_id   = var.federation_sa_id
+  display_name = "Databricks Lakehouse Federation (BigQuery)"
+  description  = "Read-only BigQuery identity used by the marketing_bq_fed foreign catalog."
+}
+
+# Least privilege: read the data, and run the queries that read it. Nothing else.
+resource "google_project_iam_member" "federation_bq_data" {
+  project = var.project_id
+  role    = "roles/bigquery.dataViewer"
+  member  = "serviceAccount:${google_service_account.federation.email}"
+}
+
+resource "google_project_iam_member" "federation_bq_jobs" {
+  project = var.project_id
+  role    = "roles/bigquery.jobUser"
+  member  = "serviceAccount:${google_service_account.federation.email}"
+}
+
+resource "google_service_account_key" "federation" {
+  service_account_id = google_service_account.federation.name
+}
+
+# Stored in GCP's own secret store so the key has one canonical home and can be
+# rotated there. The connector reads it as a dependency output, not from here —
+# the secret exists for operators, not for the apply.
+resource "google_secret_manager_secret" "bq_key" {
+  project   = var.project_id
+  secret_id = var.bq_secret_id
+
+  replication {
+    auto {}
+  }
+}
+
+resource "google_secret_manager_secret_version" "bq_key" {
+  secret      = google_secret_manager_secret.bq_key.id
+  secret_data = base64decode(google_service_account_key.federation.private_key)
+}

@@ -17,3 +17,12 @@ variable "uc_sa_email" {
   type        = string
   description = "The System-Managed Service Account email provided by Databricks Metastore"
 }
+variable "federation_sa_id" {
+  description = "Account id of the BigQuery federation service account."
+  type        = string
+}
+
+variable "bq_secret_id" {
+  description = "Secret Manager secret holding the federation SA key."
+  type        = string
+}
