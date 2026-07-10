@@ -8,6 +8,14 @@
 -- source `marketing_bq_fed.web` (classified `pii`) and is queried in place —
 -- the same boundary the AWS medallion draws against `sales_rds_fed.crm`.
 -- ============================================================================
+-- The serverless warehouse's default catalog is `hive_metastore`, and legacy
+-- access is turned off on this account. Any DDL issued from such a session fails
+-- with UC_HIVE_METASTORE_DISABLED_EXCEPTION — even when every name in the
+-- statement is fully qualified, because the check is on the session, not on the
+-- identifiers. A job's SQL task runs the whole file in one session, so one
+-- statement fixes the file. Three-part names below still address other catalogs.
+USE CATALOG marketing_gcp;
+
 -- Read live from BigQuery through `marketing_bq_fed`. Only the `analytics` dataset
 -- is touched: it is classified `internal` and holds pseudonymous sessions. The
 -- `web` dataset is `pii` — emails, IPs, names — and the medallion never opens it.

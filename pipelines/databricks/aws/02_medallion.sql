@@ -13,6 +13,14 @@
 -- Gold is keyed by `market` so 03 can fuse the three clouds.
 -- ============================================================================
 
+-- The serverless warehouse's default catalog is `hive_metastore`, and legacy
+-- access is turned off on this account. Any DDL issued from such a session fails
+-- with UC_HIVE_METASTORE_DISABLED_EXCEPTION — even when every name in the
+-- statement is fully qualified, because the check is on the session, not on the
+-- identifiers. A job's SQL task runs the whole file in one session, so one
+-- statement fixes the file. Three-part names below still address other catalogs.
+USE CATALOG sales_aws;
+
 -- ---- sales silver: clean orders, enriched with the pseudonymous customer dim ----
 -- Four transformations, each rejecting or repairing real defects in the source:
 --   1. DISTINCT            -> collapses the 40 replayed orders

@@ -65,6 +65,14 @@ ORDER BY s.revenue DESC;
 -- The path is inside loc_sales_gold, so Unity Catalog governs the write with the
 -- same external-location grants it governs everything else with.
 -- ============================================================================
+-- The serverless warehouse's default catalog is `hive_metastore`, and legacy
+-- access is turned off on this account. Any DDL issued from such a session fails
+-- with UC_HIVE_METASTORE_DISABLED_EXCEPTION — even when every name in the
+-- statement is fully qualified, because the check is on the session, not on the
+-- identifiers. A job's SQL task runs the whole file in one session, so one
+-- statement fixes the file. Three-part names below still address other catalogs.
+USE CATALOG sales_aws;
+
 CREATE OR REPLACE TABLE sales_aws.gold.executive_export
 USING PARQUET
 LOCATION 's3://dbx-de-project-bucket-2026/databricks-project/sales/gold-zone/executive/'

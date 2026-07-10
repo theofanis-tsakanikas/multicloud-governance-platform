@@ -5,6 +5,14 @@
 -- gold_marketing_by_market is then Delta-shared to the AWS metastore.
 -- ============================================================================
 
+-- The serverless warehouse's default catalog is `hive_metastore`, and legacy
+-- access is turned off on this account. Any DDL issued from such a session fails
+-- with UC_HIVE_METASTORE_DISABLED_EXCEPTION — even when every name in the
+-- statement is fully qualified, because the check is on the session, not on the
+-- identifiers. A job's SQL task runs the whole file in one session, so one
+-- statement fixes the file. Three-part names below still address other catalogs.
+USE CATALOG marketing_gcp;
+
 -- ---- silver (pseudonymous: visitor_id, never an identity) ----
 CREATE OR REPLACE TABLE marketing_gcp.intelligence.web_clean AS
 SELECT DISTINCT

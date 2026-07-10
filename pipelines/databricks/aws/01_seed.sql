@@ -4,6 +4,14 @@
 -- Shared market dimension (the cross-cloud join key, NOT a cloud region):
 --   Germany · France · Netherlands · Spain · Italy · Poland
 -- ============================================================================
+-- The serverless warehouse's default catalog is `hive_metastore`, and legacy
+-- access is turned off on this account. Any DDL issued from such a session fails
+-- with UC_HIVE_METASTORE_DISABLED_EXCEPTION — even when every name in the
+-- statement is fully qualified, because the check is on the session, not on the
+-- identifiers. A job's SQL task runs the whole file in one session, so one
+-- statement fixes the file. Three-part names below still address other catalogs.
+USE CATALOG sales_aws;
+
 --
 -- Sales bronze is NOT synthesised here. It is read live, through Lakehouse
 -- Federation, out of the Postgres that owns it:
