@@ -19,6 +19,6 @@ module "federated_grants" {
   spn_client_id           = var.gcp_spn_client_id
   spn_client_secret       = var.gcp_spn_client_secret
   providers = {
-    databricks = databricks.uc_admin
+    databricks = databricks.uc_mws
   }
 }
