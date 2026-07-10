@@ -16,6 +16,11 @@
 -- Verified against GET /unity-catalog/schemas?catalog_name=shared_gcp_delta_share,
 -- which lists exactly `information_schema` and `intelligence`.
 -- ============================================================================
+-- The serverless warehouse's default catalog is `hive_metastore`, and legacy
+-- access is off on this account: any DDL from such a session fails, however well
+-- qualified the identifiers are. One statement per file, before the first DDL.
+USE CATALOG sales_aws;
+
 CREATE OR REPLACE TABLE sales_aws.gold.executive_cross_cloud AS
 WITH mktg AS (
   SELECT market, campaigns, sessions, marketing_spend
@@ -65,15 +70,18 @@ ORDER BY s.revenue DESC;
 -- The path is inside loc_sales_gold, so Unity Catalog governs the write with the
 -- same external-location grants it governs everything else with.
 -- ============================================================================
--- The serverless warehouse's default catalog is `hive_metastore`, and legacy
--- access is turned off on this account. Any DDL issued from such a session fails
--- with UC_HIVE_METASTORE_DISABLED_EXCEPTION — even when every name in the
--- statement is fully qualified, because the check is on the session, not on the
--- identifiers. A job's SQL task runs the whole file in one session, so one
--- statement fixes the file. Three-part names below still address other catalogs.
-USE CATALOG sales_aws;
+-- DROP + CREATE, not CREATE OR REPLACE: a non-Delta external table does not
+-- support REPLACE TABLE AS SELECT.
+--
+--   [UNSUPPORTED_FEATURE.TABLE_OPERATION] Table `sales_aws`.`gold`.
+--   `executive_export` does not support REPLACE TABLE AS SELECT.
+--
+-- Dropping an external table removes the metadata, not the files; the CREATE then
+-- overwrites them. Verified idempotent against the live warehouse: the second run,
+-- over a non-empty location, succeeds.
+DROP TABLE IF EXISTS sales_aws.gold.executive_export;
 
-CREATE OR REPLACE TABLE sales_aws.gold.executive_export
+CREATE TABLE sales_aws.gold.executive_export
 USING PARQUET
 LOCATION 's3://dbx-de-project-bucket-2026/databricks-project/sales/gold-zone/executive/'
 AS SELECT * FROM sales_aws.gold.executive_cross_cloud;
