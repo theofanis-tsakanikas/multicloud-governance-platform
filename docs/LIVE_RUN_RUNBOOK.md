@@ -56,7 +56,7 @@ Then, in the UI:
 - **Snowflake masking demo:** run [`pipelines/snowflake/masking_demo.sql`](../pipelines/snowflake/masking_demo.sql) in a worksheet.
 
 > **Delta Sharing note:** `aws/03_executive.sql` references marketing gold as
-> `marketing_share.marketing_gcp.gold_marketing_by_region` — the GCP table shared
+> `shared_gcp_delta_share.intelligence.gold_marketing_by_market` — the GCP table shared
 > to AWS by the `dbx_delta_sharing` layer. For a single-workspace dry run, point
 > it at the local `marketing_gcp.intelligence.gold_marketing_by_region` instead.
 

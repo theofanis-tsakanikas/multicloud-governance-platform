@@ -23,7 +23,7 @@
 # COMMAND ----------
 # MAGIC %sql
 # MAGIC SELECT market, marketing_spend, sessions, campaigns
-# MAGIC FROM marketing_share.marketing_gcp.gold_marketing_by_market   -- DELTA-SHARED from GCP
+# MAGIC FROM shared_gcp_delta_share.intelligence.gold_marketing_by_market   -- DELTA-SHARED from GCP
 # MAGIC ORDER BY marketing_spend DESC;
 # MAGIC -- 📊 BAR (x=market, y=marketing_spend)
 

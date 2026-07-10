@@ -3,15 +3,23 @@
 -- Fuses all three clouds by `market`:
 --   GCP marketing (Delta-shared) + AWS sales + Azure supply.
 --
--- DELTA SHARING: marketing gold lives in the GCP metastore and is shared to AWS
--- by the dbx_delta_sharing layer, where it appears as `marketing_share`.
---   · real cross-cloud run → marketing_share.marketing_gcp.gold_marketing_by_market
---   · single-workspace dry run → marketing_gcp.intelligence.gold_marketing_by_market
+-- DELTA SHARING: marketing gold lives in the GCP metastore and is shared into the
+-- AWS one by the dbx_delta_sharing layer. Two naming rules decide the path, and
+-- both were wrong here until a live deploy showed what the API actually creates:
+--
+--   · the recipient catalog is named after the SHARE, prefixed:
+--       share `gcp_delta_share` -> catalog `shared_gcp_delta_share`
+--   · the share carries a SCHEMA (marketing_gcp.intelligence), and the recipient
+--     sees that schema at the top level -- not nested under its origin catalog:
+--       shared_gcp_delta_share.intelligence.<table>
+--
+-- Verified against GET /unity-catalog/schemas?catalog_name=shared_gcp_delta_share,
+-- which lists exactly `information_schema` and `intelligence`.
 -- ============================================================================
 CREATE OR REPLACE TABLE sales_aws.gold.executive_cross_cloud AS
 WITH mktg AS (
   SELECT market, campaigns, sessions, marketing_spend
-  FROM   marketing_share.marketing_gcp.gold_marketing_by_market   -- DELTA-SHARED from GCP
+  FROM   shared_gcp_delta_share.intelligence.gold_marketing_by_market   -- DELTA-SHARED from GCP
 ),
 sales AS (
   SELECT market, orders, customers, revenue FROM sales_aws.gold.sales_by_market
