@@ -27,6 +27,11 @@ generate "providers" {
   if_exists = "overwrite_terragrunt"
   contents  = <<-EOF
     provider "databricks" {
+      # ARM_CLIENT_ID/ARM_TENANT_ID are exported for the azurerm provider, and the
+      # databricks provider treats them as an Azure auth method — then finds
+      # client_id/client_secret too and refuses: "more than one authorization
+      # method configured: azure and oauth". Name the one we mean.
+      auth_type     = "oauth-m2m"
       host          = "${dependency.bootstrap_platform.outputs.serverless_workspace_url}"
       account_id    = "${local.cfg.dbx_account_id}"
       client_id     = var.spn_client_id
@@ -36,6 +41,7 @@ generate "providers" {
 }
 
 inputs = {
+  is_private_connection      = local.cfg.is_private_connection_azure
   managed_workspace_host     = dependency.bootstrap_platform.outputs.serverless_workspace_url
   dbx_account_id             = local.cfg.dbx_account_id
   spn_client_id              = local.spn.client_id

@@ -49,3 +49,8 @@ variable "managed_serverless_compute" {
   description = "Whether to enable serverless compute for the SQL Warehouse"
   type        = bool
 }
+variable "is_private_connection" {
+  description = "Public mode uses the bootstrap serverless warehouse; this layer creates nothing."
+  type        = bool
+  default     = false
+}

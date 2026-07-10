@@ -36,6 +36,7 @@ generate "providers" {
 }
 
 inputs = {
+  is_private_connection      = local.cfg.is_private_connection_gcp
   gcp_managed_workspace_host = dependency.bootstrap_gcp_platform.outputs.gcp_serverless_workspace_url
   gcp_dbx_account_id         = local.cfg.gcp_dbx_account_id
   gcp_spn_client_id          = local.spn.client_id
