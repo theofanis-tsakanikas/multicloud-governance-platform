@@ -117,5 +117,10 @@ inputs = {
   aws_db_recipient              = local.cfg.aws_db_recipient
   aws_global_metastore_id       = dependency.bootstrap_platform.outputs.global_metastore_id
   gcp_metastore_id              = dependency.bootstrap_gcp_platform.outputs.gcp_metastore_id
-  gcp_provider_name             = dependency.bootstrap_gcp_platform.outputs.gcp_global_metastore_id
+  # The provider object the AWS metastore materialises for this share is named
+  # after the SHARE, not after the sharing metastore's global id. Verified
+  # against GET /unity-catalog/providers on the AWS metastore, which lists
+  # "gcp_delta_share" — passing the global id yields
+  # "Provider 'gcp:europe-west3:...' does not exist".
+  gcp_provider_name = local.cfg.gcp_delta_sharing_name
 }
