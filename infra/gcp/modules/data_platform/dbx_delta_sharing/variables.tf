@@ -72,3 +72,8 @@ variable "provider_key" {
   type        = string
   sensitive   = true
 }
+
+variable "aws_db_recipient" {
+  description = "Name of the recipient object the GCP metastore creates for the AWS metastore."
+  type        = string
+}

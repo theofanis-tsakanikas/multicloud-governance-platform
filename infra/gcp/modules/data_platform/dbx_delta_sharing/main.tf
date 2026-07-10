@@ -12,6 +12,7 @@ module "gcp_side" {
   providers               = { databricks = databricks.gcp_mws }
   delta_shares_map_json   = var.delta_shares_map_json
   aws_global_metastore_id = var.aws_global_metastore_id
+  aws_db_recipient        = var.aws_db_recipient
 }
 
 # 2. Mount the GCP Share as a Catalog in AWS

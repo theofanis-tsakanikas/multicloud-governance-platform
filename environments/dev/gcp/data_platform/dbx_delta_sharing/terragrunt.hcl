@@ -38,10 +38,20 @@ locals {
     if cat.type == "MANAGED"
   ]))
 
+  # The share carries the SCHEMA, not individual tables. The gold table it exists
+  # to publish (gold_marketing_by_market) is created later, by the medallion job —
+  # sharing the schema means the table appears on the AWS side the moment it is
+  # written, with no second apply. The volumes flagged `shared` in the domain live
+  # in that same schema.
   delta_shares_map = {
     (local.cfg.gcp_delta_sharing_name) = {
-      catalog = local.infra.catalogs[0].catalog_name
-      schemas = [for s in local.shared_schemas : s.schema]
+      share_name = local.cfg.gcp_delta_sharing_name
+      objects = [
+        for s in local.shared_schemas : {
+          full_name = "${s.catalog}.${s.schema}"
+          type      = "SCHEMA"
+        }
+      ]
     }
   }
 }
@@ -104,6 +114,7 @@ inputs = {
   spn_client_secret             = local.spn.client_secret
   provider_key                  = local.gcp_seed.provider_key
   delta_shares_map_json         = jsonencode(local.delta_shares_map)
+  aws_db_recipient              = local.cfg.aws_db_recipient
   aws_global_metastore_id       = dependency.bootstrap_platform.outputs.global_metastore_id
   gcp_metastore_id              = dependency.bootstrap_gcp_platform.outputs.gcp_metastore_id
   gcp_provider_name             = dependency.bootstrap_gcp_platform.outputs.gcp_global_metastore_id
