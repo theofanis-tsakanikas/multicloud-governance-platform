@@ -66,7 +66,18 @@ jobs:
           if [ "$CLOUD" = "aws" ]; then
             HOST=$(cd environments/dev/bootstrap/aws/platform && terragrunt output -raw serverless_workspace_url --terragrunt-non-interactive)
             WID=$(cd environments/dev/bootstrap/aws/config && terragrunt output -raw warehouse_id --terragrunt-non-interactive)
-            SEED=databricks/bootstrap/seed_credentials
+            # The SAME service principal Terraform authenticates as, which is
+            # therefore the OWNER of every catalog, connection and external location
+            # the medallion touches. The bootstrap seed is a different identity: it
+            # exists to create the metastore and the automation SP, and it holds no
+            # privileges on the objects that SP went on to create.
+            #
+            #     shared_gcp_delta_share owner = d23c34cf...  (the automation SP)
+            #     bootstrap seed               = 1c2c2d24...  (no USE CATALOG)
+            #
+            # GCP never hit this because there the bootstrap seed IS the identity
+            # Terraform uses.
+            SEED=databricks/spn/dev/spn_credentials
           else
             HOST=$(cd environments/dev/bootstrap/gcp/platform && terragrunt output -raw gcp_serverless_workspace_url --terragrunt-non-interactive)
             WID=$(cd environments/dev/bootstrap/gcp/config && terragrunt output -raw warehouse_id --terragrunt-non-interactive)
