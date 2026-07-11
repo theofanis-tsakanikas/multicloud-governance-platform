@@ -38,6 +38,13 @@ variables:
 targets:
   aws:
     default: true
+    # By default a bundle deploys under the DEPLOYING identity's home
+    # (/Workspace/Users/<sp-id>/.bundle/...), which is a service principal here and
+    # a hidden .bundle folder — invisible to anyone browsing the workspace. Pin it
+    # to a shared, browsable location so the notebook and dashboard show up under
+    # Workspace -> Shared, not buried under an SP nobody opens.
+    workspace:
+      root_path: /Workspace/Shared/${bundle.name}
     # The dashboard reads sales_aws / supplies_azure / the delta-shared GCP gold,
     # all of which live in the AWS metastore, so it belongs to the AWS target only.
     # A top-level resource would try to deploy to the GCP workspace too, where those
@@ -48,7 +55,9 @@ targets:
           display_name: "[gov] Multi-Cloud Executive View"
           file_path: ./aws/executive.lvdash.json
           warehouse_id: ${var.warehouse_id}
-  gcp: {}
+  gcp:
+    workspace:
+      root_path: /Workspace/Shared/${bundle.name}
 
 resources:
   jobs:
