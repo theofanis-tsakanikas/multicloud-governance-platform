@@ -30,19 +30,8 @@ variable "gcp_subnet_cidr" {
 }
 
 variable "gcp_vpc_cidr" {
-  description = "VPC CIDR range(s), announced across the tunnel in private mode."
+  description = "VPC CIDR range(s) the AWS side routes toward the tunnel: the GCP VPC, and Google's private API VIP."
   type        = list(string)
-}
-
-variable "databricks_vpc_cidr" {
-  description = "AWS Databricks VPC CIDR, allowed through the GCP firewall."
-  type        = string
-}
-
-variable "databricks_subnets" {
-  description = "Subnets of the private-mode AWS VPC."
-  type        = map(string)
-  default     = {}
 }
 
 variable "vpn_gw_name" {
