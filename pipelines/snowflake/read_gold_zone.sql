@@ -44,7 +44,7 @@ USE DATABASE "sales_aws";
 CREATE SCHEMA IF NOT EXISTS "sales_aws"."demo"
   COMMENT = 'Not governed by the domain contract. Demo scaffolding only.';
 
-CREATE OR REPLACE FILE FORMAT "sales_aws"."demo"."parquet_ff" TYPE = PARQUET;
+CREATE FILE FORMAT IF NOT EXISTS "sales_aws"."demo"."parquet_ff" TYPE = PARQUET;  -- IF NOT EXISTS: a REPLACE fails once an external table references it
 
 -- ── The external table: a pointer, not a copy ───────────────────────────────
 -- Columns are declared explicitly against the Parquet fields. (INFER_SCHEMA via

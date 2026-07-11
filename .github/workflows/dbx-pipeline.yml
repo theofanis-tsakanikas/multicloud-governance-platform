@@ -208,3 +208,20 @@ jobs:
             -d "{\"warehouse_id\":\"$WAREHOUSE_ID\"}" >/dev/null \
             && echo "::notice::dashboard published → $DATABRICKS_HOST/dashboardsv3/$DID/published" \
             || echo "::warning::publish call failed (dashboard still deployed as draft)"
+
+      # The Snowflake equivalent of "the bundle uploaded the notebook": stage the
+      # governance demo .ipynb and create a Snowsight Notebook over it, so the
+      # Snowflake side is open-and-Run-all too. AWS-only, and NON-FATAL — a failure
+      # here (network policy, MFA, a missing object) must never fail the data run.
+      - name: Deploy the Snowflake demo notebook (AWS only)
+        if: ${{ inputs.cloud == 'aws' }}
+        continue-on-error: true
+        run: |
+          python3 -m pip install --quiet snowflake-connector-python
+          python3 pipelines/snowflake/deploy_notebook.py
+        env:
+          SNOWFLAKE_ACCOUNT: SNOWFLAKE_LOCATOR_REDACTED
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+          SNOWFLAKE_WAREHOUSE: DEV_SALES_WH
