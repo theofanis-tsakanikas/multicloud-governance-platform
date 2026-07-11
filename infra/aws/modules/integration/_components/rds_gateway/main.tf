@@ -180,14 +180,27 @@ resource "aws_vpc_endpoint_service" "rds_ncc_service" {
 
 # Allowed Principal — who may put an endpoint into this service.
 #
-# This was `"*"`. With acceptance_required = false alongside it, *any* AWS account in the region
-# could create an interface endpoint into this NLB, reach the gateway, and speak Postgres to a
-# database whose whole reason for being private is that nobody should. The one principal that
-# needs in is Databricks' own AWS account — the one the serverless NCC creates its endpoint from
-# — and it is already known to us: `dbx_aws_account_id` in config.hcl. Name it.
+# This was `"*"`. Alongside acceptance_required = false that meant *any* AWS account in the
+# region could create an interface endpoint into this NLB, reach the gateway, and speak Postgres
+# to a database whose entire reason for being private is that nobody should.
+#
+# It also would not have worked. Databricks does not merely need permission — its API validates
+# the allow-list before it will even attempt the endpoint, and it looks for one exact ARN:
+#
+#   NOT_FOUND: Cannot find VPC Endpoint Service ... This could indicate: (2) The VPC Endpoint
+#   Service's 'Allowed Principals' list does not include the Databricks's
+#   'private-connectivity-role' Role ARN.
+#
+# A wildcard is not that string, so `"*"` fails the check too. The tightest grant and the only
+# working one are the same grant: the single role, in Databricks' own AWS account, that
+# serverless compute creates its private endpoints from.
+locals {
+  databricks_private_connectivity_role = "arn:aws:iam::${var.databricks_aws_account_id}:role/private-connectivity-role"
+}
+
 resource "aws_vpc_endpoint_service_allowed_principal" "databricks" {
   vpc_endpoint_service_id = aws_vpc_endpoint_service.rds_ncc_service.id
-  principal_arn           = "arn:aws:iam::${var.databricks_aws_account_id}:root"
+  principal_arn           = local.databricks_private_connectivity_role
 }
 
 # Route 53 Private DNS Configuration
