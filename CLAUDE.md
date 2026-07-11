@@ -307,3 +307,43 @@ fails. It is already superseded (see [ADR-0015](docs/adr/0015-snowflake-reads-no
 - `snowflake_git_repository` is a **preview** provider resource — the generated provider block
   carries `preview_features_enabled = ["snowflake_git_repository_resource"]`. Remove that and the
   plan fails with an unhelpful unknown-resource error.
+
+### 11. A teardown fails where something outside Terraform stands on something inside it
+
+Twice, a `destroy` stopped dead because Terraform tried to drop an object that a
+**non-Terraform** object was still holding. Terraform can only drop what it created, so
+whatever created the rest has to take it back down — and has to go first. Both fixes live in
+`dbx-destroy.yml`, in the same place the deploy job puts the thing up.
+
+**Azure — `mssql: Cannot drop schema 'orders' because it is being referenced by object`**
+T-SQL has no `DROP SCHEMA ... CASCADE`, and `pgssoft/mssql` has no equivalent of the postgres
+provider's `drop_cascade` (which is the only reason the AWS side survives the same teardown —
+`rds_schemas` sets it, dev turns it on). The seeded tables (ADR-0014) block the schema drop.
+→ `pipelines/sources/azure_sql/drop_seed.py` empties the schemas first.
+
+**Snowflake — `093694: Stage loc_sales_gold cannot be dropped ... active External table(s)`**
+Subtler, and it cost five destroy runs:
+
+- The blocker is `demo.executive_cross_cloud`, the zero-copy demo's external table over the
+  gold Parquet. Terraform owns the *stage*; the demo owns the *table*.
+- **`DROP SCHEMA ... CASCADE` does not delete it — it moves the schema into Time Travel**, where
+  `UNDROP` can restore it for the retention period (1 day). The table is still real and still
+  points at the stage, so Snowflake keeps refusing to drop the stage. `SHOW EXTERNAL TABLES`
+  reports *none*, because it walks only live schemas: the blocker is invisible.
+- **Lowering `DATA_RETENTION_TIME_IN_DAYS` does not evict what is already in Time Travel.**
+  Snowflake keeps the retention that was in force at drop time.
+- **`SHOW SCHEMAS HISTORY` is not a count of ghosts** — it keeps listing a dropped schema after
+  its Time Travel is gone. Only `UNDROP` can tell a schema that can come back from a row that
+  merely remembers one.
+- Every failed attempt CASCADE-drops the schema again and leaves *another* ghost, each pinning
+  the stage on its own.
+
+→ `pipelines/snowflake/drop_demo.py` peels them: `UNDROP`, drop the external table **explicitly**
+by name (an external table has no Time Travel of its own, so an explicit `DROP` is a real delete
+where a `CASCADE` is not), set retention to 0, drop the schema. Repeat until `UNDROP` fails —
+that failure *is* the success signal.
+
+**Partial destroys:** a layer whose state is empty still breaks `run-all` — its dependents cannot
+read outputs that no longer exist (`detected no outputs`). Use `start_from` to resume below the
+layers already gone rather than re-running the whole stack. A ~180-byte state file in
+`s3://dbx-platform-tfstate-<account>/` means that layer is empty.
