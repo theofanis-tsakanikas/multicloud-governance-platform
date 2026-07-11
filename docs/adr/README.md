@@ -24,6 +24,7 @@ Format: a trimmed [MADR](https://adr.github.io/madr/). Template:
 | [0012](0012-govgate-packaging.md) | Package the policy gate as a standalone CLI + GitHub Action (govgate) | Accepted |
 | [0013](0013-stable-names-over-deployment-id-suffix.md) | Stable resource names instead of a rotating `deployment_id` suffix | Accepted |
 | [0014](0014-simulated-source-systems.md) | The OLTP source systems are simulated, and that boundary is explicit | Accepted |
+| [0015](0015-snowflake-reads-notebooks-from-git.md) | Snowflake reads the demo notebooks from git, rather than having them uploaded | Accepted |
 
 These records formalize the rationale narrated in [ARCHITECTURE.md](../../ARCHITECTURE.md);
 that document remains the prose overview, the ADRs are the decision ledger.

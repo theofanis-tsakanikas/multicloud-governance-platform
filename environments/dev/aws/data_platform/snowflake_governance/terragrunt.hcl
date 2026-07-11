@@ -33,6 +33,10 @@ generate "providers" {
       # at plan/apply time — no secrets in code (the platform's secrets-at-runtime discipline).
       organization_name = "${local.cfg.snowflake_organization}"
       account_name      = "${local.cfg.snowflake_account}"
+
+      # snowflake_git_repository is still a preview resource; without this the plan fails with
+      # an unknown-resource error rather than anything that hints at the cause (ADR-0015).
+      preview_features_enabled = ["snowflake_git_repository_resource"]
     }
 
     # The storage integration is a two-way trust: Snowflake mints an IAM user, and an AWS
@@ -51,6 +55,10 @@ inputs = {
   storage_integration_name = local.cfg.snowflake_storage_integration_name
   warehouse_size           = local.cfg.snowflake_warehouse_size
   credit_quota             = local.cfg.snowflake_credit_quota
+
+  # Snowflake reads the demo notebooks out of the repository rather than having them uploaded.
+  github_owner_url = local.cfg.github_owner_url
+  github_repo_url  = local.cfg.github_repo_url
 
   catalogs_json              = jsonencode(local.managed_catalogs)
   external_locations_json    = jsonencode(local.infra.external_locations)

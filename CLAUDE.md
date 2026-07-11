@@ -288,3 +288,22 @@ Operational notes:
 - **Exceptions are time-bound.** `environments/dev/policy_exceptions.json` entries
   have an `expires` date. An expired exception stops suppressing its finding, which
   will then fail CI — that is intentional (it forces re-review), not a bug.
+
+### 10. The Snowflake demo notebook is read from git, not uploaded (and the old way expires)
+
+`pipelines/snowflake/deploy_notebook.py` creates a **Legacy Notebook** via `CREATE NOTEBOOK`.
+Snowflake **disables legacy-notebook creation on 2026-09-01** — on that date the pipeline step
+fails. It is already superseded (see [ADR-0015](docs/adr/0015-snowflake-reads-notebooks-from-git.md)):
+
+- Terraform now provisions an `API INTEGRATION` + `GIT REPOSITORY`
+  (`infra/snowflake/modules/global/git_repository/`), so Snowflake can **read the notebooks out
+  of this repository**. A Git-backed Workspace renders every `.ipynb` natively, synced to `main`.
+- **This only works once the repo is public.** Both objects *create* against a private repo
+  (Snowflake does not call GitHub at CREATE time) but `FETCH` fails until visibility changes.
+  That is expected, not a bug.
+- The day the repo goes public: run `python3 pipelines/snowflake/git_workspace.py` (it fetches,
+  asserts the notebook is visible, and prints the one manual Workspace step), create the
+  Workspace, then **delete `deploy_notebook.py` and its step in `dbx-pipeline.yml`**.
+- `snowflake_git_repository` is a **preview** provider resource — the generated provider block
+  carries `preview_features_enabled = ["snowflake_git_repository_resource"]`. Remove that and the
+  plan fails with an unhelpful unknown-resource error.

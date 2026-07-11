@@ -148,4 +148,10 @@ locals {
   snowflake_warehouse_size           = "XSMALL"
   snowflake_credit_quota             = 100
 
+  # ─── Git (Snowflake reads the notebooks from the repo — ADR-0015) ─────────
+  # Public identifiers, not secrets. The owner URL is what the API integration is
+  # allowed to call: scoped to this owner, not to all of GitHub.
+  github_owner_url = "https://github.com/theofanis-tsakanikas"
+  github_repo_url  = "https://github.com/theofanis-tsakanikas/multicloud-governance-platform"
+
 }

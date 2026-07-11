@@ -77,3 +77,17 @@ variable "warehouse_size" {
   type        = string
   default     = "XSMALL"
 }
+
+# ── Git ─────────────────────────────────────────────────────────────────────
+# Snowflake reads the demo notebooks straight out of the repository rather than having them
+# uploaded (ADR-0015). Both values are public identifiers, not secrets.
+
+variable "github_repo_url" {
+  description = "Clone URL of the governance repository, e.g. https://github.com/<owner>/<repo>."
+  type        = string
+}
+
+variable "github_owner_url" {
+  description = "The owner prefix the API integration may call, e.g. https://github.com/<owner>. Scoped to the owner, not to all of GitHub."
+  type        = string
+}

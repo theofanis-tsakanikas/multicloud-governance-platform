@@ -229,3 +229,23 @@ module "warehouse_monitor" {
   warehouse_size        = var.warehouse_size
   credit_quota          = var.credit_quota
 }
+
+# The repository, readable from inside Snowflake — so the demo notebook is *read from git*
+# rather than uploaded into the account. Legacy notebooks (which the old deploy script created)
+# stop being creatable on 2026-09-01; a Git-backed Workspace does not. See ADR-0015.
+#
+# Every functional role gets READ: the notebooks are the proof surface of this platform, and
+# nothing in the repository is a secret. Nobody gets write — pushes go through a PR, as they do
+# for every other change here.
+module "git_repository" {
+  source               = "../../../../snowflake/modules/global/git_repository"
+  api_integration_name = "${local.role_prefix}_GIT_INTEGRATION"
+  allowed_prefix       = var.github_owner_url
+  repo_origin          = var.github_repo_url
+  repository_name      = "governance_repo"
+  database             = local.managed_db
+  schema               = "_GOVERNANCE"
+  reader_roles         = values(module.roles.role_names)
+
+  depends_on = [module.roles, module.governance_policies]
+}

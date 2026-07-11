@@ -1,6 +1,19 @@
 #!/usr/bin/env python3
 """Deploy the governance demo as a native Snowflake Notebook.
 
+⚠ DEPRECATED — this script has an expiry date. See ADR-0015.
+
+    `CREATE NOTEBOOK` produces what Snowsight now calls a *Legacy Notebook*, and Snowflake
+    disables legacy-notebook creation on **2026-09-01**. On that date this script stops working.
+
+    It is superseded by a Git-backed Workspace: Snowflake reads governance_demo.ipynb straight
+    out of the repository (infra/snowflake/modules/global/git_repository/), so there is nothing
+    to upload and no copy to drift. `git push` is the deploy.
+
+    This file is kept only as a bridge, because the Git path needs the repository to be public
+    and it is not yet. Delete it — and its step in .github/workflows/dbx-pipeline.yml — the day
+    the repo is flipped to public. `git_workspace.py` verifies the replacement is live.
+
 The Databricks side has its results notebook uploaded by the Asset Bundle; this is
 the Snowflake equivalent. It stages governance_demo.ipynb and creates a Snowsight
 Notebook over it, so the demo is "open and Run all" rather than copy-paste.
