@@ -4,8 +4,8 @@ output "api_integration_name" {
 }
 
 output "repository_fqn" {
-  description = "Fully-qualified GIT REPOSITORY object. `ALTER GIT REPOSITORY <this> FETCH` then `LS @<this>/branches/main/` proves the integration works."
-  value       = "${var.database}.${var.schema}.${var.repository_name}"
+  description = "Fully-qualified GIT REPOSITORY object, or null while the repo is still private (the object cannot be created against one). `ALTER GIT REPOSITORY <this> FETCH` then `LS @<this>/branches/main/` proves the integration works."
+  value       = var.github_repo_is_public ? "${var.database}.${var.schema}.${var.repository_name}" : null
 }
 
 output "repo_origin" {

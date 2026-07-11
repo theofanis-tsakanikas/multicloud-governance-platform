@@ -76,10 +76,27 @@ Manager at apply time, never committed.
 - **`snowflake_api_integration` cannot express `git_https_api`.** The provider documents
   `snowflake_execute` as the path until it can, so the integration is raw SQL with an explicit
   `revert`. This is a provider gap, not a design choice, and it is commented as such.
-- **Nothing works until the repo is public.** Both objects *create* fine against a private repo —
-  Snowflake does not contact GitHub at create time — but `FETCH` will fail until visibility
-  changes. This was accepted knowingly: the module applies today and starts serving the moment the
-  repository is flipped, with no second apply.
+- **Nothing works until the repo is public — and the GIT REPOSITORY object will not even apply.**
+
+  This ADR originally claimed both objects would create cleanly against a still-private repo, on
+  the reasoning that Snowflake does not contact GitHub at CREATE time. **That was wrong.** The
+  first AWS private deploy proved it:
+
+  ```
+  093550 (22023): Failed to access the Git Repository. Operation 'clone' is not authorized.
+  ```
+
+  `CREATE GIT REPOSITORY` clones. Against a private repository with no credential it fails, and
+  it fails *inside the AWS stack* — where a Snowflake notebook has no business being the thing
+  that stops an infrastructure deploy.
+
+  So the object is gated on `github_repo_is_public` (config.hcl, `false` today). The
+  `API INTEGRATION` still applies: it declares a trust, it calls nothing, and it is all a
+  Git-backed Workspace actually needs. The day the repository is made public, flip the flag and
+  `terragrunt apply` brings the repository object up. That is the entire migration.
+
+  The flag is not a feature toggle. It is a statement about the world, and it should be wrong for
+  exactly as long as the world is.
 
 ## Alternatives considered
 

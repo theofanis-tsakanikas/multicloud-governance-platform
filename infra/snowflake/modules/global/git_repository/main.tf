@@ -51,11 +51,26 @@ resource "snowflake_execute" "git_api_integration" {
 }
 
 # ── The repository, as an object the account can read ───────────────────────
-# This is what makes the integration *verifiable*: once the repo is public,
-#   ALTER GIT REPOSITORY <fqn> FETCH;
-#   LS @<fqn>/branches/main/pipelines/snowflake/;
-# lists the notebook. The Git-backed Workspace uses the same API integration.
+#
+# ⚠ ADR-0015 claimed this would apply cleanly against a still-private repository, on the
+# reasoning that Snowflake does not contact GitHub at CREATE time. That was wrong, and the AWS
+# deploy proved it:
+#
+#     093550 (22023): Failed to access the Git Repository. Operation 'clone' is not authorized.
+#
+# CREATE GIT REPOSITORY clones. Against a private repo with no credential, it fails — and it
+# fails inside the AWS stack, where it has no business being the thing that stops a deploy.
+#
+# So the object is gated on the fact it depends on. `github_repo_is_public` is false today: the
+# API INTEGRATION still applies (it is a trust declaration, it calls nothing, and it is all a
+# Git-backed Workspace actually needs), and this waits. Flip the flag the day the repo is made
+# public and `terragrunt apply` brings it up — that is the entire migration.
+#
+# The flag is not a feature toggle. It is a statement about the world, and it should be wrong
+# for exactly as long as the world is.
 resource "snowflake_git_repository" "governance" {
+  count = var.github_repo_is_public ? 1 : 0
+
   name            = var.repository_name
   database        = var.database
   schema          = var.schema
@@ -74,7 +89,7 @@ resource "snowflake_git_repository" "governance" {
 # ── Least privilege: readers may use the repo, they may not change it ───────
 # Same vocabulary as every other grant in this platform — the functional roles read.
 resource "snowflake_execute" "reader_grants" {
-  for_each = toset(var.reader_roles)
+  for_each = var.github_repo_is_public ? toset(var.reader_roles) : toset([])
 
   execute = "GRANT READ ON GIT REPOSITORY ${var.database}.${var.schema}.${var.repository_name} TO ROLE ${each.value}"
   revert  = "REVOKE READ ON GIT REPOSITORY ${var.database}.${var.schema}.${var.repository_name} FROM ROLE ${each.value}"

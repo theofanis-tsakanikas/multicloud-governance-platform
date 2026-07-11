@@ -91,3 +91,9 @@ variable "github_owner_url" {
   description = "The owner prefix the API integration may call, e.g. https://github.com/<owner>. Scoped to the owner, not to all of GitHub."
   type        = string
 }
+
+variable "github_repo_is_public" {
+  description = "CREATE GIT REPOSITORY clones the repo; against a private one it fails, and it would fail inside the AWS stack. False until the repository is made public — see ADR-0015."
+  type        = bool
+  default     = false
+}

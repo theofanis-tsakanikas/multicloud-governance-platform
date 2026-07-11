@@ -57,8 +57,9 @@ inputs = {
   credit_quota             = local.cfg.snowflake_credit_quota
 
   # Snowflake reads the demo notebooks out of the repository rather than having them uploaded.
-  github_owner_url = local.cfg.github_owner_url
-  github_repo_url  = local.cfg.github_repo_url
+  github_owner_url      = local.cfg.github_owner_url
+  github_repo_url       = local.cfg.github_repo_url
+  github_repo_is_public = local.cfg.github_repo_is_public
 
   catalogs_json              = jsonencode(local.managed_catalogs)
   external_locations_json    = jsonencode(local.infra.external_locations)

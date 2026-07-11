@@ -162,4 +162,8 @@ locals {
   github_owner_url = "https://github.com/theofanis-tsakanikas"
   github_repo_url  = "https://github.com/theofanis-tsakanikas/multicloud-governance-platform"
 
+  # CREATE GIT REPOSITORY clones. Against a private repo it fails outright, so the object waits
+  # for the fact it depends on. Flip this the day the repo is made public; nothing else changes.
+  github_repo_is_public = false
+
 }

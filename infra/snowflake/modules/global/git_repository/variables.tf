@@ -52,3 +52,20 @@ variable "git_credentials" {
   type        = string
   default     = null
 }
+
+variable "github_repo_is_public" {
+  description = <<-EOT
+    Whether the repository is public yet.
+
+    CREATE GIT REPOSITORY *clones*. Against a private repo with no credential it fails outright
+    ("Operation 'clone' is not authorized"), and it fails inside the AWS stack — where a Snowflake
+    notebook has no business being the thing that stops a deploy. So the object waits for the fact
+    it depends on.
+
+    The API INTEGRATION applies either way: it declares a trust, it calls nothing, and it is all a
+    Git-backed Workspace actually needs. Flip this the day the repo is made public and the next
+    apply brings the repository object up. That is the whole migration.
+  EOT
+  type        = bool
+  default     = false
+}
