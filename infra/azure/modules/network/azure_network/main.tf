@@ -95,7 +95,10 @@ resource "azurerm_virtual_network_gateway" "vpn_gw" {
 
   type     = "Vpn"
   vpn_type = "RouteBased"
-  sku      = "VpnGw1" # Enterprise-ready performance tier
+  # Azure retired the non-AZ VpnGw1-5 SKUs: "NonAzSkusNotAllowedForVPNGateway ... Only VpnGw1-5AZ
+  # SKUs can be created going forward." VpnGw1AZ is the zone-redundant equivalent — same tier,
+  # same ~EUR 140/month, and it pairs with the Standard (zone-redundant) public IP above.
+  sku = "VpnGw1AZ"
 
   ip_configuration {
     name                          = "vnetGatewayConfig"
