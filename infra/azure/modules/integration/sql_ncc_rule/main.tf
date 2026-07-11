@@ -6,7 +6,11 @@
 # connector needs no private-mode override: it already connects by that name, and this rule makes
 # that name resolve to the PrivateLink endpoint that fronts the transit gateway.
 resource "databricks_mws_ncc_private_endpoint_rule" "sql_rule" {
-  account_id                     = var.databricks_account_id
+  # account_id is deliberately NOT set. The databricks provider version this layer resolves makes
+  # it a computed attribute — "Can't configure a value for account_id: its value will be decided
+  # automatically" — so it is inherited from the databricks.account provider config, which already
+  # carries it. (The AWS rds rule still passes account_id because it applied under an older
+  # provider where the attribute was configurable; setting it here fails the plan.)
   network_connectivity_config_id = var.ncc_id
   endpoint_service               = var.endpoint_service_name
   domain_names                   = [var.sql_server_fqdn]
