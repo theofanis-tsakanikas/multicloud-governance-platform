@@ -73,11 +73,14 @@
                   "fieldName": "revenue_at_risk",
                   "displayName": "Revenue at risk (EUR)",
                   "format": {
-                    "type": "number-plain",
+                    "type": "number-currency",
+                    "abbreviation": "none",
+                    "currencyCode": "EUR",
                     "decimalPlaces": {
-                      "type": "max",
+                      "type": "exact",
                       "places": 0
-                    }
+                    },
+                    "hideGroupSeparator": false
                   }
                 }
               },
@@ -394,7 +397,17 @@
                   "scale": {
                     "type": "quantitative"
                   },
-                  "displayName": "Revenue"
+                  "displayName": "Revenue",
+                  "format": {
+                    "type": "number-currency",
+                    "abbreviation": "none",
+                    "currencyCode": "EUR",
+                    "decimalPlaces": {
+                      "type": "exact",
+                      "places": 0
+                    },
+                    "hideGroupSeparator": false
+                  }
                 }
               },
               "frame": {
@@ -451,7 +464,16 @@
                   "scale": {
                     "type": "quantitative"
                   },
-                  "displayName": "Marketing ROI"
+                  "displayName": "Marketing ROI",
+                  "format": {
+                    "type": "number-plain",
+                    "abbreviation": "none",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 0
+                    },
+                    "hideGroupSeparator": false
+                  }
                 }
               },
               "frame": {
@@ -508,7 +530,16 @@
                   "scale": {
                     "type": "quantitative"
                   },
-                  "displayName": "Rows rejected"
+                  "displayName": "Rows rejected",
+                  "format": {
+                    "type": "number-plain",
+                    "abbreviation": "none",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 0
+                    },
+                    "hideGroupSeparator": false
+                  }
                 }
               },
               "frame": {
