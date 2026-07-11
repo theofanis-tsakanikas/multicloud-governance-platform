@@ -17,13 +17,36 @@ set -eu
 ROLE="${1:-gateway}"
 
 # ── psql-equivalent for the two one-shot roles: sqlcmd, straight to Azure SQL over the VPN ─────
+#
+# The database is a SERVERLESS SKU with a 60-minute auto-pause. The first connection after an idle
+# period is what wakes it, and while it wakes — about a minute — every attempt is refused with:
+#
+#     Database '...' is not currently available. Please retry the connection later.
+#
+# That is not an error, it is the resume. apply_seed.py already learned this and retries; this
+# image has to as well, or the deploy fails on a database that is in the middle of coming back.
+MAX_ATTEMPTS="${MAX_ATTEMPTS:-12}"
+BACKOFF="${BACKOFF:-15}"
+
 run_sqlcmd() {
   # -C trusts the server certificate: we reach Azure SQL by its real FQDN across the tunnel, and
   # the cert it presents is its own for *.database.windows.net. -b makes a SQL error a non-zero
   # exit, so a failed statement fails the task instead of passing silently.
-  sqlcmd -S "tcp:${TARGET_HOST},${TARGET_PORT}" \
-         -U "$DB_USER" -P "$DB_PASSWORD" -d "${DB_NAME:-master}" \
-         -C -b -l 60 "$@"
+  attempt=1
+  while : ; do
+    if sqlcmd -S "tcp:${TARGET_HOST},${TARGET_PORT}" \
+              -U "$DB_USER" -P "$DB_PASSWORD" -d "${DB_NAME:-master}" \
+              -C -b -l 60 "$@"; then
+      return 0
+    fi
+    if [ "$attempt" -ge "$MAX_ATTEMPTS" ]; then
+      echo "[sql-gw] gave up after ${attempt} attempts" >&2
+      return 1
+    fi
+    echo "[sql-gw] attempt ${attempt}/${MAX_ATTEMPTS} failed — the serverless database is probably resuming; retrying in ${BACKOFF}s"
+    attempt=$((attempt + 1))
+    sleep "$BACKOFF"
+  done
 }
 
 case "$ROLE" in
