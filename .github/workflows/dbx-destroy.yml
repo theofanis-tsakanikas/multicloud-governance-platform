@@ -175,6 +175,23 @@ jobs:
           SQL_PASSWORD="$PW" \
             python3 pipelines/sources/azure_sql/drop_seed.py
 
+      # The same lesson as the Azure unseed above, in a different engine. Terraform owns the
+      # Snowflake stage; it does not own the EXTERNAL TABLE the demo built on top of it:
+      #
+      #     093694: Stage loc_sales_gold cannot be dropped ... it has active External table(s)
+      #
+      # That table — and the masking demo's PII table, its policy, and the notebook — live in
+      # the `demo` schema, whose own COMMENT says it is "Not governed by the domain contract.
+      # Demo scaffolding only." Scaffolding comes down before the building does.
+      - name: Drop the Snowflake demo scaffolding (AWS only — it sits on Terraform's stages)
+        if: inputs.cloud == 'aws' && inputs.mode == 'destroy'
+        env:
+          SNOWFLAKE_ACCOUNT: SNOWFLAKE_LOCATOR_REDACTED
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet snowflake-connector-python
+          python3 pipelines/snowflake/drop_demo.py
+
       # rds_schemas holds `postgresql_schema` resources, and the postgres provider
       # opens a connection to read them before it can destroy them. A stopped RDS
       # instance refuses that connection, so the destroy of a database's schemas
