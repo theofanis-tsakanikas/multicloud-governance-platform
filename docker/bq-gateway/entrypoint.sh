@@ -14,7 +14,14 @@
 set -eu
 
 : "${VIP_TARGETS:?VIP_TARGETS is required (the private.googleapis.com addresses)}"
-: "${LISTEN_PORT:=443}"
+# 8443, not 443. The official HAProxy image runs as the unprivileged `haproxy` user, and a
+# non-root process cannot bind a port below 1024:
+#
+#     [ALERT] Binding for frontend api_in: cannot bind socket (Permission denied) for [0.0.0.0:443]
+#
+# The RDS and Azure SQL gateways never met this — 5432 and 1433 are both above 1024. The NLB
+# listens on 443 and forwards here, so Databricks still talks to 443 and nothing runs as root.
+: "${LISTEN_PORT:=8443}"
 
 # One backend server line per VIP address.
 servers=""

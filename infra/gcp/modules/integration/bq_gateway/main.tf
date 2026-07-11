@@ -27,9 +27,11 @@ resource "aws_security_group" "gateway" {
   description = "BigQuery transit gateway: 443 in from the VPC (NLB health checks + PrivateLink traffic)"
   vpc_id      = var.vpc_id
 
+  # 8443, not 443: HAProxy runs unprivileged and cannot bind below 1024. The NLB listens on 443
+  # and forwards here, so the client still speaks 443 and nothing runs as root.
   ingress {
-    from_port   = 443
-    to_port     = 443
+    from_port   = 8443
+    to_port     = 8443
     protocol    = "tcp"
     cidr_blocks = [var.vpc_cidr]
   }
@@ -52,14 +54,14 @@ resource "aws_lb" "nlb" {
 
 resource "aws_lb_target_group" "haproxy_tg" {
   name        = "bq-gateway-tg-${var.environment}"
-  port        = 443
+  port        = 8443
   protocol    = "TCP"
   vpc_id      = var.vpc_id
   target_type = "ip"
 
   health_check {
     protocol            = "TCP"
-    port                = "443"
+    port                = "8443"
     healthy_threshold   = 3
     unhealthy_threshold = 3
   }
@@ -110,13 +112,13 @@ resource "aws_ecs_task_definition" "haproxy" {
       name  = "haproxy"
       image = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.region}.amazonaws.com/${var.ecr_repo_name}:latest"
       portMappings = [
-        { containerPort = 443, hostPort = 443, protocol = "tcp" }
+        { containerPort = 8443, hostPort = 8443, protocol = "tcp" }
       ]
       environment = [
         # The private.googleapis.com addresses. The gateway reaches them by IP across the VPN —
         # no DNS is involved anywhere on this path, which is one less thing to be wrong.
         { name = "VIP_TARGETS", value = join(" ", var.private_api_vip_ips) },
-        { name = "LISTEN_PORT", value = "443" },
+        { name = "LISTEN_PORT", value = "8443" },
       ]
       logConfiguration = {
         logDriver = "awslogs"
@@ -148,7 +150,7 @@ resource "aws_ecs_service" "main" {
   load_balancer {
     target_group_arn = aws_lb_target_group.haproxy_tg.arn
     container_name   = "haproxy"
-    container_port   = 443
+    container_port   = 8443
   }
 
   # The graph gives the service the target group but not the listener; ECS rejects the

@@ -31,5 +31,5 @@ RUN chmod +x /usr/local/bin/entrypoint.sh \
     && mkdir -p /etc/haproxy && chown -R haproxy:haproxy /etc/haproxy
 
 USER haproxy
-EXPOSE 443
+EXPOSE 8443
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
