@@ -14,7 +14,11 @@ resource "databricks_catalog" "catalog" {
   # project lives in the connection), so only set the option when present.
   options = var.catalog.type == "FEDERATED" && lookup(var.catalog, "database_name", null) != null ? { "database" = var.catalog.database_name } : null
 
-  comment       = "Catalog managed by Terraform"
+  # "Catalog managed by Terraform" told a reader nothing they could not see from the fact that it
+  # exists. The domain JSON already carries the two facts worth surfacing — what kind of catalog
+  # this is, and who owns it — and the Snowflake backend already writes exactly this. Say the same
+  # thing in both engines, or the contract only looks like one contract.
+  comment       = "${var.catalog.type} catalog — governance-as-code. Owner: ${lookup(var.catalog, "owner", "unassigned")}."
   force_destroy = true
 }
 
@@ -50,9 +54,15 @@ resource "databricks_schema" "schema" {
   # the for_each simply will not execute.
   for_each = { for s in var.catalog.schemas : s.schema_name => s }
 
-  catalog_name  = databricks_catalog.catalog.name
-  name          = each.key
-  comment       = "Managed by Terraform"
+  catalog_name = databricks_catalog.catalog.name
+  name         = each.key
+
+  # The schema is where classification lives (public | internal | confidential | pii). Snowflake's
+  # schema module has always written it into the comment; this one wrote "Managed by Terraform"
+  # and threw the signal away — so the same schema declared `pii` in the same JSON announced
+  # itself in one engine and stayed silent in the other. The classification is the whole reason
+  # the field is in the contract; the catalog a human opens is where it has to show up.
+  comment       = "classification=${lookup(each.value, "classification", "unclassified")}"
   force_destroy = true
 }
 
@@ -100,6 +110,10 @@ resource "databricks_volume" "volume" {
   schema_name      = each.value.schema_name
   volume_type      = each.value.v_type
   storage_location = each.value.calculated_path
+
+  # A volume carried no comment at all. An EXTERNAL volume is a pointer at bytes the catalog does
+  # not own — worth saying where, since that is the one thing its name cannot.
+  comment = "${each.value.v_type} volume — ${each.value.calculated_path}"
 
   depends_on = [
     databricks_schema.schema,
