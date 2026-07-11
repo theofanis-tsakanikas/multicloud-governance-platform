@@ -79,12 +79,32 @@ jobs:
 
       - name: Apply — AWS (full stack)
         working-directory: environments/dev/aws
+        env:
+          AWS_REGION: eu-central-1
+          ECR_REPO: pgbouncer-gateway
+          ENVIRONMENT: dev
         run: |
           # Apply top-level dirs in dependency order. Secrets created in an earlier
           # dir (e.g. security/secrets_manager) exist before a later dir fetches them
           # at parse time; run-all within each dir resolves the fine-grained order.
           # (run-all across the WHOLE cloud fails on a fresh env: it parses secret-
           # fetching layers before the secret-creating layer has applied.)
+          #
+          # PRIVATE MODE adds two things Terraform cannot do for itself, and they are
+          # interleaved here rather than hung off the end because *where* they run is the
+          # whole point — each sits in the one gap where its prerequisite exists and its
+          # consumer does not yet:
+          #
+          #   after foundation   the ECR repository exists, so the gateway image can be
+          #                      built and pushed — before integration's ECS service tries
+          #                      to pull it. Nothing in this repo ever built that image; the
+          #                      task crash-looped behind a green apply.
+          #
+          #   after integration  the cluster exists, so the schemas can be created from a
+          #                      one-shot task INSIDE the VPC — before data_platform's
+          #                      federated grants warm the foreign catalog and need them.
+          #                      A private RDS has no public address: this is the only door.
+          repo_root="$GITHUB_WORKSPACE"
           reached=0
           for dir in foundation network security storage integration data_platform; do
             if [ "$dir" = "${{ inputs.start_from }}" ]; then reached=1; fi
@@ -96,6 +116,18 @@ jobs:
             echo "::group::apply $dir"
             terragrunt run-all apply --terragrunt-non-interactive -auto-approve --terragrunt-working-dir "$dir"
             echo "::endgroup::"
+
+            if [ "${PRIVATE_AWS}" = "true" ] && [ "$dir" = "foundation" ]; then
+              echo "::group::private — build and push the RDS gateway image"
+              ( cd "$repo_root" && bash .github/scripts/aws-private-gateway-image.sh )
+              echo "::endgroup::"
+            fi
+
+            if [ "${PRIVATE_AWS}" = "true" ] && [ "$dir" = "integration" ]; then
+              echo "::group::private — create the RDS schemas from inside the VPC"
+              ( cd "$repo_root" && bash .github/scripts/aws-private-rds-schemas.sh )
+              echo "::endgroup::"
+            fi
           done
 
   deploy-azure:

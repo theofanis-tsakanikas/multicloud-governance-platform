@@ -30,6 +30,15 @@ dependency "bootstrap_platform" {
   config_path = "../../bootstrap/aws/platform"
 }
 
+# The RDS Proxy attaches to the instance by identifier, and the identifier is a literal in
+# config.hcl — so nothing made Terragrunt wait for the instance to exist. The CI workflow only
+# survived it by looping the layers in a fixed order; `make apply-aws` runs `run-all` over the
+# whole tree and is free to reach integration first, where the proxy target then fails with
+# DBInstanceNotFound. Declare the edge that was always there in fact.
+dependency "rds" {
+  config_path = "../storage/rds"
+}
+
 terraform {
   source = "../../../../infra/aws/modules//integration"
 }
@@ -76,4 +85,12 @@ inputs = {
   proxy_role_arn         = dependency.iam.outputs.proxy_role_arn
   db_instance_identifier = local.cfg.db_instance_identifier
   ncc_id                 = dependency.bootstrap_platform.outputs.ncc_id
+
+  # For the gateway image's one-shot roles: a private RDS is unreachable from a CI runner by
+  # construction, so the schema DDL and the seed run from inside the VPC, in this container.
+  rds_hostname = dependency.rds.outputs.rds_hostname
+  db_name      = local.cfg.db_name
+
+  # The one principal allowed to put an endpoint into the PrivateLink service. Was "*".
+  databricks_aws_account_id = local.cfg.dbx_aws_account_id
 }

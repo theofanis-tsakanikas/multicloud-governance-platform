@@ -106,9 +106,16 @@ resource "aws_ecs_task_definition" "pgbouncer" {
         { name = "DB_HOST", value = aws_db_proxy.rds_proxy.endpoint },
         { name = "DB_PORT", value = "5432" },
         { name = "DB_USER", value = var.rds_username },
+        { name = "DB_NAME", value = var.db_name },
         { name = "AUTH_TYPE", value = "scram-sha-256" },
         { name = "POOL_MODE", value = "transaction" },
-        { name = "MAX_CLIENT_CONN", value = "1000" }
+        { name = "MAX_CLIENT_CONN", value = "1000" },
+
+        # The instance itself, for the image's one-shot roles. A private RDS has no public
+        # address and admits only this task's security group, so schema DDL and the seed have
+        # nowhere else to run from — the same image, the same subnet, `aws ecs run-task`.
+        # The gateway role ignores this and goes through the proxy.
+        { name = "RDS_HOST", value = var.rds_hostname },
       ]
       secrets = [
         {
@@ -138,6 +145,12 @@ resource "aws_ecs_service" "main" {
   desired_count   = 1 # Increase for High Availability (HA)
   launch_type     = "FARGATE"
 
+  # Without this the apply returns the moment ECS *accepts* the service, not when it works. A
+  # missing image, a container that exits, a target group that never goes healthy — all of it
+  # happens after Terraform has already reported success, and the private path is then dead
+  # behind a green deploy. Wait for steady state and those failures land where they belong.
+  wait_for_steady_state = true
+
   network_configuration {
     subnets         = var.subnet_ids
     security_groups = [var.ecs_security_group_id]
@@ -148,6 +161,11 @@ resource "aws_ecs_service" "main" {
     container_name   = "pgbouncer"
     container_port   = 5432
   }
+
+  # Terraform's implicit graph gives the service the target group's ARN but knows nothing about
+  # the listener. ECS then rejects the registration outright: "The target group does not have an
+  # associated load balancer."
+  depends_on = [aws_lb_listener.pgbouncer_listener]
 }
 
 # 8. VPC Endpoint Service (The PrivateLink)
@@ -160,12 +178,16 @@ resource "aws_vpc_endpoint_service" "rds_ncc_service" {
   }
 }
 
-# Allowed Principal (Permissions for connection)
+# Allowed Principal — who may put an endpoint into this service.
+#
+# This was `"*"`. With acceptance_required = false alongside it, *any* AWS account in the region
+# could create an interface endpoint into this NLB, reach the gateway, and speak Postgres to a
+# database whose whole reason for being private is that nobody should. The one principal that
+# needs in is Databricks' own AWS account — the one the serverless NCC creates its endpoint from
+# — and it is already known to us: `dbx_aws_account_id` in config.hcl. Name it.
 resource "aws_vpc_endpoint_service_allowed_principal" "databricks" {
   vpc_endpoint_service_id = aws_vpc_endpoint_service.rds_ncc_service.id
-
-  # Set to "*" to allow any principal, or replace with specific ARNs for locking down security
-  principal_arn = "*"
+  principal_arn           = "arn:aws:iam::${var.databricks_aws_account_id}:root"
 }
 
 # Route 53 Private DNS Configuration

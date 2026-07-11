@@ -73,3 +73,17 @@ variable "rds_custom_dns_name" {
   description = "The custom DNS record for the RDS gateway (e.g. rds-private.platform.local)"
   type        = string
 }
+variable "rds_hostname" {
+  description = "The RDS instance endpoint. The gateway itself goes through the proxy; this is for the image's one-shot roles, which must reach the database directly from inside the VPC because nothing outside it can."
+  type        = string
+}
+
+variable "db_name" {
+  description = "Database the one-shot roles connect to."
+  type        = string
+}
+
+variable "databricks_aws_account_id" {
+  description = "Databricks' own AWS account — the single principal allowed to put an endpoint into the PrivateLink service. Was '*', which let any account in the region reach a database that is private by construction."
+  type        = string
+}

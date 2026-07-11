@@ -67,4 +67,8 @@ inputs = {
   rds_schemas  = local.schemas_to_create
   # dev is torn down and rebuilt; prod leaves this false (see the module).
   drop_cascade = true
+
+  # In private mode this layer is a no-op: a private RDS is unreachable from CI by construction,
+  # so the schemas are created from inside the VPC by a one-shot ECS task on the gateway image.
+  is_private_connection = local.cfg.is_private_connection_aws
 }

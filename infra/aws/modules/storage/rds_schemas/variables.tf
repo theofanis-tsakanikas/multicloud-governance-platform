@@ -13,3 +13,9 @@ variable "drop_cascade" {
   type        = bool
   default     = false
 }
+
+variable "is_private_connection" {
+  description = "In private mode the instance has no public address and admits only the gateway's security group, so Terraform cannot reach it from CI at all. The schemas are created by a one-shot ECS task instead — see the comment in main.tf."
+  type        = bool
+  default     = false
+}

@@ -108,10 +108,29 @@ jobs:
       # Each script is idempotent (DROP + CREATE) and deterministic (no random, no
       # now()), so the medallion's row counts and reject counts are reproducible.
 
+      # The seed has to reach the database, and in private mode nothing outside the VPC can:
+      # the instance has no public address and its security group admits only the gateway's.
+      # So ask the infrastructure which world we are in rather than being told — a flag passed
+      # by hand is a flag that will one day disagree with reality.
+      #
+      #   public   psql, straight from the runner, as it always did
+      #   private  the same seed, baked into the gateway image, run as a one-shot ECS task in
+      #            the VPC — the only door in. Identical SQL, identical rows.
       - name: Seed the source system — Postgres (AWS)
         if: ${{ inputs.cloud == 'aws' && inputs.seed_sources }}
+        env:
+          ENVIRONMENT: dev
         run: |
           set -euo pipefail
+          PUBLIC=$(aws rds describe-db-instances --db-instance-identifier sales-db-instance \
+            --query 'DBInstances[0].PubliclyAccessible' --output text)
+
+          if [ "$PUBLIC" = "False" ]; then
+            echo "::notice::RDS is private — seeding from inside the VPC"
+            bash .github/scripts/aws-rds-task.sh seed
+            exit 0
+          fi
+
           PGHOST=$(aws rds describe-db-instances --db-instance-identifier sales-db-instance \
             --query 'DBInstances[0].Endpoint.Address' --output text)
           PGPASSWORD=$(aws secretsmanager get-secret-value --secret-id "sales/rds-secret" \

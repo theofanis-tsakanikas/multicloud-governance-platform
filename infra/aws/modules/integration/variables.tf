@@ -34,3 +34,18 @@ variable "ecr_repo_name" { type = string }
 variable "ecs_role_arn" { type = string }
 variable "db_instance_identifier" { type = string }
 variable "proxy_role_arn" { type = string }
+
+variable "rds_hostname" {
+  description = "The RDS instance endpoint, for the gateway image's one-shot roles (schema DDL and seed run from inside the VPC — nothing outside it can reach a private RDS)."
+  type        = string
+}
+
+variable "db_name" {
+  description = "Database name."
+  type        = string
+}
+
+variable "databricks_aws_account_id" {
+  description = "Databricks' AWS account id — the only principal allowed into the PrivateLink endpoint service."
+  type        = string
+}

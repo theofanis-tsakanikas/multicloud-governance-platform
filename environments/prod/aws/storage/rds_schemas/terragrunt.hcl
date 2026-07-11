@@ -61,4 +61,8 @@ inputs = {
   password     = local.rds_secret.password
   rds_port     = local.cfg.rds_port
   rds_schemas  = local.schemas_to_create
+
+  # In private mode this layer is a no-op: a private RDS is unreachable from CI by construction,
+  # so the schemas are created from inside the VPC by a one-shot ECS task on the gateway image.
+  is_private_connection = local.cfg.is_private_connection_aws
 }
