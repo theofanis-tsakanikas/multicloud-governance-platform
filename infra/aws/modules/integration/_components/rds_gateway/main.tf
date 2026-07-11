@@ -195,7 +195,10 @@ resource "aws_vpc_endpoint_service" "rds_ncc_service" {
 # working one are the same grant: the single role, in Databricks' own AWS account, that
 # serverless compute creates its private endpoints from.
 locals {
-  databricks_private_connectivity_role = "arn:aws:iam::${var.databricks_aws_account_id}:role/private-connectivity-role"
+  # Region-suffixed, and in Databricks' *serverless PrivateLink* account — which is not the
+  # account the workspace cross-account role lives in. Both mistakes fail identically, with an
+  # error that names the endpoint service and not the ARN it could not find.
+  databricks_private_connectivity_role = "arn:aws:iam::${var.databricks_serverless_privatelink_account_id}:role/private-connectivity-role-${var.region}"
 }
 
 resource "aws_vpc_endpoint_service_allowed_principal" "databricks" {

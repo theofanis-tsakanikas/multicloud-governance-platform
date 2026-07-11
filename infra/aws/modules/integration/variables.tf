@@ -45,7 +45,7 @@ variable "db_name" {
   type        = string
 }
 
-variable "databricks_aws_account_id" {
-  description = "Databricks' AWS account id — the only principal allowed into the PrivateLink endpoint service."
+variable "databricks_serverless_privatelink_account_id" {
+  description = "Databricks' serverless PrivateLink account id — its region-suffixed private-connectivity-role is the only principal allowed into the endpoint service."
   type        = string
 }

@@ -10,14 +10,22 @@ locals {
   environment = "prod"
 
   # ─── AWS ─────────────────────────────────────────────────────────────────
-  aws_account_id              = "111111111111" # TODO: production AWS account
-  dbx_aws_account_id          = "414351767826"
-  aws_region                  = "eu-central-1"
-  bucket_name                 = "dbx-de-project-bucket-prod"
-  iam_role_name               = "databricks-access-role"
-  is_private_connection_aws   = get_env("PRIVATE_AWS", "false") == "true" # per-cloud connectivity — set by the deploy workflow (skip/public/private)
-  is_private_connection_azure = get_env("PRIVATE_AZURE", "false") == "true"
-  is_private_connection_gcp   = get_env("PRIVATE_GCP", "false") == "true"
+  aws_account_id     = "111111111111" # TODO: production AWS account
+  dbx_aws_account_id = "414351767826"
+
+  # Serverless PrivateLink runs out of a DIFFERENT Databricks-owned AWS account than the
+  # workspace cross-account role above, and the role it uses carries the region in its name:
+  #   arn:aws:iam::565502421330:role/private-connectivity-role-<region>
+  # Databricks validates that this exact ARN is on the endpoint service's allow-list before it
+  # will even attempt the endpoint, so a wildcard does not satisfy it and neither does the
+  # workspace account. https://docs.databricks.com/aws/en/security/network/serverless-network-security/pl-to-internal-network
+  dbx_serverless_privatelink_account_id = "565502421330"
+  aws_region                            = "eu-central-1"
+  bucket_name                           = "dbx-de-project-bucket-prod"
+  iam_role_name                         = "databricks-access-role"
+  is_private_connection_aws             = get_env("PRIVATE_AWS", "false") == "true" # per-cloud connectivity — set by the deploy workflow (skip/public/private)
+  is_private_connection_azure           = get_env("PRIVATE_AZURE", "false") == "true"
+  is_private_connection_gcp             = get_env("PRIVATE_GCP", "false") == "true"
 
   # RDS
   rds_username           = "sales_admin"

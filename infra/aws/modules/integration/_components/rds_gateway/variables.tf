@@ -83,7 +83,7 @@ variable "db_name" {
   type        = string
 }
 
-variable "databricks_aws_account_id" {
-  description = "Databricks' own AWS account — the single principal allowed to put an endpoint into the PrivateLink service. Was '*', which let any account in the region reach a database that is private by construction."
+variable "databricks_serverless_privatelink_account_id" {
+  description = "Databricks' SERVERLESS PrivateLink account (565502421330) — not the workspace cross-account one. Its private-connectivity-role-<region> is the single principal allowed to put an endpoint into this service, and Databricks validates that exact ARN is on the allow-list before it will even try."
   type        = string
 }

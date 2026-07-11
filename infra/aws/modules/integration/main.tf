@@ -20,9 +20,9 @@ module "rds_gateway" {
   rds_security_group_id  = var.rds_security_group_id
   proxy_role_arn         = var.proxy_role_arn
 
-  rds_hostname              = var.rds_hostname
-  db_name                   = var.db_name
-  databricks_aws_account_id = var.databricks_aws_account_id
+  rds_hostname                                 = var.rds_hostname
+  db_name                                      = var.db_name
+  databricks_serverless_privatelink_account_id = var.databricks_serverless_privatelink_account_id
 }
 
 resource "time_sleep" "dns_propagation" {

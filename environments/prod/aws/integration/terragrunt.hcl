@@ -92,5 +92,5 @@ inputs = {
   db_name      = local.cfg.db_name
 
   # The one principal allowed to put an endpoint into the PrivateLink service. Was "*".
-  databricks_aws_account_id = local.cfg.dbx_aws_account_id
+  databricks_serverless_privatelink_account_id = local.cfg.dbx_serverless_privatelink_account_id
 }
