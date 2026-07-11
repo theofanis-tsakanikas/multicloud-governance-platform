@@ -33,7 +33,12 @@
         {
           "widget": {
             "name": "title",
-            "textbox_spec": "# Multi-Cloud Executive View\nThree clouds fused by market \u2014 revenue (AWS) \u00b7 demand (GCP, Delta-shared) \u00b7 supply risk (Azure)."
+            "multilineTextboxSpec": {
+              "lines": [
+                "# Multi-Cloud Executive View\n",
+                "Three clouds fused by `market` \u2014 revenue (AWS) \u00b7 demand (GCP, Delta-shared) \u00b7 supply risk (Azure).\n"
+              ]
+            }
           },
           "position": {
             "x": 0,
@@ -47,7 +52,7 @@
             "name": "c_risk",
             "queries": [
               {
-                "name": "q",
+                "name": "main_query",
                 "query": {
                   "datasetName": "risk",
                   "fields": [
@@ -66,8 +71,22 @@
               "encodings": {
                 "value": {
                   "fieldName": "revenue_at_risk",
-                  "displayName": "Revenue at risk (EUR)"
+                  "displayName": "Revenue at risk (EUR)",
+                  "format": {
+                    "type": "number-plain",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 0
+                    }
+                  }
                 }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Revenue at risk"
+              },
+              "data": {
+                "queryName": "main_query"
               }
             }
           },
@@ -83,7 +102,7 @@
             "name": "t_exec",
             "queries": [
               {
-                "name": "q",
+                "name": "main_query",
                 "query": {
                   "datasetName": "exec",
                   "fields": [
@@ -122,6 +141,12 @@
             ],
             "spec": {
               "version": 1,
+              "invisibleColumns": [],
+              "allowHTMLByDefault": false,
+              "itemsPerPage": 25,
+              "paginationSize": "default",
+              "condensed": true,
+              "withRowNumber": false,
               "widgetType": "table",
               "encodings": {
                 "columns": [
@@ -142,8 +167,8 @@
                     "type": "string",
                     "displayAs": "string",
                     "visible": true,
-                    "order": 0,
-                    "title": "Market",
+                    "order": 100000,
+                    "title": "market",
                     "allowSearch": false,
                     "alignContent": "left",
                     "allowHTML": false,
@@ -168,15 +193,15 @@
                     "type": "float",
                     "displayAs": "number",
                     "visible": true,
-                    "order": 1,
-                    "title": "Revenue (EUR)",
+                    "order": 100001,
+                    "title": "revenue",
                     "allowSearch": false,
                     "alignContent": "right",
                     "allowHTML": false,
                     "highlightLinks": false,
                     "useMonospaceFont": false,
                     "preserveWhitespace": false,
-                    "numberFormat": "0,0"
+                    "numberFormat": "0"
                   },
                   {
                     "fieldName": "orders",
@@ -192,18 +217,18 @@
                     "linkTextTemplate": "{{ @ }}",
                     "linkTitleTemplate": "{{ @ }}",
                     "linkOpenInNewTab": true,
-                    "type": "float",
+                    "type": "integer",
                     "displayAs": "number",
                     "visible": true,
-                    "order": 2,
-                    "title": "Orders",
+                    "order": 100002,
+                    "title": "orders",
                     "allowSearch": false,
                     "alignContent": "right",
                     "allowHTML": false,
                     "highlightLinks": false,
                     "useMonospaceFont": false,
                     "preserveWhitespace": false,
-                    "numberFormat": "0,0"
+                    "numberFormat": "0"
                   },
                   {
                     "fieldName": "marketing_roi",
@@ -222,8 +247,8 @@
                     "type": "float",
                     "displayAs": "number",
                     "visible": true,
-                    "order": 3,
-                    "title": "Marketing ROI",
+                    "order": 100003,
+                    "title": "marketing_roi",
                     "allowSearch": false,
                     "alignContent": "right",
                     "allowHTML": false,
@@ -249,8 +274,8 @@
                     "type": "float",
                     "displayAs": "number",
                     "visible": true,
-                    "order": 4,
-                    "title": "Avg lead days",
+                    "order": 100004,
+                    "title": "avg_lead_days",
                     "allowSearch": false,
                     "alignContent": "right",
                     "allowHTML": false,
@@ -276,8 +301,8 @@
                     "type": "float",
                     "displayAs": "number",
                     "visible": true,
-                    "order": 5,
-                    "title": "% below reorder",
+                    "order": 100005,
+                    "title": "below_reorder_pct",
                     "allowSearch": false,
                     "alignContent": "right",
                     "allowHTML": false,
@@ -303,17 +328,24 @@
                     "type": "float",
                     "displayAs": "number",
                     "visible": true,
-                    "order": 6,
-                    "title": "Revenue at risk",
+                    "order": 100006,
+                    "title": "revenue_at_risk",
                     "allowSearch": false,
                     "alignContent": "right",
                     "allowHTML": false,
                     "highlightLinks": false,
                     "useMonospaceFont": false,
                     "preserveWhitespace": false,
-                    "numberFormat": "0,0"
+                    "numberFormat": "0"
                   }
                 ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Executive cross-cloud view"
+              },
+              "data": {
+                "queryName": "main_query"
               }
             }
           },
@@ -329,7 +361,7 @@
             "name": "b_rev",
             "queries": [
               {
-                "name": "q",
+                "name": "main_query",
                 "query": {
                   "datasetName": "exec",
                   "fields": [
@@ -364,6 +396,13 @@
                   },
                   "displayName": "Revenue"
                 }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Revenue by Market"
+              },
+              "data": {
+                "queryName": "main_query"
               }
             }
           },
@@ -379,7 +418,7 @@
             "name": "b_roi",
             "queries": [
               {
-                "name": "q",
+                "name": "main_query",
                 "query": {
                   "datasetName": "exec",
                   "fields": [
@@ -414,6 +453,13 @@
                   },
                   "displayName": "Marketing ROI"
                 }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Marketing ROI by Market"
+              },
+              "data": {
+                "queryName": "main_query"
               }
             }
           },
@@ -429,7 +475,7 @@
             "name": "b_rej",
             "queries": [
               {
-                "name": "q",
+                "name": "main_query",
                 "query": {
                   "datasetName": "rejects",
                   "fields": [
@@ -464,6 +510,13 @@
                   },
                   "displayName": "Rows rejected"
                 }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Rows rejected by Reject reason"
+              },
+              "data": {
+                "queryName": "main_query"
               }
             }
           },
