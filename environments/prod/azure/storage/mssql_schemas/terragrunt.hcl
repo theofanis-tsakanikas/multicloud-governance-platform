@@ -56,4 +56,7 @@ inputs = {
   sql_admin_user     = local.cfg.sql_admin_user
   sql_admin_password = dependency.mssql.outputs.sql_admin_password
   mssql_schemas      = local.schemas_to_create
+
+  # No-op in private mode; schemas are created inside the VPC by a one-shot ECS task.
+  is_private_connection = local.cfg.is_private_connection_azure
 }

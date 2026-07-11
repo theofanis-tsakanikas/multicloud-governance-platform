@@ -24,3 +24,9 @@ variable "sql_admin_password" {
   type        = string
   sensitive   = true
 }
+
+variable "is_private_connection" {
+  description = "In private mode the SQL server has no public address; the schemas are created by a one-shot ECS task inside the VPC instead (see the deploy workflow)."
+  type        = bool
+  default     = false
+}

@@ -155,11 +155,23 @@ jobs:
       # Azure source has to hold rows even when the target workspace is on AWS.
       - name: Seed the source system — Azure SQL (the AWS medallion reads it)
         if: ${{ inputs.cloud == 'aws' && inputs.seed_sources }}
+        env:
+          ENVIRONMENT: dev
         run: |
           set -euo pipefail
           SRV=$(az sql server list --query "[0].name" -o tsv)
           RG=$(az sql server list --query "[0].resourceGroup" -o tsv)
           KV=$(az keyvault list --query "[0].name" -o tsv)
+
+          # In private mode the server has no public endpoint and firewall rules are ignored, so
+          # the runner cannot reach it — the seed runs from inside the VPC on the transit gateway,
+          # exactly as its schemas do. Ask the server which world we are in rather than being told.
+          PUBLIC=$(az sql server show -g "$RG" -n "$SRV" --query "publicNetworkAccess" -o tsv)
+          if [ "$PUBLIC" = "Disabled" ]; then
+            echo "::notice::Azure SQL is private — seeding from inside the VPC"
+            bash .github/scripts/azure-sql-task.sh seed
+            exit 0
+          fi
 
           # Same reason the destroy needs it: every runner has a different IP, and
           # the firewall only knows the one that ran the deploy.

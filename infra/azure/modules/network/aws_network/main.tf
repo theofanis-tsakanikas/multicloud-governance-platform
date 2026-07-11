@@ -97,6 +97,22 @@ resource "aws_vpc_endpoint" "kinesis" {
   private_dns_enabled = true
 }
 
+# ECR repository for the SQL transit gateway image (docker/sql-gateway). It lives here, in the
+# network layer, for the same reason the AWS RDS gateway's repo lives in foundation: the image
+# must be built and pushed AFTER the repo exists and BEFORE the integration layer's ECS service
+# pulls it. CI does that push between `network` and `integration`.
+resource "aws_ecr_repository" "sql_gateway" {
+  name                 = var.ecr_repo_name
+  image_tag_mutability = "MUTABLE"
+  force_delete         = true # dev is torn down and rebuilt; a repo with images must still drop
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  tags = { Name = "sql-gateway" }
+}
+
 # 4. The Bridge to Azure (VPN Gateway)
 resource "aws_vpn_gateway" "vpn_gw" {
   vpc_id = aws_vpc.databricks_vpc.id

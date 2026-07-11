@@ -95,3 +95,60 @@ variable "vpn_shared_key" {
   default     = null
   sensitive   = true
 }
+
+# ── Transit-hub additions (private mode only) ─────────────────────────────────────────────────
+
+variable "subnet_ids" {
+  description = "AWS private subnets (from network/aws_network) where the SQL gateway NLB and Fargate task run."
+  type        = list(string)
+  default     = []
+}
+
+variable "security_group_id" {
+  description = "Security group for the SQL gateway Fargate task (aws_network's databricks_sg)."
+  type        = string
+  default     = ""
+}
+
+variable "ecr_repo_name" {
+  description = "ECR repository holding the sql-gateway image (created in the network layer)."
+  type        = string
+  default     = ""
+}
+
+variable "ncc_id" {
+  description = "Databricks Network Connectivity Config id (from bootstrap/aws/platform)."
+  type        = string
+  default     = ""
+}
+
+variable "dbx_account_id" {
+  description = "Databricks account id (UUID) for the NCC private-endpoint rule."
+  type        = string
+  default     = ""
+}
+
+variable "databricks_serverless_privatelink_account_id" {
+  description = "Databricks' serverless-PrivateLink AWS account id — the only principal allowed into the gateway's endpoint service."
+  type        = string
+  default     = ""
+}
+
+variable "spn_client_id" {
+  description = "Databricks account SPN client id, for the account-level provider that creates the NCC rule."
+  type        = string
+  default     = ""
+}
+
+variable "spn_client_secret" {
+  description = "Databricks account SPN client secret."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "databricks_host" {
+  description = "Databricks accounts host (accounts.cloud.databricks.com)."
+  type        = string
+  default     = ""
+}

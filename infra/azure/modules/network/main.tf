@@ -37,4 +37,5 @@ module "aws_network" {
   databricks_vpc_cidr = var.databricks_vpc_cidr
   azure_vnet_cidr     = var.azure_vnet_cidr
   databricks_subnets  = var.databricks_subnets
+  ecr_repo_name       = var.ecr_repo_name
 }

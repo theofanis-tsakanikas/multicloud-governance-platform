@@ -17,3 +17,8 @@ variable "databricks_subnets" {
   description = "Map of subnet names to CIDR blocks"
   type        = map(string)
 }
+variable "ecr_repo_name" {
+  description = "ECR repository name for the SQL transit gateway image."
+  type        = string
+  default     = "sql-gateway"
+}

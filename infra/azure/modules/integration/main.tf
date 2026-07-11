@@ -57,3 +57,58 @@ module "aws_az_vpn_conn" {
   vpc_id              = var.vpc_id
   private_ip_address  = module.private_endpoint["enabled"].private_ip_address
 }
+
+# ── The AWS end of the transit hub ────────────────────────────────────────────────────────────
+# An HAProxy gateway on Fargate, fronted by an NLB and a PrivateLink service, that carries TCP
+# 1433 from Databricks serverless across the VPN (built just above) to the Azure private endpoint.
+# It resolves the Azure SQL FQDN through the Route53 zone aws_az_vpn_conn creates, so it depends
+# on that module having run.
+module "sql_gateway" {
+  for_each = local.private_mode
+  source   = "./sql_gateway"
+
+  environment                                  = var.environment
+  region                                       = var.region
+  vpc_id                                       = var.vpc_id
+  subnet_ids                                   = var.subnet_ids
+  security_group_id                            = var.security_group_id
+  sql_server_fqdn                              = var.sql_server_fqdn
+  ecr_repo_name                                = var.ecr_repo_name
+  databricks_serverless_privatelink_account_id = var.databricks_serverless_privatelink_account_id
+
+  depends_on = [module.aws_az_vpn_conn]
+}
+
+# The endpoint service exists the moment the NLB is registered, but Databricks' provisioning of
+# its interface endpoint into it lags — same as the RDS side. Give it a beat before the NCC rule
+# references the service by name.
+resource "time_sleep" "gateway_ready" {
+  for_each        = local.private_mode
+  depends_on      = [module.sql_gateway]
+  create_duration = "60s"
+}
+
+# ── The Databricks-side half: route the Azure SQL FQDN through the gateway's PrivateLink ───────
+module "sql_ncc_rule" {
+  for_each              = local.private_mode
+  source                = "./sql_ncc_rule"
+  ncc_id                = var.ncc_id
+  endpoint_service_name = module.sql_gateway["enabled"].endpoint_service_name
+  sql_server_fqdn       = var.sql_server_fqdn
+  databricks_account_id = var.dbx_account_id
+
+  providers = {
+    databricks = databricks.account
+  }
+
+  depends_on = [time_sleep.gateway_ready]
+}
+
+# Creating the NCC rule is not the same as the private endpoint being usable — Databricks takes a
+# few minutes to establish it. dbx_mssql_grants, three layers later, warms the foreign catalog by
+# querying Azure SQL; without this wait it would fail with an error naming none of this.
+resource "time_sleep" "ncc_endpoint_ready" {
+  for_each        = local.private_mode
+  depends_on      = [module.sql_ncc_rule]
+  create_duration = "180s"
+}

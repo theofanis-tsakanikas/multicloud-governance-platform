@@ -64,3 +64,9 @@ variable "is_private_connection" {
   type        = bool
   default     = false
 }
+
+variable "ecr_repo_name" {
+  description = "ECR repository name for the SQL transit gateway image (private mode)."
+  type        = string
+  default     = "sql-gateway"
+}

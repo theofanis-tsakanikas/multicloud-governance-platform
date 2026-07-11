@@ -170,6 +170,17 @@ jobs:
           # at parse time; run-all within each dir resolves the fine-grained order.
           # (run-all across the WHOLE cloud fails on a fresh env: it parses secret-
           # fetching layers before the secret-creating layer has applied.)
+          #
+          # PRIVATE MODE (transit hub) adds two steps Terraform cannot do itself, each in the one
+          # gap where its prerequisite exists and its consumer does not yet — the mirror of the
+          # AWS private steps:
+          #
+          #   after network      the ECR repo exists (inside aws_network), so the sql-gateway
+          #                      image is built and pushed before integration's ECS service pulls it.
+          #   after integration  the gateway is up, so the Azure SQL schemas are created from a
+          #                      one-shot task INSIDE the VPC — before data_platform's federated
+          #                      grants warm the foreign catalog. A private Azure SQL has no other door.
+          repo_root="$GITHUB_WORKSPACE"
           reached=0
           for dir in foundation network security storage integration data_platform; do
             if [ "$dir" = "${{ inputs.start_from }}" ]; then reached=1; fi
@@ -181,8 +192,23 @@ jobs:
             echo "::group::apply $dir"
             terragrunt run-all apply --terragrunt-non-interactive -auto-approve --terragrunt-working-dir "$dir"
             echo "::endgroup::"
+
+            if [ "${PRIVATE_AZURE}" = "true" ] && [ "$dir" = "network" ]; then
+              echo "::group::private — build and push the SQL transit-gateway image"
+              ( cd "$repo_root" && bash .github/scripts/azure-sql-gateway-image.sh )
+              echo "::endgroup::"
+            fi
+
+            if [ "${PRIVATE_AZURE}" = "true" ] && [ "$dir" = "integration" ]; then
+              echo "::group::private — create the Azure SQL schemas from inside the VPC"
+              ( cd "$repo_root" && bash .github/scripts/azure-sql-schemas.sh )
+              echo "::endgroup::"
+            fi
           done
         env:
+          AWS_REGION: eu-central-1
+          ECR_REPO: sql-gateway
+          ENVIRONMENT: dev
           ARM_USE_OIDC: true
           ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
