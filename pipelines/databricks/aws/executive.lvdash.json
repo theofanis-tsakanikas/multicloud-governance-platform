@@ -2,17 +2,24 @@
   "datasets": [
     {
       "name": "exec",
-      "displayName": "executive_cross_cloud",
+      "displayName": "executive",
       "queryLines": [
-        "SELECT market, revenue, orders, customers, marketing_spend, sessions,\n",
-        "       marketing_roi, avg_lead_days, inventory_units, below_reorder_pct,\n",
-        "       stockout_risk, revenue_at_risk\n",
+        "SELECT market, revenue, orders, marketing_roi, avg_lead_days,\n",
+        "       below_reorder_pct, revenue_at_risk\n",
+        "FROM sales_aws.gold.executive_cross_cloud ORDER BY revenue DESC"
+      ]
+    },
+    {
+      "name": "risk",
+      "displayName": "risk_total",
+      "queryLines": [
+        "SELECT ROUND(SUM(revenue_at_risk),0) AS revenue_at_risk\n",
         "FROM sales_aws.gold.executive_cross_cloud"
       ]
     },
     {
       "name": "rejects",
-      "displayName": "sales_rejects",
+      "displayName": "rejects",
       "queryLines": [
         "SELECT reason, rows FROM sales_aws.silver.sales_rejects ORDER BY rows DESC"
       ]
@@ -26,22 +33,30 @@
         {
           "widget": {
             "name": "title",
-            "textbox_spec": "# Multi-Cloud Executive View\nThree clouds fused by market — revenue (AWS) · demand (GCP, Delta-shared) · supply risk (Azure)."
+            "textbox_spec": "# Multi-Cloud Executive View\nThree clouds fused by market \u2014 revenue (AWS) \u00b7 demand (GCP, Delta-shared) \u00b7 supply risk (Azure)."
           },
-          "position": { "x": 0, "y": 0, "width": 6, "height": 2 }
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 1
+          }
         },
         {
           "widget": {
-            "name": "revenue_at_risk",
+            "name": "c_risk",
             "queries": [
               {
                 "name": "q",
                 "query": {
-                  "datasetName": "exec",
+                  "datasetName": "risk",
                   "fields": [
-                    { "name": "sum(revenue_at_risk)", "expression": "SUM(`revenue_at_risk`)" }
+                    {
+                      "name": "revenue_at_risk",
+                      "expression": "`revenue_at_risk`"
+                    }
                   ],
-                  "disaggregated": false
+                  "disaggregated": true
                 }
               }
             ],
@@ -49,112 +64,89 @@
               "version": 2,
               "widgetType": "counter",
               "encodings": {
-                "value": { "fieldName": "sum(revenue_at_risk)", "displayName": "Revenue at risk (EUR)" }
-              }
-            }
-          },
-          "position": { "x": 0, "y": 2, "width": 2, "height": 4 }
-        },
-        {
-          "widget": {
-            "name": "revenue_by_market",
-            "queries": [
-              {
-                "name": "q",
-                "query": {
-                  "datasetName": "exec",
-                  "fields": [
-                    { "name": "market", "expression": "`market`" },
-                    { "name": "sum(revenue)", "expression": "SUM(`revenue`)" }
-                  ],
-                  "disaggregated": false
+                "value": {
+                  "fieldName": "revenue_at_risk",
+                  "displayName": "Revenue at risk (EUR)"
                 }
               }
-            ],
-            "spec": {
-              "version": 3,
-              "widgetType": "bar",
-              "encodings": {
-                "x": { "fieldName": "market", "scale": { "type": "categorical" }, "displayName": "Market" },
-                "y": { "fieldName": "sum(revenue)", "scale": { "type": "quantitative" }, "displayName": "Revenue" }
-              }
             }
           },
-          "position": { "x": 2, "y": 2, "width": 4, "height": 4 }
+          "position": {
+            "x": 0,
+            "y": 1,
+            "width": 2,
+            "height": 3
+          }
         },
         {
           "widget": {
-            "name": "marketing_roi",
+            "name": "b_rev",
             "queries": [
               {
                 "name": "q",
                 "query": {
                   "datasetName": "exec",
                   "fields": [
-                    { "name": "market", "expression": "`market`" },
-                    { "name": "avg(marketing_roi)", "expression": "AVG(`marketing_roi`)" }
-                  ],
-                  "disaggregated": false
-                }
-              }
-            ],
-            "spec": {
-              "version": 3,
-              "widgetType": "bar",
-              "encodings": {
-                "x": { "fieldName": "market", "scale": { "type": "categorical" }, "displayName": "Market" },
-                "y": { "fieldName": "avg(marketing_roi)", "scale": { "type": "quantitative" }, "displayName": "Marketing ROI" }
-              }
-            }
-          },
-          "position": { "x": 0, "y": 6, "width": 3, "height": 5 }
-        },
-        {
-          "widget": {
-            "name": "supply_risk",
-            "queries": [
-              {
-                "name": "q",
-                "query": {
-                  "datasetName": "exec",
-                  "fields": [
-                    { "name": "market", "expression": "`market`" },
-                    { "name": "avg_lead_days", "expression": "`avg_lead_days`" },
-                    { "name": "below_reorder_pct", "expression": "`below_reorder_pct`" },
-                    { "name": "stockout_risk", "expression": "`stockout_risk`" }
+                    {
+                      "name": "market",
+                      "expression": "`market`"
+                    },
+                    {
+                      "name": "revenue",
+                      "expression": "`revenue`"
+                    }
                   ],
                   "disaggregated": true
                 }
               }
             ],
             "spec": {
-              "version": 1,
-              "widgetType": "table",
+              "version": 3,
+              "widgetType": "bar",
               "encodings": {
-                "columns": [
-                  { "fieldName": "market", "displayName": "Market" },
-                  { "fieldName": "avg_lead_days", "displayName": "Avg lead days" },
-                  { "fieldName": "below_reorder_pct", "displayName": "% below reorder" },
-                  { "fieldName": "stockout_risk", "displayName": "Stockout risk" }
-                ]
+                "x": {
+                  "fieldName": "market",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Market"
+                },
+                "y": {
+                  "fieldName": "revenue",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Revenue"
+                }
               }
             }
           },
-          "position": { "x": 3, "y": 6, "width": 3, "height": 5 }
+          "position": {
+            "x": 2,
+            "y": 1,
+            "width": 4,
+            "height": 4
+          }
         },
         {
           "widget": {
-            "name": "data_quality",
+            "name": "b_roi",
             "queries": [
               {
                 "name": "q",
                 "query": {
-                  "datasetName": "rejects",
+                  "datasetName": "exec",
                   "fields": [
-                    { "name": "reason", "expression": "`reason`" },
-                    { "name": "sum(rows)", "expression": "SUM(`rows`)" }
+                    {
+                      "name": "market",
+                      "expression": "`market`"
+                    },
+                    {
+                      "name": "marketing_roi",
+                      "expression": "`marketing_roi`"
+                    }
                   ],
-                  "disaggregated": false
+                  "disaggregated": true
                 }
               }
             ],
@@ -162,12 +154,129 @@
               "version": 3,
               "widgetType": "bar",
               "encodings": {
-                "x": { "fieldName": "reason", "scale": { "type": "categorical" }, "displayName": "Reject reason" },
-                "y": { "fieldName": "sum(rows)", "scale": { "type": "quantitative" }, "displayName": "Rows rejected" }
+                "x": {
+                  "fieldName": "market",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Market"
+                },
+                "y": {
+                  "fieldName": "marketing_roi",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Marketing ROI"
+                }
               }
             }
           },
-          "position": { "x": 0, "y": 11, "width": 6, "height": 4 }
+          "position": {
+            "x": 0,
+            "y": 4,
+            "width": 3,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "b_supply",
+            "queries": [
+              {
+                "name": "q",
+                "query": {
+                  "datasetName": "exec",
+                  "fields": [
+                    {
+                      "name": "market",
+                      "expression": "`market`"
+                    },
+                    {
+                      "name": "below_reorder_pct",
+                      "expression": "`below_reorder_pct`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "market",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Market"
+                },
+                "y": {
+                  "fieldName": "below_reorder_pct",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "% below reorder"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 4,
+            "width": 3,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "b_rej",
+            "queries": [
+              {
+                "name": "q",
+                "query": {
+                  "datasetName": "rejects",
+                  "fields": [
+                    {
+                      "name": "reason",
+                      "expression": "`reason`"
+                    },
+                    {
+                      "name": "rows",
+                      "expression": "`rows`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "reason",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Reject reason"
+                },
+                "y": {
+                  "fieldName": "rows",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Rows rejected"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 8,
+            "width": 6,
+            "height": 4
+          }
         }
       ]
     }
