@@ -79,6 +79,9 @@ resource "azurerm_public_ip" "vpn_gw_pip" {
   resource_group_name = var.resource_group_name
   allocation_method   = "Static"
   sku                 = "Standard"
+  # VpnGw1AZ is zone-redundant, and Azure requires its public IP to be zone-redundant too:
+  # "Standard Public IPs associated with VPN Gateways with AZ VPN skus must have zones configured."
+  zones = ["1", "2", "3"]
 }
 
 # The Virtual Network Gateway
