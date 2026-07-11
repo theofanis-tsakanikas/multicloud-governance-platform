@@ -1,110 +1,108 @@
-# `locals` is a top-level block: it was nested inside the external-VPN-gateway
-# resource, which Terraform rejects outright ("block type name locals is reserved").
-# This module has never been validated.
+# The IPsec tunnel joining GCP's AWS transit VPC to the GCP VPC.
+#
+# It carries exactly one kind of traffic: the BigQuery gateway's TCP 443, from the Fargate task in
+# 10.11.0.0/16 to Google's private API VIP (199.36.153.8/30), which the GCP VPC then hands to
+# Google's own frontend. Nothing else crosses it.
+#
+# ── WHY THIS IS ONE TUNNEL AND NOT FOUR ─────────────────────────────────────────────────────────
+#
+# The previous version built the textbook HA topology: two AWS VPN connections against the two
+# interfaces of a GCP HA VPN gateway, four tunnels, four BGP sessions. It also carried a bug that
+# would have kept half of them down forever — every tunnel was handed `tunnel1_preshared_key`,
+# including the odd ones that terminate on the AWS connection's *second* tunnel, which has a
+# different key. The module's own header admitted it had never been validated.
+#
+# Four tunnels is roughly $219/month for a demo that needs one path to work. This builds a single
+# tunnel, the same shape as the Azure bridge that is up right now and carrying Azure SQL. AWS will
+# report its second tunnel DOWN: that is expected, not a fault, and it is the price of not paying
+# for an HA pair nobody is failing over to.
+#
+# BGP is not optional — GCP HA VPN has no static-route mode. The Cloud Router exists only to hold
+# that session, and to learn 10.11.0.0/16 from AWS so that Google's replies find their way home.
+
 locals {
-  # Every AWS VPN connection exposes two tunnel endpoints; GCP wants them flat.
-  aws_ips = flatten([
-    for conn in aws_vpn_connection.aws_to_gcp : [conn.tunnel1_address, conn.tunnel2_address]
-  ])
+  gcp_asn = 65534 # GCP's Cloud Router ASN, and what AWS must expect on the peer
 }
 
-# --- AWS SIDE ---
+# ── AWS side ────────────────────────────────────────────────────────────────────────────────────
 
-# 1. Customer Gateway in AWS
-# This represents the GCP side of the VPN connection within AWS
+# The peer, as AWS sees it: interface 0 of the GCP HA VPN gateway.
 resource "aws_customer_gateway" "gcp_side" {
-  # Dynamic count based on the number of public IPs provided by GCP
-  count = length(var.gcp_vpn_gw_ips)
-
-  bgp_asn    = 65000 # GCP's ASN
-  ip_address = var.gcp_vpn_gw_ips[count.index]
+  bgp_asn    = local.gcp_asn
+  ip_address = var.gcp_vpn_gw_ips[0]
   type       = "ipsec.1"
-  tags       = { Name = "cgw-to-gcp-${count.index}" }
+  tags       = { Name = "cgw-to-gcp" }
 }
 
-# 2. VPN Connection in AWS
-# Creates the actual IPsec connection between the AWS VGW and the GCP Customer Gateway
 resource "aws_vpn_connection" "aws_to_gcp" {
-  # Map each Customer Gateway to its own VPN Connection
-  count = length(aws_customer_gateway.gcp_side)
-
   vpn_gateway_id      = var.aws_vpn_gw_id
-  customer_gateway_id = aws_customer_gateway.gcp_side[count.index].id
+  customer_gateway_id = aws_customer_gateway.gcp_side.id
   type                = "ipsec.1"
-  # Set to false to enable BGP (Dynamic Routing)
-  static_routes_only = false
+  static_routes_only  = false # HA VPN on the GCP side speaks BGP or it speaks nothing
 
-  tags = { Name = "s2s-to-gcp-${count.index}" }
+  tags = { Name = "s2s-to-gcp" }
 }
 
-# --- GCP SIDE ---
+# ── GCP side ────────────────────────────────────────────────────────────────────────────────────
 
-# 3. Cloud Router (Required for BGP/Dynamic Routing in GCP)
+# AWS, as GCP sees it. One address: tunnel 1 of the connection above.
+resource "google_compute_external_vpn_gateway" "aws_gw" {
+  name            = "external-aws-gateway"
+  project         = var.project_id
+  redundancy_type = "SINGLE_IP_INTERNALLY_REDUNDANT"
+  description     = "The AWS VPN connection's tunnel-1 endpoint"
+
+  interface {
+    id         = 0
+    ip_address = aws_vpn_connection.aws_to_gcp.tunnel1_address
+  }
+}
+
 resource "google_compute_router" "gcp_router" {
   name    = "gcp-aws-router"
-  network = var.gcp_vpc_id
+  project = var.project_id
   region  = var.location
+  network = var.gcp_vpc_id
+
   bgp {
-    asn = 65000 # Google's ASN
+    asn = local.gcp_asn
   }
 }
 
-# 4. External VPN Gateway (Declaration of AWS Public IPs in GCP)
-resource "google_compute_external_vpn_gateway" "aws_gw" {
-  name = "external-aws-gateway"
-  # Uses FOUR_IP_REDUNDANCY for 2 connections (4 tunnels total) 
-  # or TWO_IP_REDUNDANCY for 1 connection (2 tunnels)
-  redundancy_type = length(aws_vpn_connection.aws_to_gcp) > 1 ? "FOUR_IP_REDUNDANCY" : "TWO_IP_REDUNDANCY"
+resource "google_compute_vpn_tunnel" "tunnel" {
+  name    = "gcp-tunnel-to-aws"
+  project = var.project_id
+  region  = var.location
 
-  description = "VPN Gateway pointing to AWS"
-
-  # Dynamic block that registers each AWS public IP to a GCP interface
-  dynamic "interface" {
-    for_each = local.aws_ips
-    content {
-      id         = interface.key # The index (0, 1, 2, 3...)
-      ip_address = interface.value
-    }
-  }
-}
-
-# 5. VPN Tunnels (GCP Side)
-# Provisioning 2 tunnels for every AWS VPN Connection to ensure High Availability
-resource "google_compute_vpn_tunnel" "tunnels" {
-  count                           = length(local.aws_ips)
-  name                            = "gcp-tunnel-${count.index}"
-  region                          = var.location
-  vpn_gateway                     = var.gcp_vpn_gw_id # ID from the network module
+  vpn_gateway                     = var.gcp_vpn_gw_id
+  vpn_gateway_interface           = 0
   peer_external_gateway           = google_compute_external_vpn_gateway.aws_gw.id
-  peer_external_gateway_interface = count.index
-  shared_secret                   = aws_vpn_connection.aws_to_gcp[floor(count.index / 2)].tunnel1_preshared_key
-  # Note: In production, consider using fixed keys or pulling from a Secret Manager
+  peer_external_gateway_interface = 0
 
-  router = google_compute_router.gcp_router.name
+  # The key AWS generated for tunnel 1. Handing it to a tunnel that terminates on AWS tunnel 2 is
+  # precisely the bug that would have left the old module's odd tunnels down forever.
+  shared_secret = aws_vpn_connection.aws_to_gcp.tunnel1_preshared_key
 
-  # Connect to the correct HA VPN Gateway interface (0 or 1)
-  vpn_gateway_interface = count.index % 2
+  router = google_compute_router.gcp_router.id
 }
 
-# 6. BGP Interfaces & Peers
-# This is where the routing "handshake" occurs between AWS and GCP
-resource "google_compute_router_interface" "interfaces" {
-  count  = length(local.aws_ips)
-  name   = "interface-${count.index}"
-  router = google_compute_router.gcp_router.name
-  region = var.location
-  # Assigns the BGP IP range for the GCP side of the tunnel
-  ip_range   = count.index % 2 == 0 ? "${aws_vpn_connection.aws_to_gcp[floor(count.index / 2)].tunnel1_cgw_inside_address}/30" : "${aws_vpn_connection.aws_to_gcp[floor(count.index / 2)].tunnel2_cgw_inside_address}/30"
-  vpn_tunnel = google_compute_vpn_tunnel.tunnels[count.index].name
+# The BGP session rides inside the tunnel, on the /30 AWS assigns to it.
+resource "google_compute_router_interface" "iface" {
+  name       = "interface-to-aws"
+  project    = var.project_id
+  region     = var.location
+  router     = google_compute_router.gcp_router.name
+  ip_range   = "${aws_vpn_connection.aws_to_gcp.tunnel1_cgw_inside_address}/30"
+  vpn_tunnel = google_compute_vpn_tunnel.tunnel.name
 }
 
-resource "google_compute_router_peer" "peers" {
-  count  = length(local.aws_ips)
-  name   = "peer-${count.index}"
-  router = google_compute_router.gcp_router.name
-  region = var.location
-  # Targets the peer IP (AWS side) for the BGP session
-  peer_ip_address = count.index % 2 == 0 ? aws_vpn_connection.aws_to_gcp[floor(count.index / 2)].tunnel1_vgw_inside_address : aws_vpn_connection.aws_to_gcp[floor(count.index / 2)].tunnel2_vgw_inside_address
-  peer_asn        = 64512 # Default AWS ASN
-  interface       = google_compute_router_interface.interfaces[count.index].name
+resource "google_compute_router_peer" "peer" {
+  name                      = "peer-to-aws"
+  project                   = var.project_id
+  region                    = var.location
+  router                    = google_compute_router.gcp_router.name
+  interface                 = google_compute_router_interface.iface.name
+  peer_ip_address           = aws_vpn_connection.aws_to_gcp.tunnel1_vgw_inside_address
+  peer_asn                  = aws_vpn_connection.aws_to_gcp.tunnel1_bgp_asn
+  advertised_route_priority = 100
 }

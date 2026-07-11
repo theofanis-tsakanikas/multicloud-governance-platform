@@ -112,18 +112,33 @@ locals {
   gcp_project_number     = "810048527282"
   gcp_location           = "europe-west3"
   gcp_bucket_prefix_name = "databricks-gcp-bucket"
-  gcp_vpc_cidr           = ["10.30.0.0/16", "199.36.153.4/30"]
+  gcp_vpc_cidr           = ["10.30.0.0/16", "199.36.153.8/30"]
   gcp_subnet_cidr        = ["10.30.1.0/24"]
-  network_name           = "gcp-dbx-vpc"
-  subnetwork_name        = "gcp-dbx-subnet"
-  terraform_sa_account   = "terraform-deployer@databricks-multicloud-platform.iam.gserviceaccount.com"
-  dbx_system_sa_gcp      = "dabc-d7f3c69a3d414b638430c29ab7771451@gcp-sa-databricks.iam.gserviceaccount.com"
-  gcp_dbx_account_id     = "d7f3c69a-3d41-4b63-8430-c29ab7771451"
-  gcp_databricks_host    = "https://accounts.gcp.databricks.com"
-  gcp_workspace_name     = "gcp-serverless-workspace-prod"
-  gcp_metastore_name     = "primary-metastore-europe-west3"
-  gcp_metastore_bucket   = "dbx-metastore-bucket"
-  gcp_delta_sharing_name = "gcp_delta_share"
+
+  # GCP's own AWS transit VPC. It cannot share Azure's 10.10.0.0/16: two VPCs with the same CIDR
+  # in one account are legal but unroutable to each other and impossible to reason about, and the
+  # Azure hub is live and working — nothing here may touch it.
+  gcp_transit_vpc_cidr = "10.11.0.0/16"
+  gcp_transit_subnets  = { subnet_a = "10.11.1.0/24", subnet_b = "10.11.2.0/24" }
+  gcp_transit_nat_cidr = "10.11.100.0/24"
+  gcp_ecr_repo_name    = "bq-gateway"
+
+  # The private.googleapis.com VIP. NOT restricted.googleapis.com (199.36.153.4/30): that one only
+  # fronts APIs that support VPC Service Controls, and the BigQuery connector also needs
+  # oauth2.googleapis.com to exchange its service-account key for a token. private.googleapis.com
+  # fronts essentially every Google API, which is what a private path without VPC-SC requires.
+  gcp_private_api_vip_cidr = "199.36.153.8/30"
+  gcp_private_api_vip_ips  = ["199.36.153.8", "199.36.153.9", "199.36.153.10", "199.36.153.11"]
+  network_name             = "gcp-dbx-vpc"
+  subnetwork_name          = "gcp-dbx-subnet"
+  terraform_sa_account     = "terraform-deployer@databricks-multicloud-platform.iam.gserviceaccount.com"
+  dbx_system_sa_gcp        = "dabc-d7f3c69a3d414b638430c29ab7771451@gcp-sa-databricks.iam.gserviceaccount.com"
+  gcp_dbx_account_id       = "d7f3c69a-3d41-4b63-8430-c29ab7771451"
+  gcp_databricks_host      = "https://accounts.gcp.databricks.com"
+  gcp_workspace_name       = "gcp-serverless-workspace-prod"
+  gcp_metastore_name       = "primary-metastore-europe-west3"
+  gcp_metastore_bucket     = "dbx-metastore-bucket"
+  gcp_delta_sharing_name   = "gcp_delta_share"
   # Delta Sharing between two Databricks accounts: the GCP metastore creates a
   # recipient for the AWS metastore, and the AWS side then sees a provider of
   # this name automatically. Nothing creates the provider object explicitly.

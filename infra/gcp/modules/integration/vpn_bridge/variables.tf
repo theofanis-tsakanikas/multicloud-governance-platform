@@ -5,11 +5,6 @@ variable "aws_vpn_gw_id" {
   type        = string
 }
 
-variable "databricks_vpc_id" {
-  description = "The ID of the AWS VPC where Databricks resides."
-  type        = string
-}
-
 # --- GCP Connectivity Variables --- 
 
 variable "gcp_vpc_id" {

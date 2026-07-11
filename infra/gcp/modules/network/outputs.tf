@@ -47,3 +47,8 @@ output "aws_vpn_gw_id" {
   description = "AWS VPN gateway id; null in public mode."
   value       = try(module.aws_network["enabled"].aws_vpn_gw_id, "")
 }
+
+output "ecr_repo_name" {
+  description = "ECR repo for the bq-gateway image; empty in public mode."
+  value       = try(module.aws_network["enabled"].ecr_repo_name, "")
+}

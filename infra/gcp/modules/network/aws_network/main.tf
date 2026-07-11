@@ -6,7 +6,7 @@ data "aws_availability_zones" "available" {
 # 1. The Network (VPC & Subnets)
 # The main VPC container
 resource "aws_vpc" "databricks_vpc" {
-  cidr_block           = var.databricks_vpc_cidr # e.g., "10.10.0.0/16"
+  cidr_block           = var.transit_vpc_cidr # 10.11.0.0/16 — NOT Azure's 10.10, which is live
   enable_dns_hostnames = true
   enable_dns_support   = true
 
@@ -15,13 +15,13 @@ resource "aws_vpc" "databricks_vpc" {
 
 # Private Subnets
 resource "aws_subnet" "private_subnets" {
-  for_each   = var.databricks_subnets
+  for_each   = var.transit_subnets
   vpc_id     = aws_vpc.databricks_vpc.id
   cidr_block = each.value
 
   # Map each subnet to a unique Availability Zone based on its index in the map
   availability_zone = data.aws_availability_zones.available.names[
-    index(keys(var.databricks_subnets), each.key)
+    index(keys(var.transit_subnets), each.key)
   ]
 
   tags = {
@@ -95,6 +95,18 @@ resource "aws_vpc_endpoint" "kinesis" {
 }
 
 # 4. The Gateway to Azure (VPN Gateway)
+resource "aws_ecr_repository" "bq_gateway" {
+  name                 = var.ecr_repo_name
+  image_tag_mutability = "MUTABLE"
+  force_delete         = true
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  tags = { Name = "bq-gateway" }
+}
+
 resource "aws_vpn_gateway" "vpn_gw" {
   vpc_id = aws_vpc.databricks_vpc.id
 
@@ -119,7 +131,7 @@ resource "aws_internet_gateway" "igw" {
 # A small Public Subnet specifically for the NAT Gateway
 resource "aws_subnet" "public_nat_subnet" {
   vpc_id            = aws_vpc.databricks_vpc.id
-  cidr_block        = "10.10.100.0/24" # A unique range not used elsewhere
+  cidr_block        = var.transit_nat_cidr # 10.11.100.0/24 — inside this VPC, not Azure's
   availability_zone = data.aws_availability_zones.available.names[0]
   tags              = { Name = "databricks-public-nat-subnet" }
 }

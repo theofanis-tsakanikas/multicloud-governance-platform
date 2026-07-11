@@ -44,3 +44,9 @@ variable "is_private_connection" {
   type        = bool
   default     = false
 }
+
+variable "private_api_vip_cidr" {
+  description = "private.googleapis.com VIP range (199.36.153.8/30). A route sends it to Google's private API frontend; without it, traffic arriving over the VPN is dropped."
+  type        = string
+  default     = "199.36.153.8/30"
+}

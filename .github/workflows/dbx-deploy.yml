@@ -241,12 +241,22 @@ jobs:
 
       - name: Apply — GCP
         working-directory: environments/dev/gcp
+        env:
+          AWS_REGION: eu-central-1
+          ECR_REPO: bq-gateway
         run: |
           # Apply top-level dirs in dependency order. Secrets created in an earlier
           # dir (e.g. security/secrets_manager) exist before a later dir fetches them
           # at parse time; run-all within each dir resolves the fine-grained order.
           # (run-all across the WHOLE cloud fails on a fresh env: it parses secret-
           # fetching layers before the secret-creating layer has applied.)
+          #
+          # PRIVATE MODE adds one step Terraform cannot do for itself, in the one gap where its
+          # prerequisite exists and its consumer does not yet: after `network` the ECR repository
+          # exists, so the BigQuery gateway image is built and pushed before integration's ECS
+          # service tries to pull it. There is no schema step here, unlike AWS and Azure — BigQuery
+          # stays reachable from CI over the Google API with IAM, so the seed never needed the VPC.
+          repo_root="$GITHUB_WORKSPACE"
           reached=0
           for dir in foundation network security storage integration data_platform; do
             if [ "$dir" = "${{ inputs.start_from }}" ]; then reached=1; fi
@@ -258,4 +268,10 @@ jobs:
             echo "::group::apply $dir"
             terragrunt run-all apply --terragrunt-non-interactive -auto-approve --terragrunt-working-dir "$dir"
             echo "::endgroup::"
+
+            if [ "${PRIVATE_GCP}" = "true" ] && [ "$dir" = "network" ]; then
+              echo "::group::private — build and push the BigQuery transit-gateway image"
+              ( cd "$repo_root" && bash .github/scripts/gcp-bq-gateway-image.sh )
+              echo "::endgroup::"
+            fi
           done

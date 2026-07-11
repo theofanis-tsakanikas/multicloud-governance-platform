@@ -42,47 +42,32 @@ resource "google_compute_ha_vpn_gateway" "gcp_vpn_gw" {
   region  = var.location
 }
 
-
-
-# 5. Private DNS Zone for Google APIs
-# Forces traffic to googleapis.com to stay within the Google network
-resource "google_dns_managed_zone" "googleapis" {
+# ── THE ROUTE THAT MAKES THE WHOLE PATH WORK ────────────────────────────────────────────────────
+#
+# Traffic for Google's private API VIP arrives here over the VPN, from the BigQuery gateway in the
+# AWS transit VPC. Without this route the GCP VPC has nowhere to send it and the packet is dropped
+# — the design's single largest hole, and invisible until you trace a connection that simply never
+# answers.
+#
+# `default-internet-gateway` is not what it sounds like. For 199.36.153.8/30 it does not leave for
+# the internet: it hands the packet to Google's own private API frontend, which is the entire point
+# of the VIP. This is Google's documented pattern for reaching its APIs privately from a network
+# joined by VPN or Interconnect.
+#
+# There is deliberately NO private DNS zone here. Nothing in this path resolves a name inside GCP:
+# the gateway dials the VIP by address, and the TLS SNI the Databricks client sent
+# (bigquery.googleapis.com, oauth2.googleapis.com …) is what Google's frontend routes on. A DNS
+# zone would be a second thing to be wrong, and it would drag in dns.googleapis.com, which this
+# project does not enable.
+resource "google_compute_route" "private_api_vip" {
   count = var.is_private_connection ? 1 : 0
 
-  name        = "googleapis-private-zone"
-  dns_name    = "googleapis.com."
-  description = "Private zone for Google APIs"
-  project     = var.project_id
+  name             = "private-googleapis-vip"
+  project          = var.project_id
+  network          = google_compute_network.gcp_vpc.name
+  dest_range       = var.private_api_vip_cidr
+  next_hop_gateway = "default-internet-gateway"
+  priority         = 100
 
-  # `visibility` is an argument, not a block; the networks belong to
-  # private_visibility_config. As written this module could never have validated.
-  visibility = "private"
-
-  private_visibility_config {
-    networks {
-      network_url = google_compute_network.gcp_vpc.id
-    }
-  }
-}
-
-# Route all Google API calls to the Restricted IP range (Restricted VIP)
-resource "google_dns_record_set" "restricted_apis" {
-  count = var.is_private_connection ? 1 : 0
-
-  name         = "*.googleapis.com."
-  type         = "A"
-  ttl          = 300
-  managed_zone = google_dns_managed_zone.googleapis[0].name
-  # Standard Restricted VIP addresses for Google Cloud
-  rrdatas = ["199.36.153.4", "199.36.153.5", "199.36.153.6", "199.36.153.7"]
-}
-
-resource "google_dns_record_set" "cname_googleapis" {
-  count = var.is_private_connection ? 1 : 0
-
-  name         = "googleapis.com."
-  type         = "A"
-  ttl          = 300
-  managed_zone = google_dns_managed_zone.googleapis[0].name
-  rrdatas      = ["199.36.153.4", "199.36.153.5", "199.36.153.6", "199.36.153.7"]
+  description = "Hands private.googleapis.com traffic arriving over the VPN to Google's private API frontend"
 }

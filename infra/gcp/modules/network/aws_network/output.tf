@@ -22,3 +22,7 @@ output "route_table_id" {
   description = "The ID of the main private route table."
   value       = aws_route_table.private.id
 }
+output "ecr_repo_name" {
+  description = "ECR repo holding the bq-gateway image; CI pushes to it before integration applies."
+  value       = aws_ecr_repository.bq_gateway.name
+}
