@@ -55,10 +55,21 @@ def rows(cur, sql):
     return [dict(zip(cols, r)) for r in cur.fetchall()]
 
 
-def demo_ghosts(cur) -> int:
-    """How many dropped `demo` schemas are still recoverable — i.e. still pinning the stage."""
-    history = rows(cur, f"SHOW SCHEMAS HISTORY IN DATABASE {DATABASE}")
-    return sum(1 for s in history if s.get("dropped_on") and s["name"].lower() == DEMO)
+def undrop_demo(cur) -> bool:
+    """Restore the most recent ghost. False once there is nothing recoverable left.
+
+    The termination signal, and it has to be this one. SHOW SCHEMAS HISTORY is NOT a count of
+    ghosts: it keeps listing a dropped schema after its Time Travel is gone, so a run that
+    peeled every ghost still sees the same number and loops forever. Only UNDROP knows the
+    difference between a schema that can come back and a row that merely remembers one.
+    """
+    try:
+        cur.execute(f"UNDROP SCHEMA {DEMO_SCHEMA}")
+        return True
+    except Exception as exc:
+        if "did not exist" in str(exc) or "purged" in str(exc):
+            return False
+        raise
 
 
 def drop_externals(cur) -> None:
@@ -101,29 +112,29 @@ def main() -> int:
         cur.execute(f"DROP SCHEMA {DEMO_SCHEMA} CASCADE")
         print(f"[demo]   dropped {DEMO_SCHEMA} (retention 0)")
 
-    # Now peel the ghosts left by every earlier CASCADE.
-    for peel in range(1, MAX_PEELS + 1):
-        remaining = demo_ghosts(cur)
-        if not remaining:
+    # Now peel the ghosts left by every earlier CASCADE, newest first, until UNDROP says there
+    # are none — which is the only trustworthy way to ask.
+    peeled = 0
+    for _ in range(MAX_PEELS):
+        if not undrop_demo(cur):
             break
-        print(f"[demo] {remaining} ghost(s) of {DEMO} in Time Travel — peeling (pass {peel})")
-
-        # UNDROP restores the most recently dropped one. Make it live so its external table can
-        # be deleted for real, then drop it with no retention so it cannot come back.
-        cur.execute(f"UNDROP SCHEMA {DEMO_SCHEMA}")
+        peeled += 1
+        print(f"[demo] restored a ghost of {DEMO} (pass {peeled}) — deleting it for real")
         drop_externals(cur)
         cur.execute(f"ALTER SCHEMA {DEMO_SCHEMA} SET DATA_RETENTION_TIME_IN_DAYS = 0")
         cur.execute(f"DROP SCHEMA {DEMO_SCHEMA} CASCADE")
-        print(f"[demo]   peeled one; {demo_ghosts(cur)} left")
-
-    # Assert, do not assume. The provider's error names the stage and never the thing holding
-    # it, so a silent miss here costs another full destroy run to diagnose.
-    left = demo_ghosts(cur)
-    if left:
+    else:
         con.close()
-        sys.exit(f"drop_demo: {left} ghost(s) of {DEMO} still in Time Travel — DROP STAGE would fail")
+        sys.exit(f"drop_demo: still peeling ghosts after {MAX_PEELS} passes — something is regenerating them")
 
-    print("[demo] no external table, live or recoverable; terraform can drop the stages")
+    # Assert, do not assume: one more UNDROP must fail. The provider's error names the stage and
+    # never the thing holding it, so a silent miss here costs another full destroy run to find.
+    if undrop_demo(cur):
+        con.close()
+        sys.exit(f"drop_demo: {DEMO} is still recoverable — terraform's DROP STAGE would fail")
+
+    print(f"[demo] {peeled} ghost(s) peeled; nothing recoverable remains")
+    print("[demo] no external table, live or in Time Travel; terraform can drop the stages")
     con.close()
     return 0
 
