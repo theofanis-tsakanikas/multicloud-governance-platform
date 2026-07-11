@@ -469,8 +469,8 @@
                     "type": "number-plain",
                     "abbreviation": "none",
                     "decimalPlaces": {
-                      "type": "max",
-                      "places": 0
+                      "type": "exact",
+                      "places": 2
                     },
                     "hideGroupSeparator": false
                   }
