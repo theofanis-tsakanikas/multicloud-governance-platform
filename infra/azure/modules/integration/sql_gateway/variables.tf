@@ -37,3 +37,8 @@ variable "databricks_serverless_privatelink_account_id" {
   description = "Databricks' serverless-PrivateLink AWS account — the only principal allowed into the endpoint service."
   type        = string
 }
+
+variable "vpc_cidr" {
+  description = "The AWS transit VPC CIDR (10.10.0.0/16). The gateway SG admits 1433 from it — NLB health checks and PrivateLink traffic both arrive from within the VPC."
+  type        = string
+}

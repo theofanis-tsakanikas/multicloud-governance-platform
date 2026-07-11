@@ -74,6 +74,7 @@ module "sql_gateway" {
   security_group_id                            = var.security_group_id
   sql_server_fqdn                              = var.sql_server_fqdn
   ecr_repo_name                                = var.ecr_repo_name
+  vpc_cidr                                     = var.databricks_vpc_cidr
   databricks_serverless_privatelink_account_id = var.databricks_serverless_privatelink_account_id
 
   depends_on = [module.aws_az_vpn_conn]

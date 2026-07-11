@@ -17,6 +17,31 @@ resource "aws_ecs_cluster" "main" {
   name = "sql-gateway-cluster-${var.environment}"
 }
 
+# The Fargate task's own security group. aws_network's databricks_sg admits only itself
+# (self = true), which blocks the NLB health check — it originates from the NLB's ENIs in the
+# VPC subnets, not from that SG — and the PrivateLink-forwarded traffic too, both of which arrive
+# from within the VPC. So the target group never goes healthy and wait_for_steady_state hangs.
+# Admit 1433 from the VPC CIDR (the RDS gateway does the same for 5432).
+resource "aws_security_group" "gateway" {
+  name        = "sql-gateway-sg-${var.environment}"
+  description = "SQL transit gateway: 1433 in from the VPC (NLB health checks + PrivateLink traffic)"
+  vpc_id      = var.vpc_id
+
+  ingress {
+    from_port   = 1433
+    to_port     = 1433
+    protocol    = "tcp"
+    cidr_blocks = [var.vpc_cidr]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
 # Internal NLB — the PrivateLink service can only front a network load balancer.
 resource "aws_lb" "nlb" {
   name                             = "sql-gateway-nlb-${var.environment}"
@@ -120,7 +145,7 @@ resource "aws_ecs_service" "main" {
 
   network_configuration {
     subnets         = var.subnet_ids
-    security_groups = [var.security_group_id]
+    security_groups = [aws_security_group.gateway.id]
   }
 
   load_balancer {
