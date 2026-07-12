@@ -156,7 +156,7 @@ Domain governance is defined in JSON, loaded natively by Terragrunt, and passed 
 
 ## GitHub Actions workflows
 
-All nine workflows live in `.github/workflows/`. The `bootstrap`, `deploy`, and `destroy` workflows target the `dev` GitHub Environment (configure manual approval gates there if needed).
+All ten workflows live in `.github/workflows/`. The `bootstrap`, `deploy`, and `destroy` workflows target the `dev` GitHub Environment (configure manual approval gates there if needed).
 
 | Workflow | File | Trigger | Required secrets |
 |---|---|---|---|
@@ -169,6 +169,7 @@ All nine workflows live in `.github/workflows/`. The `bootstrap`, `deploy`, and 
 | Secret scan | `gitleaks.yml` | PR + push — scans the diff for committed credentials/keys | — |
 | SBOM & supply-chain | `sbom.yml` | Push to main / PR (deps) / weekly — SPDX SBOM (Syft) + CVE scan (Grype) → Security tab | — |
 | Publish dashboard | `pages.yml` | Push to main — rebuilds + publishes the static governance dashboard to GitHub Pages | — |
+| Genie copilot | `dbx-genie.yml` | Manual — provisions the Genie governance space. **Needs no cloud stack**: its tables are facts from the domain JSON, so it survives a teardown of all three clouds. Idempotent. | `DBX_DEPLOY_ROLE_ARN` (+ optional `GENIE_GRANT_USER` var) |
 
 **Validate** and **Config validate** are the two PR-gating workflows (`dbx-config-validate` is credential-free and also runs the access-policy gate). **Validate** runs in parallel across three jobs:
 - `validate (aws/azure/gcp)` matrix — `terraform fmt`, `terragrunt hclfmt`, `terragrunt validate`, Checkov, tfsec

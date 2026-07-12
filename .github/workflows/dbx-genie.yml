@@ -1,0 +1,124 @@
+name: DBX Genie — provision the governance copilot
+
+# The one part of this platform that needs no cloud stack, and has its own workflow to say so.
+#
+# The copilot's four tables are facts read out of environments/dev/domains/*.json — not out of RDS,
+# not out of Azure SQL, not out of BigQuery. They live in a managed catalog on the metastore root.
+# It therefore survives a full teardown of AWS, Azure and GCP, which is exactly right: it describes
+# the *governance*, not the infrastructure. Bolting it onto dbx-deploy would rebuild it on every
+# apply for no reason and imply a dependency that does not exist.
+#
+# What it needs is only what the bootstrap already provides: a workspace, a SQL warehouse, and the
+# service principal. Run it once, after bootstrap. Re-run it whenever the domain JSON changes —
+# it is idempotent and reuses the existing space rather than creating a second one.
+#
+# ── WHAT IS ACTUALLY BEING DEPLOYED ────────────────────────────────────────────────────────────
+#
+# Not an agent, and not a model. Genie is a Databricks feature and the LLM is theirs. What this
+# workflow provisions is the CAGE:
+#
+#   · the facts        four read-only tables, generated from the domain JSON
+#   · the boundary     the space is pointed at exactly those tables and nothing else
+#   · the contract     "answer only from these; if the answer is not here, say so"
+#   · the authority    run_as_type = VIEWER — Genie queries AS THE HUMAN ASKING, so Unity
+#                      Catalog's grants are the ceiling on anything it can ever return
+#
+# That last one is the whole safety argument, and it is not a promise made in a prompt: it would
+# hold if the instructions were deleted. The analyzer decides what is safe and fails the PR; Genie
+# only restates what the analyzer already proved.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Regenerate the artifacts and check they match the domain JSON — deploy nothing"
+        type: boolean
+        default: false
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  TF_VERSION: "1.9.8"
+  TERRAGRUNT_VERSION: "0.75.0"
+  AWS_REGION: eu-central-1
+
+jobs:
+  genie:
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - uses: actions/checkout@v4
+
+      # The artifacts are generated from the domain JSON with no cloud and no credentials. If they
+      # have drifted from it, the deploy would ship stale governance facts — so fail here, before
+      # any of the below, exactly as dbx-config-validate does on every PR.
+      - name: Artifacts match the domain JSON
+        run: python3 scripts/genie_space.py --check
+
+      - name: Configure AWS credentials (OIDC)
+        if: ${{ !inputs.dry_run }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.DBX_DEPLOY_ROLE_ARN }}
+          aws-region: eu-central-1
+
+      - name: Setup Terraform + Terragrunt
+        if: ${{ !inputs.dry_run }}
+        run: |
+          wget -q "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip" -O tf.zip
+          unzip -q tf.zip && sudo mv terraform /usr/local/bin/
+          wget -q "https://github.com/gruntwork-io/terragrunt/releases/download/v${TERRAGRUNT_VERSION}/terragrunt_linux_amd64" -O tg
+          chmod +x tg && sudo mv tg /usr/local/bin/terragrunt
+
+      # Everything comes from bootstrap. Nothing comes from a cloud stack — that is the point of
+      # this workflow existing separately.
+      - name: Resolve the workspace, the warehouse, and the service principal
+        if: ${{ !inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          HOST=$(cd environments/dev/bootstrap/aws/platform && terragrunt output -raw serverless_workspace_url --terragrunt-non-interactive)
+          WID=$(cd environments/dev/bootstrap/aws/config   && terragrunt output -raw warehouse_id            --terragrunt-non-interactive)
+
+          # The same service principal Terraform authenticates as, and therefore the owner of the
+          # catalog this creates.
+          CREDS=$(aws secretsmanager get-secret-value --secret-id databricks/spn/dev/spn_credentials --query SecretString --output text)
+          CSEC=$(echo "$CREDS" | jq -r .client_secret)
+          echo "::add-mask::$CSEC"
+
+          echo "DATABRICKS_HOST=$HOST"                                >> "$GITHUB_ENV"
+          echo "DATABRICKS_CLIENT_ID=$(echo "$CREDS" | jq -r .client_id)" >> "$GITHUB_ENV"
+          echo "DATABRICKS_CLIENT_SECRET=$CSEC"                       >> "$GITHUB_ENV"
+          echo "GENIE_WAREHOUSE_ID=$WID"                              >> "$GITHUB_ENV"
+
+      # Idempotent: creates the catalog if absent, replaces the four tables, reuses the space if it
+      # already exists, and re-attaches the grounding contract. Re-run it after any change to the
+      # domain JSON and the copilot's facts follow.
+      - name: Deploy the governance copilot
+        if: ${{ !inputs.dry_run }}
+        env:
+          # Optional. Without it the space is owned by the SP and no human can open it, which is
+          # correct for an unattended run and useless for a demo.
+          GENIE_GRANT_USER: ${{ vars.GENIE_GRANT_USER }}
+        run: python3 scripts/genie_space.py --deploy
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### Genie — governance copilot"
+            echo ""
+            if [ "${{ inputs.dry_run }}" = "true" ]; then
+              echo "Dry run: artifacts checked against the domain JSON. Nothing deployed."
+            else
+              echo "| | |"
+              echo "|---|---|"
+              echo "| Catalog | \`platform_governance\` |"
+              echo "| Tables | \`objects\`, \`access_matrix\`, \`pii_map\`, \`policy_findings\` |"
+              echo "| Space | Governance Copilot — sees those four tables and nothing else |"
+              echo "| Runs as | \`VIEWER\` — the asker's own Unity Catalog grants are the ceiling |"
+              echo ""
+              echo "Needs no cloud stack. Survives a teardown of AWS, Azure and GCP."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
