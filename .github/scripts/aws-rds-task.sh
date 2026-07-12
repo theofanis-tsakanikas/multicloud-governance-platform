@@ -37,7 +37,21 @@ if [ "$NETCFG" = "null" ] || [ -z "$NETCFG" ]; then
   exit 1
 fi
 
-OVERRIDES="$(jq -nc --arg c "$CONTAINER" --args '{containerOverrides:[{name:$c,command:$ARGS.positional}]}' "$@")"
+# The command array, built WITHOUT jq's --args.
+#
+# jq treats a positional argument that begins with a dash as an option, and --args does not stop it:
+#
+#     jq: Unknown option -- Empty the Azure SQL source-system schemas so Terraform can drop them
+#
+# That is how the azure destroy failed when it first tried to send a .sql file whose opening line is
+# a `--` comment. Nothing sent through here starts with a dash today, which is exactly what makes it
+# worth fixing now — the failure is invisible until the day it is not.
+#
+# Null-delimiting bypasses the argument parser and carries newlines and quotes through intact.
+CMD_JSON="$(printf '%s\0' "$@" | jq -Rsc 'split("\u0000")[:-1]')"
+
+OVERRIDES="$(jq -nc --arg c "$CONTAINER" --argjson cmd "$CMD_JSON" \
+  '{containerOverrides:[{name:$c,command:$cmd}]}')"
 
 TASK="$(aws ecs run-task \
   --cluster "$CLUSTER" \

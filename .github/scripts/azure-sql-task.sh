@@ -44,20 +44,32 @@ if [ "$NETCFG" = "null" ] || [ -z "$NETCFG" ]; then
   exit 1
 fi
 
+# The command array, built WITHOUT jq's --args.
+#
+# jq parses positional arguments as options if they begin with a dash, and it does not stop doing
+# that after --args. A T-SQL script whose first line is a `--` comment is therefore not an argument
+# to jq, it is a flag:
+#
+#     jq: Unknown option -- Empty the Azure SQL source-system schemas so Terraform can drop them
+#
+# which is how the azure destroy failed the first time it tried to send drop_seed.sql through here.
+# Null-delimiting sidesteps the argument parser entirely, and carries newlines and quotes intact.
+CMD_JSON="$(printf '%s\0' "$@" | jq -Rsc 'split("\u0000")[:-1]')"
+
 OVERRIDES="$(jq -nc \
   --arg c "$CONTAINER" --arg host "$FQDN" --arg db "$DB_NAME" \
   --arg user "$DB_USER" --arg pw "$PW" \
-  --args \
+  --argjson cmd "$CMD_JSON" \
   '{containerOverrides:[{
       name:$c,
-      command:$ARGS.positional,
+      command:$cmd,
       environment:[
         {name:"TARGET_HOST",value:$host},
         {name:"DB_NAME",value:$db},
         {name:"DB_USER",value:$user},
         {name:"DB_PASSWORD",value:$pw}
       ]
-   }]}' "$@")"
+   }]}')"
 
 TASK="$(aws ecs run-task \
   --cluster "$CLUSTER" \
