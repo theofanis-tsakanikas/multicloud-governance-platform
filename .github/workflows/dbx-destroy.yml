@@ -272,7 +272,23 @@ jobs:
             echo "::group::${{ inputs.mode }} $dir"
             if [ "${{ inputs.mode }}" = "plan" ]; then
               terragrunt run-all plan -destroy --terragrunt-non-interactive --terragrunt-working-dir "$dir"
+            elif terragrunt run-all destroy --terragrunt-non-interactive -auto-approve --terragrunt-working-dir "$dir"; then
+              : # clean
             else
+              # The one failure that is expected, recoverable, and not Terraform's fault: Databricks
+              # leaves its VPC endpoint connected to our PrivateLink service after the NCC rule that
+              # asked for it is gone, and AWS will not delete a service that has a live connection.
+              #
+              #   Error: deleting EC2 VPC Endpoint Service (vpce-svc-...): has active connections
+              #
+              # By now this destroy has already deleted the rule — that is what makes rejecting the
+              # connection safe: nothing is left that could re-establish it. Reject, and run the
+              # layer again. Terraform picks up exactly where it stopped.
+              #
+              # Anything else that failed here fails again on the retry, and the job stops. This
+              # buys one attempt, not a loop, and it says so in the log either way.
+              echo "::warning::${dir} failed — draining Databricks' endpoint connection and retrying once"
+              bash "${GITHUB_WORKSPACE}/.github/scripts/drain-endpoint-service.sh" "${{ inputs.cloud }}"
               terragrunt run-all destroy --terragrunt-non-interactive -auto-approve --terragrunt-working-dir "$dir"
             fi
             echo "::endgroup::"
