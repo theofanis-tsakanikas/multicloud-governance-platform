@@ -53,7 +53,15 @@ resource "aws_lb" "nlb" {
 }
 
 resource "aws_lb_target_group" "haproxy_tg" {
-  name        = "bq-gateway-tg-${var.environment}"
+  # A target group's port is immutable, so changing it replaces the group — and Terraform tries to
+  # destroy the old one while the listener still points at it:
+  #
+  #     ResourceInUse: Target group ... is currently in use by a listener or a rule
+  #
+  # name_prefix + create_before_destroy is the way out: the replacement is built under a fresh
+  # generated name, the listener is repointed at it, and only then does the old one go. A fixed
+  # `name` cannot do this — the new group would collide with the old one it is replacing.
+  name_prefix = "bqgw-"
   port        = 8443
   protocol    = "TCP"
   vpc_id      = var.vpc_id
@@ -64,6 +72,10 @@ resource "aws_lb_target_group" "haproxy_tg" {
     port                = "8443"
     healthy_threshold   = 3
     unhealthy_threshold = 3
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 }
 
