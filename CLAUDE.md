@@ -26,7 +26,7 @@ Full architecture detail and dependency graphs are in [ARCHITECTURE.md](ARCHITEC
 │   ├── governance_metrics.py   #   trendable telemetry → docs/governance/metrics.json (CI --check)
 │   ├── cost_estimate.py        #   multi-cloud + Databricks cost & carbon floor → docs/governance/COST.md (CI --check)
 │   ├── catalog_drift.py        #   reconcile declared grants vs live Unity Catalog (deferred --live)
-│   └── genie_space.py          #   Genie governance-space SQL + grounding-contract instructions (deferred deploy)
+│   └── genie_space.py          #   Genie governance copilot: SQL + grounding contract; --deploy provisions it
 ├── pipelines/                  # Level B — governance over data in motion (offline, stdlib sqlite3):
 │   ├── generate_data.py        #   deterministic synthetic data shaped by the governance model
 │   ├── medallion.py            #   bronze→silver→gold + cross-cloud KPI table (PII-minimised gold)

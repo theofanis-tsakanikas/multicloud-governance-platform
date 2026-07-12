@@ -265,24 +265,179 @@ def generate_artifacts(repo_root: Path) -> dict[Path, str]:
     }
 
 
-def deploy_space(repo_root: Path) -> int:
-    """Create the Genie space via the Databricks SDK (deferred — needs creds).
+def _split_statements(text: str) -> list[str]:
+    """Split SQL on semicolons that are NOT inside a string literal.
 
-    Genie spaces are not yet a first-class Terraform resource, so — exactly like
-    the documented Genie pattern in the sibling FintelliGuard project — creation
-    is an SDK step run at deploy time, not part of `terragrunt apply`.
+    `text.split(";")` tears the policy_findings INSERT in half, because one generated
+    justification reads "...pseudonymised at source; data scientists use it for...". The generator
+    escapes its quotes correctly ('' for a literal apostrophe) — it is the splitter that has to
+    respect them. Comment LINES are then dropped from each chunk, rather than the chunk being
+    skipped for starting with one: the first statement sits under the file's header comment, and
+    skipping it silently loses the CREATE SCHEMA.
     """
-    try:
-        from databricks.sdk import WorkspaceClient  # noqa: F401
-    except ImportError:
-        print("databricks-sdk not installed — `pip install databricks-sdk` to deploy. Artifacts were still generated.")
-        return 0
-    print(
-        "Deploy is intentionally deferred (no live workspace in CI). With creds configured:\n"
-        f"  1. Run docs/governance/genie/materialize_governance.sql on the serverless SQL warehouse.\n"
-        f"  2. Create a Genie space over the `{GOVERNANCE_SCHEMA}` schema using the generated instructions.\n"
-        "See docs/governance/README.md for the full runbook."
-    )
+    out: list[str] = []
+    cur: list[str] = []
+    in_string = False
+    i = 0
+    while i < len(text):
+        ch = text[i]
+        if in_string:
+            if ch == "'":
+                if i + 1 < len(text) and text[i + 1] == "'":  # '' — escaped, not the end
+                    cur.append("''")
+                    i += 2
+                    continue
+                in_string = False
+            cur.append(ch)
+        elif ch == "'":
+            in_string = True
+            cur.append(ch)
+        elif ch == ";":
+            out.append("".join(cur))
+            cur = []
+        else:
+            cur.append(ch)
+        i += 1
+    out.append("".join(cur))
+
+    statements = []
+    for chunk in out:
+        body = "\n".join(l for l in chunk.splitlines() if not l.lstrip().startswith("--")).strip()
+        if body:
+            statements.append(body)
+    return statements
+
+
+def deploy_space(repo_root: Path) -> int:
+    """Create the Genie space for real: catalog → tables → space → grounding contract → grants.
+
+    Genie spaces are not a Terraform resource, so this is an API step run at deploy time rather
+    than part of `terragrunt apply`. It needs nothing that the cloud stacks provide: the governance
+    tables are facts read out of the domain JSON, and they live in a managed catalog backed by the
+    metastore root. The copilot therefore survives a full teardown of AWS, Azure and GCP — which is
+    the point. It describes the governance, not the infrastructure.
+
+    Environment:
+        DATABRICKS_HOST          workspace URL
+        DATABRICKS_TOKEN         or DATABRICKS_CLIENT_ID + DATABRICKS_CLIENT_SECRET (M2M OAuth)
+        GENIE_WAREHOUSE_ID       the SQL warehouse the space runs on
+        GENIE_GRANT_USER         optional — a user to grant CAN_MANAGE and SELECT
+    """
+    import base64
+    import os
+    import time
+    import urllib.error
+    import urllib.request
+
+    host = os.environ.get("DATABRICKS_HOST", "").rstrip("/")
+    warehouse = os.environ.get("GENIE_WAREHOUSE_ID", "")
+    if not host or not warehouse:
+        print("deploy needs DATABRICKS_HOST and GENIE_WAREHOUSE_ID; artifacts were still generated.")
+        return 1
+
+    token = os.environ.get("DATABRICKS_TOKEN")
+    if not token:
+        cid, secret = os.environ.get("DATABRICKS_CLIENT_ID"), os.environ.get("DATABRICKS_CLIENT_SECRET")
+        if not (cid and secret):
+            print("deploy needs DATABRICKS_TOKEN, or DATABRICKS_CLIENT_ID + DATABRICKS_CLIENT_SECRET.")
+            return 1
+        basic = base64.b64encode(f"{cid}:{secret}".encode()).decode()
+        req = urllib.request.Request(
+            f"{host}/oidc/v1/token",
+            data=b"grant_type=client_credentials&scope=all-apis",
+            headers={"Authorization": f"Basic {basic}",
+                     "Content-Type": "application/x-www-form-urlencoded"},
+        )
+        token = json.loads(urllib.request.urlopen(req).read())["access_token"]
+
+    catalog = GOVERNANCE_SCHEMA.split(".")[0]
+
+    def api(method: str, path: str, body: dict | None = None) -> tuple[int, dict | str]:
+        req = urllib.request.Request(
+            host + path,
+            data=json.dumps(body).encode() if body else None,
+            headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+            method=method,
+        )
+        try:
+            return 200, json.loads(urllib.request.urlopen(req).read() or "{}")
+        except urllib.error.HTTPError as exc:
+            return exc.code, exc.read().decode()[:200]
+
+    def sql(statement: str) -> tuple[bool, object]:
+        # Without an explicit catalog the SQL API resolves names against the legacy hive_metastore,
+        # which is disabled on this account (UC_HIVE_METASTORE_DISABLED_EXCEPTION).
+        code, res = api("POST", "/api/2.0/sql/statements",
+                        {"warehouse_id": warehouse, "statement": statement,
+                         "wait_timeout": "50s", "catalog": catalog})
+        if code != 200:
+            return False, res
+        while res.get("status", {}).get("state") in ("PENDING", "RUNNING"):
+            time.sleep(3)
+            code, res = api("GET", f"/api/2.0/sql/statements/{res['statement_id']}")
+        if res.get("status", {}).get("state") != "SUCCEEDED":
+            return False, res.get("status", {}).get("error", {}).get("message", res)
+        return True, res
+
+    # 1. The catalog. The generated SQL creates only the schema inside it. Managed — the metastore
+    #    root backs it, so no external location and no cloud storage layer is required.
+    ok, err = sql(f"CREATE CATALOG IF NOT EXISTS {catalog} COMMENT "
+                  f"'Governance facts, materialised from the domain JSON. The only tables Genie sees.'")
+    if not ok:
+        print(f"catalog: {err}")
+        return 1
+    print(f"  catalog   {catalog}")
+
+    # 2. The generated DDL + inserts.
+    script = (repo_root / GENIE_DIR / "materialize_governance.sql").read_text()
+    for statement in _split_statements(script):
+        ok, err = sql(statement)
+        if not ok:
+            print(f"  FAILED    {' '.join(statement.split()[:5])}\n            {err}")
+            return 1
+    print(f"  tables    {GOVERNANCE_SCHEMA}.{{objects, access_matrix, pii_map, policy_findings}}")
+
+    # 3. The space. Genie's create endpoint is /api/2.0/data-rooms; /api/2.0/genie/spaces demands a
+    #    `serialized_space` blob and is not the door in.
+    tables = [f"{GOVERNANCE_SCHEMA}.{t}"
+              for t in ("objects", "access_matrix", "pii_map", "policy_findings")]
+    code, existing = api("GET", "/api/2.0/data-rooms")
+    space_id = next((s["space_id"] for s in (existing or {}).get("data_rooms", [])
+                     if s.get("display_name") == "Governance Copilot"), None)
+    if not space_id:
+        code, res = api("POST", "/api/2.0/data-rooms", {
+            "display_name": "Governance Copilot",
+            "description": "Read-only. Answers only from governance facts the analyzer already proved.",
+            "warehouse_id": warehouse,
+            "table_identifiers": tables,
+        })
+        if code != 200:
+            print(f"space: {res}")
+            return 1
+        space_id = res["space_id"]
+    print(f"  space     {space_id}")
+
+    # 4. The grounding contract. It is a sub-resource, not a field on the space — and it takes
+    #    {title, content}, which the API will tell you one missing field at a time.
+    instructions = (repo_root / GENIE_DIR / "genie_instructions.md").read_text()
+    code, res = api("POST", f"/api/2.0/data-rooms/{space_id}/instructions",
+                    {"title": "Grounding contract", "content": instructions})
+    print(f"  contract  {'attached' if code == 200 else res}")
+
+    # 5. Grants. run_as_type is VIEWER — Genie queries as the human, so Unity Catalog's own grants
+    #    are the ceiling on what it can ever return. That is the whole safety argument, and it is
+    #    not a matter of trusting the prompt.
+    user = os.environ.get("GENIE_GRANT_USER")
+    if user:
+        api("PATCH", f"/api/2.0/permissions/genie/{space_id}",
+            {"access_control_list": [{"user_name": user, "permission_level": "CAN_MANAGE"}]})
+        for stmt in (f"GRANT USE CATALOG ON CATALOG {catalog} TO `{user}`",
+                     f"GRANT USE SCHEMA ON SCHEMA {GOVERNANCE_SCHEMA} TO `{user}`",
+                     f"GRANT SELECT ON SCHEMA {GOVERNANCE_SCHEMA} TO `{user}`"):
+            sql(stmt)
+        print(f"  grants    {user}")
+
+    print(f"\n  {host}/genie/rooms/{space_id}")
     return 0
 
 

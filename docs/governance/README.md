@@ -129,18 +129,43 @@ CI (`.github/workflows/dbx-config-validate.yml`, offline, no cloud creds) runs t
 analyzer as a gate and asserts the committed docs + Genie artifacts match a fresh
 render — so the EU-AI-Act documentation can never silently drift from the code.
 
-## Deploying the Genie layer (deferred)
+## Deploying the Genie layer
 
-Genie spaces are not yet a first-class Terraform resource, so — like the rest of
-the platform's apply path — provisioning is a deploy-time SDK step, not part of
-`terragrunt apply`. With a workspace + SQL warehouse and credentials configured:
+Genie spaces are not a Terraform resource, so provisioning is an API step at deploy
+time rather than part of `terragrunt apply`. It is a single command:
 
-1. Run `docs/governance/genie/materialize_governance.sql` on the serverless SQL
-   warehouse to load the read-only governance tables into `platform_governance`.
-2. Create a Genie space over that schema, pasting
-   `docs/governance/genie/genie_instructions.md` as the space instructions.
-3. The space now answers the benchmark questions in those instructions — grounded
-   strictly on the tables, which are the analyzer's output.
+```bash
+export DATABRICKS_HOST=https://<workspace>.cloud.databricks.com
+export DATABRICKS_CLIENT_ID=... DATABRICKS_CLIENT_SECRET=...   # or DATABRICKS_TOKEN
+export GENIE_WAREHOUSE_ID=<sql warehouse id>
+export GENIE_GRANT_USER=you@example.com                        # optional
 
-`python scripts/genie_space.py --deploy` documents this runbook and is the hook
-for SDK-based provisioning once a workspace exists.
+make genie-deploy
+```
+
+It creates the `platform_governance` catalog, materialises the four read-only tables
+from the domain JSON, creates the space over exactly those tables, attaches the
+grounding contract, and grants you access. It is idempotent — re-running it reuses
+the existing space.
+
+**It needs none of the cloud stacks.** The governance tables are facts read out of the
+domain JSON, in a managed catalog backed by the metastore root — no S3 bucket of ours,
+no RDS, no VPC. The copilot survives a full teardown of AWS, Azure and GCP, which is
+exactly right: it describes the *governance*, not the infrastructure.
+
+### Where the boundary actually lives
+
+The space is created with `run_as_type: VIEWER`. Genie queries **as the human asking**,
+so Unity Catalog's own grants are the ceiling on anything it can return. The boundary is
+not a promise made in a prompt — it is the same permission system that governs everyone
+else, and it would hold even if the instructions were deleted.
+
+Asked for something outside the four tables, it declines:
+
+> **Q:** *What is the CEO's home address?*
+> **A:** *I cannot answer that question, as it is unrelated to the available database
+> schema and there is no information about individuals' home addresses in the provided
+> tables.*
+
+Asked which datasets hold PII, it answers from `pii_map` — and volunteers that the third
+cloud has none, rather than inventing one.

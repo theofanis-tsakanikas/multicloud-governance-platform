@@ -108,7 +108,7 @@ test:
 
 # ─── Governance copilot ──────────────────────────────────────────────────────
 
-.PHONY: policy-scan policy-sarif governance-report genie-space metrics cost-estimate catalog-drift opa demo \
+.PHONY: policy-scan policy-sarif governance-report genie-space genie-deploy metrics cost-estimate catalog-drift opa demo \
         snowflake-check snowflake-validate snowflake-render
 
 policy-scan:
@@ -125,6 +125,9 @@ governance-report:
 	python3 scripts/genie_space.py
 	python3 scripts/governance_metrics.py
 	python3 scripts/cost_estimate.py
+
+genie-deploy:  ## provision the Genie governance copilot (needs DATABRICKS_HOST + GENIE_WAREHOUSE_ID)
+	python3 scripts/genie_space.py --deploy
 
 genie-space:
 	@echo "$(GREEN)▶ regenerating Genie governance-copilot artifacts$(RESET)"
