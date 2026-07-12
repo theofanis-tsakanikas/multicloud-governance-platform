@@ -129,7 +129,15 @@ jobs:
       # applies that rule, and every runner has a different IP — so the destroy is
       # locked out of the server it is trying to delete. Open the door for this
       # runner; it disappears with the server.
-      - name: Allow this runner through the SQL firewall (Azure only)
+      # In PUBLIC mode the runner reaches Azure SQL over its public endpoint, and needs its own IP on
+      # the firewall to do it. In PRIVATE mode there is no public endpoint, and Azure refuses to even
+      # discuss the firewall — the rules would be meaningless, so it will not let you write one:
+      #
+      #     ERROR: (DenyPublicEndpointEnabled) Unable to create or modify firewall rules when public
+      #     network interface for the server is disabled
+      #
+      # which failed the whole destroy job on its second step. Ask the server which mode it is in.
+      - name: Allow this runner through the SQL firewall (Azure, public mode only)
         if: inputs.cloud == 'azure'
         run: |
           set -euo pipefail
@@ -137,6 +145,11 @@ jobs:
           RG=$(az sql server list --query "[0].resourceGroup" -o tsv 2>/dev/null || true)
           if [ -z "$SRV" ]; then
             echo "::notice::no SQL server found — nothing to allow"
+            exit 0
+          fi
+          PUBLIC=$(az sql server show -g "$RG" -n "$SRV" --query "publicNetworkAccess" -o tsv)
+          if [ "$PUBLIC" != "Enabled" ]; then
+            echo "::notice::Azure SQL is private (publicNetworkAccess=${PUBLIC}) — no firewall to open, and none allowed"
             exit 0
           fi
           IP=$(curl -fsS https://api.ipify.org)
@@ -154,17 +167,36 @@ jobs:
       # The tables were never Terraform's. The pipeline seeds them into a SIMULATED source
       # system (ADR-0014); the pipeline is therefore what unseeds them. Terraform owns the
       # schema, the seed owns the rows, and the teardown mirrors the setup.
+      #
+      # And it has to reach the database to do it, which in private mode the runner cannot: there is
+      # no public endpoint and no firewall rule that would grant one. So the unseed goes where the
+      # seed already goes — a one-shot task on the transit gateway, inside the VPC, across the VPN.
+      # Same statement, same schemas; only the road in changes. (The gateway speaks sqlcmd rather
+      # than pymssql, hence drop_seed.sql rather than drop_seed.py — the same discovery logic, in
+      # the language of the path that can still reach the server.)
+      #
+      # This runs BEFORE terragrunt destroy, which is what makes it possible: the gateway that
+      # carries it is in `integration`, still standing, and is torn down later in the same job.
       - name: Unseed the source system — Azure SQL (Terraform cannot drop a non-empty schema)
         if: inputs.cloud == 'azure' && inputs.mode == 'destroy'
         run: |
           set -euo pipefail
           SRV=$(az sql server list --query "[0].name" -o tsv 2>/dev/null || true)
+          RG=$(az sql server list --query "[0].resourceGroup" -o tsv 2>/dev/null || true)
           KV=$(az keyvault list --query "[0].name" -o tsv 2>/dev/null || true)
           if [ -z "$SRV" ] || [ -z "$KV" ]; then
             echo "::notice::no SQL server or key vault — nothing to unseed"
             exit 0
           fi
 
+          PUBLIC=$(az sql server show -g "$RG" -n "$SRV" --query "publicNetworkAccess" -o tsv)
+          if [ "$PUBLIC" != "Enabled" ]; then
+            echo "::notice::Azure SQL is private — unseeding from inside the VPC, through the gateway"
+            .github/scripts/azure-sql-task.sh sql "$(cat pipelines/sources/azure_sql/drop_seed.sql)"
+            exit 0
+          fi
+
+          echo "::notice::Azure SQL is public — unseeding from the runner"
           PW=$(az keyvault secret show --vault-name "$KV" --name sql-admin-password --query value -o tsv)
           echo "::add-mask::$PW"
 
