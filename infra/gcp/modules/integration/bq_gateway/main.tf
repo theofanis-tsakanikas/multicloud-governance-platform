@@ -185,3 +185,46 @@ resource "aws_vpc_endpoint_service_allowed_principal" "databricks" {
   vpc_endpoint_service_id = aws_vpc_endpoint_service.bq_ncc_service.id
   principal_arn           = "arn:aws:iam::${var.databricks_serverless_privatelink_account_id}:role/private-connectivity-role-${var.region}"
 }
+
+# ── The teardown, which the endpoint service cannot do alone ──────────────────────────────────
+#
+# Deleting the NCC rule removes it from Databricks' config immediately — and leaves Databricks' actual
+# VPC endpoint standing in Databricks' own AWS account, still connected to this service. AWS will not
+# delete an endpoint service that has a live connection, so the destroy dies:
+#
+#     Error: deleting EC2 VPC Endpoint Service (vpce-svc-...): ... has active connections
+#
+# Twenty minutes after the rule was gone, the endpoint was still `available`. Waiting is not a plan.
+#
+# But a connection belongs to two parties, and the service owner may reject one — and a rejected
+# endpoint is one AWS will let go of. So reject whatever is attached, on the way out.
+#
+# The ordering is the whole safety argument. This resource reads the service's id, so Terraform
+# destroys it BEFORE the service; and the bq_ncc_rule module consumes this module's output, so
+# Terraform destroys the rule before either. By the time the rejection lands, the rule is already
+# gone and there is nothing left that could re-establish the connection.
+resource "null_resource" "drain_endpoint_connections" {
+  triggers = {
+    service_id = aws_vpc_endpoint_service.bq_ncc_service.id
+    region     = var.region
+  }
+
+  provisioner "local-exec" {
+    when = destroy
+    # Backticks live inside the single-quoted JMESPath, where the shell leaves them alone.
+    command = <<-EOT
+      set -eu
+      IDS=$(aws ec2 describe-vpc-endpoint-connections --region ${self.triggers.region} \
+              --filters "Name=service-id,Values=${self.triggers.service_id}" \
+              --query 'VpcEndpointConnections[?VpcEndpointState==`available` || VpcEndpointState==`pendingAcceptance`].VpcEndpointId' \
+              --output text)
+      if [ -n "$IDS" ]; then
+        echo "draining endpoint connections from ${self.triggers.service_id}: $IDS"
+        aws ec2 reject-vpc-endpoint-connections --region ${self.triggers.region} \
+          --service-id ${self.triggers.service_id} --vpc-endpoint-ids $IDS
+      else
+        echo "no endpoint connections on ${self.triggers.service_id} — nothing to drain"
+      fi
+    EOT
+  }
+}
