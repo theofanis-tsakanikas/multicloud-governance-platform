@@ -1,6 +1,6 @@
 # Multi-Cloud Governance Platform
 
-![Multi-Cloud Governance Platform — Unity Catalog Governance-as-Code across AWS, Azure & GCP](./images/banner.png)
+![Multi-Cloud Governance Platform — one contract, three clouds, two engines, zero public endpoints](./images/banner_new.png)
 
 [![CI](https://github.com/theofanis-tsakanikas/multicloud-governance-platform/actions/workflows/dbx-validate.yml/badge.svg)](https://github.com/theofanis-tsakanikas/multicloud-governance-platform/actions/workflows/dbx-validate.yml)
 [![Config Validation](https://github.com/theofanis-tsakanikas/multicloud-governance-platform/actions/workflows/dbx-config-validate.yml/badge.svg)](https://github.com/theofanis-tsakanikas/multicloud-governance-platform/actions/workflows/dbx-config-validate.yml)
