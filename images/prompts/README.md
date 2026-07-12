@@ -30,6 +30,7 @@ browser. Αν κάτι δεν σου αρέσει, **επεξεργάσου το
 
 | # | Αρχείο | Τι δείχνει |
 |---|---|---|
+| **00** | `00-social-preview-banner.md` | 🖼️ **Το banner** — GitHub social preview (1280×640) |
 | **10** | `10-the-whole-platform.md` | 🎬 **Άνοιγμα** — ένα JSON contract → 3 clouds → 2 μηχανές |
 | 01 | `01-aws-public-connection.md` | AWS **δημόσια** — Databricks → RDS, απευθείας |
 | 08 | `08-azure-and-gcp-public.md` | Azure + GCP **δημόσια** — και τα δύο, γιατί είναι απλά |
