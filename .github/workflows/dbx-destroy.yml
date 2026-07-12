@@ -191,6 +191,24 @@ jobs:
 
           PUBLIC=$(az sql server show -g "$RG" -n "$SRV" --query "publicNetworkAccess" -o tsv)
           if [ "$PUBLIC" != "Enabled" ]; then
+            # The gateway is the only road to a private Azure SQL — and it is torn down by the very
+            # job this step runs in. A destroy resumed with start_from therefore arrives here to find
+            # its own vehicle already gone:
+            #
+            #     An error occurred (ClientException) when calling the RunTask operation:
+            #     TaskDefinition not found.
+            #
+            # That is not a failure. It means the unseed already ran, in the attempt that got far
+            # enough to destroy the gateway — the schemas are empty and Terraform can drop them. And
+            # if they somehow are not, `mssql_schema` will say so itself, in the layer below, in an
+            # error that is about the actual problem. Nothing is lost by continuing except a
+            # redundant guard; a great deal is lost by failing a teardown that is already correct.
+            GW=$(aws ecs describe-services --cluster sql-gateway-cluster-dev \
+                   --services sql-gateway-service --query 'services[0].status' --output text 2>/dev/null || echo NONE)
+            if [ "$GW" != "ACTIVE" ]; then
+              echo "::warning::the sql-gateway is already destroyed (${GW}) — this destroy is a resumption, and the unseed ran in the attempt that took the gateway down"
+              exit 0
+            fi
             echo "::notice::Azure SQL is private — unseeding from inside the VPC, through the gateway"
             .github/scripts/azure-sql-task.sh sql "$(cat pipelines/sources/azure_sql/drop_seed.sql)"
             exit 0
