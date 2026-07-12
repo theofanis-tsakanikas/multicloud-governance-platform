@@ -209,7 +209,16 @@ jobs:
 
       - name: Deploy the bundle (creates notebooks + jobs in the workspace)
         working-directory: pipelines/databricks
-        run: databricks bundle deploy -t ${{ inputs.cloud }} --var "warehouse_id=${WAREHOUSE_ID}"
+        # --force because the bundle refuses to overwrite a dashboard that changed in the
+        # workspace since it last deployed:
+        #
+        #     Error: dashboard "executive" has been modified remotely
+        #
+        # It did change — the AI/BI dashboard was repaired live through the API while its widgets
+        # were being made to render, and those repairs were then committed back to
+        # aws/executive.lvdash.json. The file in git is the good version, so the guard is protecting
+        # the workspace from the source of truth. Overwrite it: git is what deploys here.
+        run: databricks bundle deploy -t ${{ inputs.cloud }} --force --var "warehouse_id=${WAREHOUSE_ID}"
 
       - name: Run the medallion job
         if: ${{ inputs.run_job }}
