@@ -22,6 +22,29 @@
 
 # COMMAND ----------
 # MAGIC %md
+# MAGIC ## ⚠️ Expect a `NULL` market in cells 1–3. It is supposed to be there.
+# MAGIC
+# MAGIC All three sources are seeded **deliberately dirty**, because real OLTP systems are — every 50th
+# MAGIC row lost its market attribution (`market IS NULL`), alongside non-positive amounts, replayed
+# MAGIC duplicates, and orders whose customer was erased under GDPR. From the RDS seeder itself:
+# MAGIC
+# MAGIC > *"Deliberately DIRTY, because a real OLTP source is. Without this the medallion's
+# MAGIC > bronze→silver step rejects zero rows and the 'cleansing' stage is theatre."*
+# MAGIC
+# MAGIC So watch that `NULL` travel:
+# MAGIC
+# MAGIC | | |
+# MAGIC |---|---|
+# MAGIC | **Cells 1–3** — the raw private sources | 6 markets **+ NULL** ← the truth, as it is |
+# MAGIC | **Cell 4** — the three-cloud join | 6 markets, no NULL — `NULL` never joins to anything |
+# MAGIC | **Cell 5** — the governed gold | 6 markets, no NULL — the quality gate refused it |
+# MAGIC | **Cell 6** — the rejects | `null_market: 120` ← there it is, counted, not lost |
+# MAGIC
+# MAGIC The private connection's job is to deliver the truth, not a convenient version of it.
+# MAGIC Deciding which of that truth reaches a CEO's report is governance's job — and it shows its work.
+
+# COMMAND ----------
+# MAGIC %md
 # MAGIC ## 1 · 🟠 AWS — RDS Postgres, which has no public IP
 # MAGIC The instance is `publicly_accessible = false`. There is no address to dial from outside the VPC.
 # MAGIC Every row below crossed a PrivateLink endpoint and a `pgbouncer` running on Fargate.
