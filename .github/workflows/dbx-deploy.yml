@@ -59,6 +59,11 @@ jobs:
       SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
       SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
       SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+      # The account locator is NOT in the repo. Together org + account resolve to a working
+      # snowflakecomputing.com login page, and a public repository should not hand anyone the one
+      # thing they cannot guess: where to knock. config.hcl reads both from the environment.
+      SNOWFLAKE_ORGANIZATION: ${{ vars.SNOWFLAKE_ORGANIZATION }}
+      SNOWFLAKE_ACCOUNT_NAME: ${{ vars.SNOWFLAKE_ACCOUNT_NAME }}
 
     steps:
       - uses: actions/checkout@v4

@@ -162,11 +162,21 @@ locals {
   ]
 
   # ─── Snowflake (second enforcement backend — engine-agnostic governance) ──
-  # Identifiers only (no secrets); auth is via a ~/.snowflake/config.toml profile
-  # or SNOWFLAKE_* env vars at plan/apply time. The storage integration is
-  # provisioned by a creds/bootstrap layer and referenced here by name.
-  snowflake_organization             = "SNOWFLAKE_ORG_REDACTED"
-  snowflake_account                  = "SNOWFLAKE_ACCOUNT_REDACTED"
+  # Auth is via a ~/.snowflake/config.toml profile or SNOWFLAKE_* env vars at
+  # plan/apply time — no secrets in code.
+  #
+  # The organization + account are NOT hard-coded, and that is deliberate. Together
+  # they resolve to https://<org>-<account>.snowflakecomputing.com, which is a working
+  # login page. Unlike an AWS account id — which grants nothing without an IAM trust
+  # policy that names you — a Snowflake locator is a credential-stuffable endpoint.
+  # Publishing it in a public repository hands an attacker the one thing they cannot
+  # guess: where to knock.
+  #
+  # So they come from the environment. CI sets them from a repository variable; locally,
+  # export them or put them in ~/.snowflake/config.toml. An empty value fails the plan
+  # loudly rather than silently pointing at the wrong account.
+  snowflake_organization             = get_env("SNOWFLAKE_ORGANIZATION", "")
+  snowflake_account                  = get_env("SNOWFLAKE_ACCOUNT_NAME", "")
   snowflake_storage_integration_name = "DEV_STORAGE_INTEGRATION"
   snowflake_warehouse_size           = "XSMALL"
   snowflake_credit_quota             = 100

@@ -38,6 +38,13 @@ data. What is worth reporting is anything that would harm somebody who deployed 
   id, the GCP project id. These are not credentials. The AWS IAM trust policies are scoped to a
   Databricks-owned principal *and* require an `sts:ExternalId`, so knowing the role name and the
   account id grants nothing.
+
+  **The Snowflake account locator is the exception, and it is not in this repository.** Unlike the
+  others, an org + account resolve to `https://<org>-<account>.snowflakecomputing.com` — a working
+  login page. An AWS account id grants nothing without a trust policy that names you; a Snowflake
+  locator is a credential-stuffable endpoint. It comes from the environment
+  (`SNOWFLAKE_ORGANIZATION` / `SNOWFLAKE_ACCOUNT_NAME`), set from a repository variable in CI.
+  If you fork this and deploy the Snowflake layer, set your own.
 - The **`prod/` tree**. It is a placeholder (`aws_account_id = "111111111111"`) and has never been
   applied.
 - Findings that require an attacker to already hold valid credentials for one of the clouds.

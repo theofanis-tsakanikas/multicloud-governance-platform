@@ -24,7 +24,7 @@ Credentials come from the environment (the pipeline exports them from GitHub
 secrets); for a local run, export them yourself or source them from AWS Secrets
 Manager the same way every other secret in this repo is read:
 
-    export SNOWFLAKE_ACCOUNT=SNOWFLAKE_LOCATOR_REDACTED
+    export SNOWFLAKE_ACCOUNT=<org>-<account>
     export SNOWFLAKE_USER=... SNOWFLAKE_PASSWORD=... SNOWFLAKE_ROLE=ACCOUNTADMIN
 
 The notebook lives in "sales_aws"."demo" — the ungoverned demo schema, not part
