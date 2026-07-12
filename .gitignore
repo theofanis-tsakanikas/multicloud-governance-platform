@@ -60,7 +60,10 @@ PRE-PUBLISH.md
 *.tfvars
 
 # Screen recordings / promo assets (large binaries — keep out of git)
-promo/
-# ...but the production guide is a document, not an asset. It is the plan the recordings are made
-# from, it cites numbers that must stay in step with the repo, and it is worth reviewing in a diff.
+#
+# `promo/*` and not `promo/`: git does not descend into an ignored DIRECTORY, so a negation inside
+# one never fires. Ignore the contents instead, and the plans below survive.
+promo/*
+# The plans are documents, not assets. They cite numbers that must stay in step with the repo, and
+# they are worth reviewing in a diff.
 !promo/*.md
