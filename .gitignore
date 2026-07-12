@@ -61,3 +61,6 @@ PRE-PUBLISH.md
 
 # Screen recordings / promo assets (large binaries — keep out of git)
 promo/
+# ...but the production guide is a document, not an asset. It is the plan the recordings are made
+# from, it cites numbers that must stay in step with the repo, and it is worth reviewing in a diff.
+!promo/*.md
