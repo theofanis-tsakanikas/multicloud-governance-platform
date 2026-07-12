@@ -347,3 +347,66 @@ that failure *is* the success signal.
 read outputs that no longer exist (`detected no outputs`). Use `start_from` to resume below the
 layers already gone rather than re-running the whole stack. A ~180-byte state file in
 `s3://dbx-platform-tfstate-<account>/` means that layer is empty.
+
+### 12. Tearing down a PRIVATE stack breaks three more things, all of them the same thing
+
+The private teardown took five runs to get green. Every wall was the same wall in a new costume:
+**the private path is what makes the teardown possible, and the teardown is what takes the private
+path away.** Everything below is already fixed; this is why, so the fixes are not "cleaned up".
+
+**Databricks leaves its endpoint standing after you delete the rule that asked for it.**
+
+```
+Error: deleting EC2 VPC Endpoint Service (vpce-svc-...): ... has active connections
+```
+
+Terraform deletes the NCC rule; Databricks drops it from its config immediately and leaves the
+actual VPC endpoint — in *Databricks'* AWS account — connected to our PrivateLink service. AWS will
+not delete a service with a live connection. **Waiting does not win this**: twenty minutes after the
+rule was gone, the endpoint was still `available`. A connection has two ends, and the service owner
+may reject one → `.github/scripts/drain-endpoint-service.sh`, which the destroy job calls when a
+layer fails and then retries the layer once. Safe precisely because the rule is already gone by
+then, so nothing can re-establish it. The script **takes the cloud as an argument and refuses to
+guess** — there are three of these services and draining all of them would sever the private paths
+still standing.
+
+*(The gateway modules also carry a `null_resource` that does this in-band. It did nothing on the
+first teardown, and the reason is worth keeping: Terraform runs destroy provisioners for resources
+that are **in the state**, and a stack applied before that resource existed has none. A fix that
+only works on infrastructure created after the fix is not yet a fix.)*
+
+**In private mode the runner cannot reach Azure SQL — and cannot even ask to.**
+
+```
+ERROR: (DenyPublicEndpointEnabled) Unable to create or modify firewall rules when public
+network interface for the server is disabled
+```
+
+The destroy opens a firewall rule so it can empty the seeded schemas (T-SQL has no
+`DROP SCHEMA CASCADE` — gotcha #11). With `publicNetworkAccess = Disabled` there is no endpoint, and
+Azure will not let you write a rule pretending there is. **The unseed takes the road the seed
+already takes**: a one-shot task on the transit gateway, inside the VPC, across the VPN. That path
+speaks `sqlcmd`, not `pymssql`, hence `drop_seed.sql` beside `drop_seed.py`. Both the firewall step
+and the unseed step now ask the server which mode it is in rather than assuming public.
+
+**A pre-destroy step cannot assume its own vehicle still exists.**
+
+```
+An error occurred (ClientException) when calling the RunTask operation: TaskDefinition not found.
+```
+
+The gateway that carries the unseed is destroyed *by the same job*. Resume with `start_from` and the
+unseed arrives to find it gone — having already run, in the attempt that took the gateway down.
+Resuming from the failed layer is how this repo is meant to be driven, so a step that cannot survive
+it is a step that punishes the correct habit. It now checks whether the gateway is standing and
+carries on if it is not; if the schemas somehow are not empty, `mssql_schema` fails below with an
+error about the actual problem.
+
+**One more, small and vicious:** `jq` reads a positional argument beginning with a dash as an
+option, and `--args` does not stop it. `drop_seed.sql` opens with a `--` SQL comment:
+
+```
+jq: Unknown option -- Empty the Azure SQL source-system schemas so Terraform can drop them
+```
+
+Both ECS task scripts now null-delimit their arguments instead.
