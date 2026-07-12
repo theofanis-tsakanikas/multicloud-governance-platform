@@ -91,7 +91,8 @@ inputs = {
   transit_subnet_ids = dependency.network.outputs.private_subnet_ids
   ecr_repo_name      = dependency.network.outputs.ecr_repo_name
 
-  private_api_vip_ips = local.cfg.gcp_private_api_vip_ips
+  private_api_vip_ips  = local.cfg.gcp_private_api_vip_ips
+  private_api_vip_cidr = local.cfg.gcp_private_api_vip_cidr
 
   ncc_id                                       = dependency.bootstrap_platform.outputs.ncc_id
   databricks_serverless_privatelink_account_id = local.cfg.dbx_serverless_privatelink_account_id

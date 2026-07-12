@@ -66,6 +66,26 @@ resource "google_compute_router" "gcp_router" {
 
   bgp {
     asn = local.gcp_asn
+
+    # ── THE ADVERTISEMENT WITHOUT WHICH THE PACKETS DIE AT THE DOOR ────────────────────────────
+    #
+    # A static route in the AWS VPC gets a packet for 199.36.153.8 as far as the VPN gateway — and
+    # no further. On a BGP connection the VGW forwards on what it has LEARNED, and the Cloud Router
+    # advertises only the VPC's own subnets by default. The VIP is not among them, so the VGW has
+    # no route for it and drops it on the floor.
+    #
+    # It fails silently and it fails late: the tunnel is UP, BGP is Established, every route is
+    # green, the gateway is healthy — and HAProxy's backend check just times out at layer 4 with
+    # nothing anywhere to say why.
+    #
+    # So advertise the VIP explicitly, and keep advertising the subnets alongside it.
+    advertise_mode    = "CUSTOM"
+    advertised_groups = ["ALL_SUBNETS"]
+
+    advertised_ip_ranges {
+      range       = var.private_api_vip_cidr
+      description = "private.googleapis.com — AWS must learn this or its gateway cannot route to it"
+    }
   }
 }
 

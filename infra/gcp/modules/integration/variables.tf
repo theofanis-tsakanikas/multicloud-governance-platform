@@ -141,3 +141,9 @@ variable "spn_client_secret" {
   default   = ""
   sensitive = true
 }
+
+variable "private_api_vip_cidr" {
+  description = "private.googleapis.com VIP range, advertised to AWS over BGP by the Cloud Router."
+  type        = string
+  default     = "199.36.153.8/30"
+}

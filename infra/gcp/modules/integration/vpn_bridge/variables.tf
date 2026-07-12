@@ -33,3 +33,8 @@ variable "project_id" {
   description = "The GCP Project ID."
   type        = string
 }
+variable "private_api_vip_cidr" {
+  description = "private.googleapis.com VIP range. The Cloud Router must ADVERTISE this to AWS: a static route only gets the packet to the VGW, which then forwards on BGP-learned prefixes alone. Without the advertisement the VGW has no route for the VIP and drops it — silently, with every tunnel and route showing green."
+  type        = string
+  default     = "199.36.153.8/30"
+}

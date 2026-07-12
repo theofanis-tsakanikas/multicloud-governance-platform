@@ -35,6 +35,9 @@ module "vpn_bridge" {
   gcp_vpn_gw_ips = var.gcp_vpn_gw_ips
   location       = var.location
   project_id     = var.project_id
+
+  # The Cloud Router must advertise the VIP to AWS, or the VGW has no route for it.
+  private_api_vip_cidr = var.private_api_vip_cidr
 }
 
 # The AWS end of the hub. It reaches the VIP by address across the tunnel, so it needs the tunnel
