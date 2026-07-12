@@ -33,14 +33,14 @@ every caption, the music, the sound-design cue sheet, and the exact CapCut build
 | Databricks | **2 workspaces**, **1 Unity Catalog metastore** (one governance plane) |
 | Second engine | **Snowflake** — reads the *same* S3 gold file, **zero copies** |
 | The contract | **6 domain JSON files** — infra + grants + classification, per domain |
-| The gate | `policy_analyzer.py` — **10 rules**; **fails the PR on any unacknowledged HIGH** |
-| Independent check | **OPA / Rego** re-implements the same rules and cross-checks the analyzer in CI |
+| The gate | `policy_analyzer.py` — **9 rules**, 4 of them HIGH; **fails the PR on any unacknowledged HIGH** |
+| Cross-check | **OPA / Rego** re-implements **3 of the 4** gating rules and is run against the analyzer's output in CI. Do not call it a fully independent second engine — it consumes the analyzer's own report as its input. |
 | Exceptions | **time-bound**. An expired exception stops suppressing its finding and **fails CI again** |
 | Live exceptions | 2 — `sales_rds_fed.crm` (expires **2026-12-31**), `marketing_bq_fed.web` (**2026-09-30**) |
 | Offline | the whole gate runs with **no cloud and no credentials** |
 | Tests | **135**, infra-free, gating every push |
 | Infra | **Terraform via Terragrunt** — **87 modules**, **11 workflows**, one-button deploy / run / destroy |
-| Decisions | **17 ADRs** — the decision ledger |
+| Decisions | **15 ADRs** — the decision ledger (`docs/adr/` also holds a template and a README) |
 | Federated catalogs | `sales_rds_fed` (RDS) · `supply_sql_master` (Azure SQL) · `marketing_bq_fed` (BigQuery) |
 | Cross-cloud share | `shared_gcp_delta_share` — GCP gold, Delta-Shared to AWS |
 | Private mode | **3 NCC private-endpoint rules, all ESTABLISHED** |
@@ -49,8 +49,8 @@ every caption, the music, the sound-design cue sheet, and the exact CapCut build
 | BigQuery | reached through Google's **private API VIP** `199.36.153.8/30`, across an IPsec tunnel |
 | Transit hubs | AWS `10.40.0.0/16` · Azure `10.10.0.0/16` · GCP `10.11.0.0/16` |
 | Byte-level proof | **131** data-carrying gateway sessions, up to **1.9 MB**, all from private address space |
-| Data quality | **249 rows refused** — `null_market` 120 · `non_positive_amount` 61 · `duplicate_replay` 40 · `orphan_customer` 28 |
-| The AI | Genie — **read-only**, sees **4 governance tables and nothing else**, `run_as = VIEWER` |
+| Data quality | Silver removes **220** of 6,040 bronze rows. The rejects table reports **120** null markets, **61** refunds, **40** replays and **28** orphaned customers — the orphans are *kept* and relabelled `unknown`, not dropped, and one row trips two rules. Say "the gate refused 220 rows", not 249. |
+| The AI | Genie — **read-only**, sees **4 governance tables and nothing else**. It runs as the *viewer*, so Unity Catalog's own grants cap what it can return (that is the platform default; the repo does not set it explicitly). |
 
 > **The honest footnote, and say it:** BigQuery has **no** "disable public access" switch — it is a
 > managed API. What is private there is the **connection**, not the disappearance of the public API
@@ -92,7 +92,7 @@ on each end**. ✅ = already have it · 🎥 = to record · 💤 = needs no infr
 | `07-ncc-established` ✅ | Databricks **Account Console → Network → NCC** | **3 private-endpoint rules, all `ESTABLISHED`** — postgres, Azure SQL, googleapis | ~5s | 🥇 hold on the three green rows |
 | `08-no-public-door` ✅ | AWS RDS console + Azure portal | RDS **`Publicly accessible: No`** → Azure SQL **`Public network access: Disabled`** | ~6s | box each toggle; whip between |
 | `09-one-query` ✅ | Databricks — the **private-proof notebook**, cell 4 | one SQL statement joining **RDS + Azure SQL + BigQuery**, live | ~8s | the CTE names, then the result grid |
-| `10-rejects` ✅ | `sales_aws.silver.sales_rejects` | **249 rows refused** — null_market 120, etc. | ~5s | the reason/rows table |
+| `10-rejects` ✅ | `sales_aws.silver.sales_rejects` | the four reject reasons — null_market 120, refunds 61, replays 40, orphans 28 | ~5s | the reason/rows table |
 | `11-snowflake` ✅ | `images/snowflake/` | Snowflake reading the **same S3 gold file** — zero copies | ~6s | the external table + `metadata$filename` |
 | `12-genie` 🎥 | **Genie space** | the **refusal**: *"What is the CEO's home address?"* → *"I cannot answer that…"* | ~7s | 🥇 hold on the refusal text |
 | `13-pr-exception` 🎥💤 | **the same PR** — add the entry to `policy_exceptions.json` | the exception with its **justification** and **`"expires": "2026-12-31"`**; the check turns **GREEN** ✅ | ~9s | the `expires` field, then the green ✓ |
@@ -120,7 +120,7 @@ Note the arc: **beat 1 and beat 11 are the same pull request.**
 | 6 | 0:34–0:40 | `06-catalogs` | catalogs across 3 clouds | **Three clouds. One catalog.** | pan the tree | soft whoosh |
 | 7 | 0:40–0:50 | `07-ncc-established` + `08-no-public-door` | 3× `ESTABLISHED` → RDS **No** → Azure **Disabled** | **Then we closed the front door.** → **No public address. Anywhere.** | 🥇 hold the 3 greens; box each toggle | **riser starts** |
 | 8 | 0:50–0:58 | `09-one-query` | the three-cloud SQL + results | **One query. Three clouds.** → **Not one public endpoint in it.** | reveal the CTEs, then snap the grid | **riser resolves — impact** |
-| 9 | 0:58–1:05 | `10-rejects` | the 249 refused rows | **The connection brings the truth.** → **Governance decides which of it is *true*.** | count-up to **249** | snap on 249 |
+| 9 | 0:58–1:05 | `10-rejects` | the reject reasons | **The connection brings the truth.** → **Governance decides which of it is *true*.** | count-up to **220** | snap on 220 |
 | 10 | 1:05–1:12 | `11-snowflake` + `12-genie` | Snowflake on the same file → Genie refusing | **One gold file. Two engines. Zero copies.** → **And an AI that knows what it isn't allowed to know.** | match-cut; 🥇 hold the refusal | whoosh; soft "no" tick |
 | 11 | 1:12–1:24 | `13-pr-exception` (**payoff**) | the **same** PR — the exception, the **expiry**, then **GREEN** ✅ | **That PR?** → **It ships — with a reason, and a date it expires.** → **Governance isn't "no". It's "not without a reason, and not forever."** | callback: same shot as beat 1, now earned; box the `expires` field | **the payoff — resolve + ✅ ding** |
 | 12 | 1:24–1:30 | `14-endcard` | title + handle | **Multi-Cloud Governance Platform** → **One contract. Three clouds. Two engines. Zero public endpoints.** → **Link in comments ↓** | logo settles, hold 3s | music resolves / outro |
@@ -204,7 +204,7 @@ confidence," ~95–115 BPM. **No lyrics.** Sources: **Uppbeat** · **YouTube Aud
 - ✅ **Hard cuts on the beat** — the strongest "effect" there is.
 - ✅ **The rewind** at 0:07 — the one signature transition.
 - ✅ **Speed ramps** — the Terragrunt DAG going green; any scroll.
-- ✅ **Kinetic numbers** — count-up / snap on **135 tests**, **249 rejected rows**, and nothing else.
+- ✅ **Kinetic numbers** — count-up / snap on **135 tests**, **220 rejected rows**, and nothing else.
 - ✅ **Spotlight / box / arrow** — the red ❌, the three `ESTABLISHED` rows, `Publicly accessible: No`,
   `Public network access: Disabled`, the Genie refusal, the **`expires`** field.
 - ✅ **Rounded corners + soft shadow** + a slight contrast grade.
@@ -229,7 +229,7 @@ confidence," ~95–115 BPM. **No lyrics.** Sources: **Uppbeat** · **YouTube Aud
 | 0:26 | Ding + rising ticks | the deploy ✅; the DAG going green |
 | **0:40** | **Riser (starts)** | under the three `ESTABLISHED` rows |
 | **0:58** | **Riser resolves → impact** | the three-cloud query result |
-| 1:02 | Snap | the count-up to **249** |
+| 1:02 | Snap | the count-up to **220** |
 | 1:08 | Whoosh; soft "no" tick | Snowflake match-cut; the Genie refusal |
 | **1:12** | **Resolve + ✅ ding** | the payoff — the PR goes green |
 | 1:24 | Soft outro swell | CTA / logo settle |
@@ -252,7 +252,7 @@ confidence," ~95–115 BPM. **No lyrics.** Sources: **Uppbeat** · **YouTube Aud
 6. **Speed ramps:** curve-speed the Terragrunt DAG greens.
 7. **Framing:** scale each capture into the **upper 70%**, rounded corners + shadow, slight grade.
 8. **Captions:** the 27 lines from Part 4, lower band, ≥1.2s, pop-in. Recolour the keywords.
-9. **Kinetic numbers:** **135** and **249** snap or count up. Nothing else does.
+9. **Kinetic numbers:** **135** and **220** snap or count up. Nothing else does.
 10. **Highlights:** box the red ❌, the three `ESTABLISHED` rows, both `No`/`Disabled` toggles, the
     Genie refusal, and — most importantly — the **`expires`** field in the payoff.
 11. **Sound design:** per the cue sheet. The bass impact, the rewind, and the payoff ding are what
@@ -271,7 +271,7 @@ confidence," ~95–115 BPM. **No lyrics.** Sources: **Uppbeat** · **YouTube Aud
       show, no Databricks workspace URL you'd rather not publish, no `.env`. Scrub or crop.
 - [ ] **Beat 1 and beat 11 are framed identically.** Same crop, same zoom. The callback dies otherwise.
 - [ ] The `expires` date is **visible and legible** in the payoff. It is the whole argument.
-- [ ] Every number real: **135** tests, **249** rejected rows, **3** NCC rules, **131** gateway sessions.
+- [ ] Every number real: **135** tests, **220** rejected rows (not 249 — see the facts table), **3** NCC rules, **131** gateway sessions.
 - [ ] **You did not claim BigQuery has no public endpoint.** Say *the connection* is private.
 - [ ] Captions readable at thumbnail; burned in.
 - [ ] **Poster/thumbnail = the red ❌.**
