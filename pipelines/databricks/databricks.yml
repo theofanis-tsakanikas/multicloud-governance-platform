@@ -17,6 +17,19 @@
 bundle:
   name: governance-medallion
 
+# The bundle syncs this directory wholesale, and it has no idea whether the platform
+# was deployed public or private. aws/private_proof_notebook.py asserts, in prose, that
+# RDS has no public IP and that Azure SQL refuses the internet. In private mode that is
+# true and demonstrable. In public mode it is false — the same cells would run, over the
+# public path, under a heading claiming they did not.
+#
+# A notebook that lies confidently is worse than no notebook, so the bundle does not ship
+# it. dbx-pipeline.yml imports it separately, and only after asking the infrastructure
+# whether all three sources are actually private.
+sync:
+  exclude:
+    - ./aws/private_proof_notebook.py
+
 variables:
   warehouse_id:
     description: "SQL warehouse ID the medallion runs on (from your workspace)."

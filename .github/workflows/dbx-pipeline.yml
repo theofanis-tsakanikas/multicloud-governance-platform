@@ -220,6 +220,51 @@ jobs:
         # the workspace from the source of truth. Overwrite it: git is what deploys here.
         run: databricks bundle deploy -t ${{ inputs.cloud }} --force --var "warehouse_id=${WAREHOUSE_ID}"
 
+      # The private-connectivity notebook, which the bundle deliberately does not ship.
+      #
+      # It queries the three federated catalogs under headings that assert, flatly, that RDS has no
+      # public IP and that Azure SQL refuses the internet. Deployed onto a public stack those cells
+      # still return rows — over the public path — and the notebook becomes a confident lie. So the
+      # infrastructure is asked first.
+      #
+      # The three transit gateways are the question and the answer both: each is created under
+      # `for_each = local.private_mode` and therefore exists if and only if that cloud's private path
+      # was built. Three ACTIVE services is not a proxy for "the platform is private" — it is the
+      # same fact, read from the other side.
+      - name: Deploy the private-connectivity notebook (AWS, private mode only)
+        if: ${{ inputs.cloud == 'aws' }}
+        run: |
+          set -euo pipefail
+          PRIVATE=true
+          # cluster:service — one line per private path. The service names do not follow their
+          # clusters (the RDS gateway is a pgbouncer, not a proxy in the abstract), so spell them out.
+          for PAIR in \
+            "db-gateway-cluster-dev:pgbouncer-service" \
+            "sql-gateway-cluster-dev:sql-gateway-service" \
+            "bq-gateway-cluster-dev:bq-gateway-service"
+          do
+            CLUSTER="${PAIR%%:*}"; SERVICE="${PAIR##*:}"
+            STATUS=$(aws ecs describe-services --cluster "$CLUSTER" --services "$SERVICE" \
+                       --query 'services[0].status' --output text 2>/dev/null || echo NONE)
+            echo "  ${CLUSTER}/${SERVICE}: ${STATUS}"
+            [ "$STATUS" = "ACTIVE" ] || PRIVATE=false
+          done
+
+          if [ "$PRIVATE" != "true" ]; then
+            echo "::notice::public mode (not all three transit gateways are up) — skipping the private-connectivity notebook, whose every claim would be false here"
+            exit 0
+          fi
+
+          echo "::notice::all three private paths are up — deploying the private-connectivity notebook"
+          databricks workspace import "/Shared/governance-medallion/files/aws/private_proof_notebook" \
+            --file pipelines/databricks/aws/private_proof_notebook.py \
+            --language PYTHON --format SOURCE --overwrite
+          # And at the top of Shared, where someone opening the workspace will actually find it.
+          databricks workspace import "/Shared/🔒 Private Connectivity Proof" \
+            --file pipelines/databricks/aws/private_proof_notebook.py \
+            --language PYTHON --format SOURCE --overwrite
+          echo "::notice::→ ${DATABRICKS_HOST}/#workspace/Shared"
+
       - name: Run the medallion job
         if: ${{ inputs.run_job }}
         working-directory: pipelines/databricks
