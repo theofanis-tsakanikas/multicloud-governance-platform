@@ -16,7 +16,13 @@ resource "aws_lb" "nlb" {
 
 # 3. Target Group for the NLB
 resource "aws_lb_target_group" "pgbouncer_tg" {
-  name        = "pgbouncer-tg-${var.environment}"
+  # name_prefix + create_before_destroy, backported from bq_gateway: a target group's port is
+  # immutable, so any port change REPLACES the group — and Terraform tries to destroy the old one
+  # while the listener still points at it ("ResourceInUse: Target group ... in use by a listener").
+  # A fixed `name` cannot survive that; name_prefix lets the replacement come up under a fresh name,
+  # the listener repoints, and only then does the old group go. bq_gateway learned this the hard way
+  # (443→8443); rds/sql inherit the fix before it can cost a run.
+  name_prefix = "rdsgw-"
   port        = 5432
   protocol    = "TCP"
   vpc_id      = var.vpc_id
@@ -27,6 +33,10 @@ resource "aws_lb_target_group" "pgbouncer_tg" {
     port                = "5432"
     healthy_threshold   = 3
     unhealthy_threshold = 3
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 }
 

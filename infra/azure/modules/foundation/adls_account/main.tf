@@ -10,6 +10,10 @@ resource "azurerm_storage_account" "adls_sa_uc" {
   account_kind             = "StorageV2"
   # This is the "magic switch" that turns standard Blob storage into ADLS Gen2
   is_hns_enabled = true
+  # Refuse public access at the ACCOUNT level, so no container can opt itself into anonymous access
+  # later — matching the posture S3 (public_access_block) and GCS (public_access_prevention) already
+  # enforce. The containers below are also each `private`; this is the belt to that suspenders.
+  allow_nested_items_to_be_public = false
 }
 
 # Dynamic creation of storage containers within the ADLS account

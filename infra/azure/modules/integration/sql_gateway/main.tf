@@ -54,7 +54,12 @@ resource "aws_lb" "nlb" {
 }
 
 resource "aws_lb_target_group" "haproxy_tg" {
-  name        = "sql-gateway-tg-${var.environment}"
+  # name_prefix + create_before_destroy, backported from bq_gateway: a target group's port is
+  # immutable, so any port change REPLACES the group while the listener still references it
+  # ("ResourceInUse: Target group ... in use by a listener"). name_prefix lets the replacement come
+  # up under a fresh name and the listener repoint before the old group is destroyed. The fix was
+  # learned on bq_gateway (443→8443) and is applied here before it can bite.
+  name_prefix = "sqlgw-"
   port        = 1433
   protocol    = "TCP"
   vpc_id      = var.vpc_id
@@ -65,6 +70,10 @@ resource "aws_lb_target_group" "haproxy_tg" {
     port                = "1433"
     healthy_threshold   = 3
     unhealthy_threshold = 3
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 }
 

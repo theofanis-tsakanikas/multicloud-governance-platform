@@ -11,6 +11,7 @@ variable "az_spn_client_id" {
 variable "az_spn_client_secret" {
   description = "The secret of the azure spn client"
   type        = string
+  sensitive   = true # every other *_secret/password var in the tree is; this one was missed
 }
 
 variable "azure_storage_credential_name" {
