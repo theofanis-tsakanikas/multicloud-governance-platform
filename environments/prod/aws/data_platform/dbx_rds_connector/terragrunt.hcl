@@ -30,6 +30,10 @@ dependency "rds" {
   config_path = "../../storage/rds"
 }
 
+dependency "secrets_manager" {
+  config_path = "../../security/secrets_manager"
+}
+
 dependency "bootstrap_platform" {
   config_path = "../../../bootstrap/aws/platform"
 }

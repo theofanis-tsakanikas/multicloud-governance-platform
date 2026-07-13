@@ -57,11 +57,6 @@ generate "providers" {
       client_id     = var.gcp_spn_client_id
       client_secret = var.gcp_spn_client_secret
     }
-    provider "google" {
-      project     = "${local.cfg.gcp_project_id}"
-      region      = "${local.cfg.gcp_location}"
-      credentials = var.provider_key
-    }
   EOF
 }
 

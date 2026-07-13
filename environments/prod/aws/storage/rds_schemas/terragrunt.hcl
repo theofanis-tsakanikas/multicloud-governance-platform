@@ -34,6 +34,10 @@ dependency "rds" {
   config_path = "../rds"
 }
 
+dependency "secrets_manager" {
+  config_path = "../../security/secrets_manager"
+}
+
 terraform {
   source = "../../../../../infra/aws/modules/storage//rds_schemas"
 }
@@ -61,6 +65,8 @@ inputs = {
   password     = local.rds_secret.password
   rds_port     = local.cfg.rds_port
   rds_schemas  = local.schemas_to_create
+  # dev sets drop_cascade = true because it is torn down and rebuilt. prod deliberately leaves it at
+  # the module default (false) so a prod destroy cannot cascade-drop schema contents by surprise.
 
   # In private mode this layer is a no-op: a private RDS is unreachable from CI by construction,
   # so the schemas are created from inside the VPC by a one-shot ECS task on the gateway image.
