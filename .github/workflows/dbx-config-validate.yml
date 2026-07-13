@@ -49,6 +49,44 @@ jobs:
       - name: Install dev dependencies
         run: pip install -r requirements-dev.txt
 
+      # ── The guard that should have existed from the start ────────────────────────────────────
+      #
+      # dbx-validate.yml carried a YAML syntax error from the commit that introduced it: two lines
+      # of a shell heredoc sat at column 1 inside a `run: |` block, which terminates the block
+      # scalar, and the `>` that followed was then read as a folded-scalar indicator.
+      #
+      # GitHub does not warn you about this. It cannot parse the file, so it cannot read the
+      # workflow's `name`, so the badge renders the file path instead of the name — and it records a
+      # failed run on every push. Twenty runs, twenty failures, and not one of them ever executed a
+      # step. Checkov, tfsec, terraform fmt, terragrunt validate and Infracost were configured,
+      # believed in, and silently absent from every pull request the repository ever had.
+      #
+      # A gate you think you have and do not is worse than no gate, because you stop looking. So the
+      # credential-free job now parses every workflow file before anything else runs.
+      - name: Every workflow file is valid YAML
+        run: |
+          python - <<'PY'
+          import glob, sys, yaml
+
+          bad = []
+          for path in sorted(glob.glob(".github/workflows/*.yml")):
+              try:
+                  spec = yaml.safe_load(open(path))
+              except yaml.YAMLError as exc:
+                  bad.append((path, str(exc).splitlines()[0]))
+                  continue
+              if not isinstance(spec, dict) or "jobs" not in spec:
+                  bad.append((path, "parsed, but declares no jobs"))
+                  continue
+              print(f"  ok  {path}  ({spec.get('name', '<unnamed>')})")
+
+          if bad:
+              print("\n::error::workflow files that GitHub will not be able to run:")
+              for path, why in bad:
+                  print(f"::error file={path}::{why}")
+              sys.exit(1)
+          PY
+
       - name: Install conftest (OPA cross-check)
         run: |
           CONFTEST_VERSION=0.56.0

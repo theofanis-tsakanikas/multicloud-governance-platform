@@ -8,6 +8,12 @@ on:
       - "terragrunt.hcl"
       - ".github/workflows/dbx-validate.yml"
 
+  # This workflow gates pull requests, so it only runs on one. That is correct — and it means the
+  # badge in the README shows whatever the last PR left behind, which for a repo developed on main
+  # can be nothing at all, or something months stale. workflow_dispatch is how you refresh it
+  # without opening a PR you do not need.
+  workflow_dispatch:
+
 permissions:
   id-token: write
   contents: read
@@ -101,9 +107,9 @@ jobs:
             || echo "_Unable to render estimate — check workflow logs._")
           body="## Cost estimate
 
-> **Scope:** \`infra/aws/modules\` only. Databricks, Azure, and GCP resources are not priced by Infracost.
+          > **Scope:** \`infra/aws/modules\` only. Databricks, Azure, and GCP resources are not priced by Infracost.
 
-$estimate"
+          $estimate"
           gh pr comment "${{ github.event.pull_request.number }}" \
             --body "$body" --edit-last 2>/dev/null \
           || gh pr comment "${{ github.event.pull_request.number }}" \
