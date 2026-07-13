@@ -302,9 +302,7 @@ def _split_statements(text: str) -> list[str]:
 
     statements = []
     for chunk in out:
-        body = "\n".join(
-            line for line in chunk.splitlines() if not line.lstrip().startswith("--")
-        ).strip()
+        body = "\n".join(line for line in chunk.splitlines() if not line.lstrip().startswith("--")).strip()
         if body:
             statements.append(body)
     return statements
@@ -347,8 +345,7 @@ def deploy_space(repo_root: Path) -> int:
         req = urllib.request.Request(
             f"{host}/oidc/v1/token",
             data=b"grant_type=client_credentials&scope=all-apis",
-            headers={"Authorization": f"Basic {basic}",
-                     "Content-Type": "application/x-www-form-urlencoded"},
+            headers={"Authorization": f"Basic {basic}", "Content-Type": "application/x-www-form-urlencoded"},
         )
         token = json.loads(urllib.request.urlopen(req).read())["access_token"]
 
@@ -369,9 +366,11 @@ def deploy_space(repo_root: Path) -> int:
     def sql(statement: str) -> tuple[bool, object]:
         # Without an explicit catalog the SQL API resolves names against the legacy hive_metastore,
         # which is disabled on this account (UC_HIVE_METASTORE_DISABLED_EXCEPTION).
-        code, res = api("POST", "/api/2.0/sql/statements",
-                        {"warehouse_id": warehouse, "statement": statement,
-                         "wait_timeout": "50s", "catalog": catalog})
+        code, res = api(
+            "POST",
+            "/api/2.0/sql/statements",
+            {"warehouse_id": warehouse, "statement": statement, "wait_timeout": "50s", "catalog": catalog},
+        )
         if code != 200:
             return False, res
         while res.get("status", {}).get("state") in ("PENDING", "RUNNING"):
@@ -383,8 +382,9 @@ def deploy_space(repo_root: Path) -> int:
 
     # 1. The catalog. The generated SQL creates only the schema inside it. Managed — the metastore
     #    root backs it, so no external location and no cloud storage layer is required.
-    ok, err = sql(f"CREATE CATALOG IF NOT EXISTS {catalog} COMMENT "
-                  f"'Governance facts, materialised from the domain JSON. The only tables Genie sees.'")
+    ok, err = sql(
+        f"CREATE CATALOG IF NOT EXISTS {catalog} COMMENT 'Governance facts, materialised from the domain JSON. The only tables Genie sees.'"
+    )
     if not ok:
         print(f"catalog: {err}")
         return 1
@@ -401,18 +401,20 @@ def deploy_space(repo_root: Path) -> int:
 
     # 3. The space. Genie's create endpoint is /api/2.0/data-rooms; /api/2.0/genie/spaces demands a
     #    `serialized_space` blob and is not the door in.
-    tables = [f"{GOVERNANCE_SCHEMA}.{t}"
-              for t in ("objects", "access_matrix", "pii_map", "policy_findings")]
+    tables = [f"{GOVERNANCE_SCHEMA}.{t}" for t in ("objects", "access_matrix", "pii_map", "policy_findings")]
     code, existing = api("GET", "/api/2.0/data-rooms")
-    space_id = next((s["space_id"] for s in (existing or {}).get("data_rooms", [])
-                     if s.get("display_name") == "Governance Copilot"), None)
+    space_id = next((s["space_id"] for s in (existing or {}).get("data_rooms", []) if s.get("display_name") == "Governance Copilot"), None)
     if not space_id:
-        code, res = api("POST", "/api/2.0/data-rooms", {
-            "display_name": "Governance Copilot",
-            "description": "Read-only. Answers only from governance facts the analyzer already proved.",
-            "warehouse_id": warehouse,
-            "table_identifiers": tables,
-        })
+        code, res = api(
+            "POST",
+            "/api/2.0/data-rooms",
+            {
+                "display_name": "Governance Copilot",
+                "description": "Read-only. Answers only from governance facts the analyzer already proved.",
+                "warehouse_id": warehouse,
+                "table_identifiers": tables,
+            },
+        )
         if code != 200:
             print(f"space: {res}")
             return 1
@@ -422,20 +424,26 @@ def deploy_space(repo_root: Path) -> int:
     # 4. The grounding contract. It is a sub-resource, not a field on the space — and it takes
     #    {title, content}, which the API will tell you one missing field at a time.
     instructions = (repo_root / GENIE_DIR / "genie_instructions.md").read_text()
-    code, res = api("POST", f"/api/2.0/data-rooms/{space_id}/instructions",
-                    {"title": "Grounding contract", "content": instructions})
+    code, res = api("POST", f"/api/2.0/data-rooms/{space_id}/instructions", {"title": "Grounding contract", "content": instructions})
     print(f"  contract  {'attached' if code == 200 else res}")
 
-    # 5. Grants. run_as_type is VIEWER — Genie queries as the human, so Unity Catalog's own grants
-    #    are the ceiling on what it can ever return. That is the whole safety argument, and it is
-    #    not a matter of trusting the prompt.
+    # 5. Grants. Genie inherits Databricks' default run-as behaviour: the space queries AS the human
+    #    asking (run_as_type VIEWER), not as a service principal — so Unity Catalog's own grants are
+    #    the ceiling on what it can ever return. We RELY on that default rather than set it (the
+    #    create call does not override run_as_type); it is the boundary, and it does not depend on
+    #    trusting the prompt.
     user = os.environ.get("GENIE_GRANT_USER")
     if user:
-        api("PATCH", f"/api/2.0/permissions/genie/{space_id}",
-            {"access_control_list": [{"user_name": user, "permission_level": "CAN_MANAGE"}]})
-        for stmt in (f"GRANT USE CATALOG ON CATALOG {catalog} TO `{user}`",
-                     f"GRANT USE SCHEMA ON SCHEMA {GOVERNANCE_SCHEMA} TO `{user}`",
-                     f"GRANT SELECT ON SCHEMA {GOVERNANCE_SCHEMA} TO `{user}`"):
+        api(
+            "PATCH",
+            f"/api/2.0/permissions/genie/{space_id}",
+            {"access_control_list": [{"user_name": user, "permission_level": "CAN_MANAGE"}]},
+        )
+        for stmt in (
+            f"GRANT USE CATALOG ON CATALOG {catalog} TO `{user}`",
+            f"GRANT USE SCHEMA ON SCHEMA {GOVERNANCE_SCHEMA} TO `{user}`",
+            f"GRANT SELECT ON SCHEMA {GOVERNANCE_SCHEMA} TO `{user}`",
+        ):
             sql(stmt)
         print(f"  grants    {user}")
 

@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """A real bronze → silver → gold medallion pipeline — in stdlib ``sqlite3``.
 
-Level B of the data story (see pipelines/README.md). On the live platform these
-transformations run as Spark SQL on Databricks across three clouds (the deferred
-SQL is in ``pipelines/databricks/``). Here they run **offline, in sqlite** — a
-real SQL engine in the standard library — so a reviewer sees data actually flow
-through the governed catalogs with zero dependencies and zero cloud.
+Level B of the data story (see pipelines/README.md). The live platform runs a
+*parallel* medallion as Spark SQL on Databricks (the deferred SQL is in
+``pipelines/databricks/``): the same governance model and the same PII-minimised
+gold posture, but a distinct implementation — the live SQL and this offline
+version are two medallions that share a thesis, not byte-identical transforms
+over the same schemas. Here they run **offline, in sqlite** — a real SQL engine
+in the standard library — so a reviewer sees data actually flow through the
+governed catalogs with zero dependencies and zero cloud.
 
 Why this is on-thesis, not an analytics detour:
 
@@ -14,9 +17,11 @@ Why this is on-thesis, not an analytics detour:
   away (counts by country, revenue by market) — so the pipeline *demonstrates*
   the data-protection posture the governance layer asserts.
 * **the cross-cloud KPI table is the Delta Sharing story, executed.** GCP
-  marketing gold is joined with AWS sales gold into one ``global_kpis`` table —
-  the same "one governance/analytics plane across clouds" the platform claims,
-  shown moving data instead of just declaring a share.
+  marketing gold is combined (``UNION ALL``, not a join) with AWS sales gold into
+  one ``global_kpis`` table — one row per labelled KPI, so the shared ``value``
+  column is read per ``kpi`` label, never summed across them. It shows the same
+  "one governance/analytics plane across clouds" the platform claims, moving data
+  instead of just declaring a share.
 
 Layers (table prefix → meaning):
 
@@ -170,6 +175,9 @@ def build_gold(conn: sqlite3.Connection, silver: dict[str, str]) -> list[str]:
         )
 
     # ---- Cross-cloud KPI table (the Delta Sharing story, executed) ---------
+    # UNION ALL, not a join: one row per (cloud, domain, kpi), so the shared `value` column is only
+    # ever read per `kpi` label — currency and unit counts live in different rows and are never
+    # summed across the column.
     parts = []
     if "gold__sales_revenue_by_market" in gold:
         parts.append(

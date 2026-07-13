@@ -52,6 +52,8 @@ pipelines/data/
 
 # 📓 Local notes / study material (PDFs, overview + concepts — local only)
 notes/
+# Generated reading doc for the maintainer — not part of the repo's published surface.
+THE-GATE-explained.pdf
 
 # === Pre-publish security baseline (added 2026-06-22) ===
 PRE-PUBLISH.md

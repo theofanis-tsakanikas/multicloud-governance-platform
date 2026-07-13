@@ -13,7 +13,7 @@ The previous version shipped a 913-line Python orchestrator that manually manage
 | 2-phase IAM (`is_initial_deployment`) | Single-phase with static `external_id` |
 | `platform_bootstrap/ + gcp_platform_bootstrap/` | `bootstrap/aws/ + bootstrap/gcp/` |
 | Local `.tfstate` files | Remote S3 + DynamoDB locking |
-| No CI/CD | 4 GitHub Actions workflows |
+| No CI/CD | 11 GitHub Actions workflows |
 | No pre-commit hooks | Checkov + tfsec + fmt on every PR |
 
 ---
@@ -22,7 +22,7 @@ The previous version shipped a 913-line Python orchestrator that manually manage
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│  GitHub Actions (monorepo: .github/workflows/dbx-*.yml)             │
+│  GitHub Actions (.github/workflows/dbx-*.yml)                       │
 │  validate → bootstrap → deploy → destroy                            │
 └──────────────────────┬──────────────────────────────────────────────┘
                         │  OIDC → AWS IAM Role
@@ -268,7 +268,7 @@ shared_schemas = distinct(flatten([
 ## Project structure
 
 ```
-databricks-platform-v2/
+multicloud-governance-platform/
 ├── terragrunt.hcl                        # Root: S3 remote state + DynamoDB lock
 ├── Makefile                              # Developer targets (plan/apply/destroy/validate)
 ├── .pre-commit-config.yaml               # terraform fmt, hclfmt, checkov, tfsec, secret scan

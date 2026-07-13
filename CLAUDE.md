@@ -162,7 +162,7 @@ All eleven workflows live in `.github/workflows/`. The `bootstrap`, `deploy`, an
 |---|---|---|---|
 | Validate | `dbx-validate.yml` | PR touching `infra/**`, `environments/**`, `terragrunt.hcl`, `dbx-validate.yml` | `DBX_DEPLOY_ROLE_ARN` |
 | Config validate | `dbx-config-validate.yml` | PR touching domains/scripts/schema/policy/docs/tests — **no cloud creds**: `validate_domains` + JSON-Schema check, the `policy_analyzer` gate (+ SARIF upload + expiry warning), the OPA/conftest cross-check, report/Genie/metrics/cost/data-profile/dashboard `--check`, and pytest | — |
-| Drift detection | `dbx-drift.yml` | Weekly schedule (+ manual) — `terragrunt run-all plan -detailed-exitcode` per cloud; opens/updates a `drift`-labelled issue | `DBX_DEPLOY_ROLE_ARN` |
+| Drift detection | `dbx-drift.yml` | Manual (`workflow_dispatch`) — `terragrunt run-all plan -detailed-exitcode` per cloud; opens/updates a `drift`-labelled issue. Dispatch-only on purpose: a weekly schedule against a torn-down platform would fail every run (it reads secrets the stack itself creates) | `DBX_DEPLOY_ROLE_ARN` |
 | Bootstrap | `dbx-bootstrap.yml` | Manual (`workflow_dispatch`) | `DBX_DEPLOY_ROLE_ARN` |
 | Deploy | `dbx-deploy.yml` | Manual (`workflow_dispatch`) | `DBX_DEPLOY_ROLE_ARN`, `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID` |
 | Destroy | `dbx-destroy.yml` | Manual — requires typing `DESTROY` to confirm | Same as Deploy |

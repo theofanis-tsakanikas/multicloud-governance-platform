@@ -72,7 +72,14 @@ Stated plainly, because a security file that only lists strengths is marketing:
   oversight — but if you deploy this, decide it for yourself.
 - **The OPA cross-check re-implements 3 of the 4 gating rules** (`PII_WRITE` is missing) and consumes
   the analyzer's own output as its input. It is a cross-check, not an independent second engine.
-- **A malformed `expires` date in `policy_exceptions.json` silently never expires.** There is no
-  schema validation on that file. A typo makes an exception permanent.
+- **A malformed `expires` date in `policy_exceptions.json` now fails closed.** An unparseable date
+  is treated as already expired, so the finding it covers re-surfaces and the gate goes red (rather
+  than the exception silently becoming permanent). There is still no JSON Schema on that file, so the
+  *shape* of an entry is not validated — only the expiry is fail-safe.
+- **In public connectivity mode the RDS instance is reachable from the internet.** The default
+  connectivity is public (`PRIVATE_AWS=false`); in that mode the Postgres instance gets a public IP
+  and its security group admits `0.0.0.0/0` on 5432, guarded only by a Secrets-Manager-generated
+  password over synthetic data. Checkov does not flag this (the exposure is behind a `!var...`
+  ternary it cannot resolve). Deploy in private mode, or restrict the ingress, for anything real.
 - **Drift detection against a live metastore is not wired into CI.** A grant changed by hand in the
   Databricks UI will not be caught.

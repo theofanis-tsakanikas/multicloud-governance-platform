@@ -19,7 +19,7 @@ engines — by a gate that fails the pull request before a single resource exist
 
 | | |
 |---|---|
-| **[The gate](#governance-is-a-gate-not-a-report)** | A PR that leaks PII does not merge. It runs offline, in under a second |
+| **[The gate](#governance-is-a-gate-not-a-report)** | A PR that leaks PII fails the check before merge. It runs offline, in under a second |
 | **[The architecture](#the-architecture)** | One JSON contract → three clouds → two engines |
 | **[What it looks like when it runs](#what-it-looks-like-when-it-runs)** | The catalogs, the lineage, the medallion, the dashboard — screenshots |
 | **[The PII claim](#the-pii-claim-and-why-it-holds)** | Identities never leave Postgres, and the check returns zero rows |
@@ -35,8 +35,9 @@ engines — by a gate that fails the pull request before a single resource exist
 Most "governance" is a report. Somebody runs a scan, a dashboard turns amber, a ticket gets filed,
 and the grant that exposed a schema of customer emails has been live for three weeks.
 
-Here it is a **gate**. A pull request that grants a group `SELECT` on a schema classified `pii` does
-not get merged and then flagged. **It does not merge.**
+Here it is a **gate**. A pull request that grants a group `SELECT` on a schema classified `pii`
+fails the check and turns red *before* review — not merged first and flagged later. Make that check
+**required** in branch protection and the red becomes a wall: **it does not merge.**
 
 ```
 $ python scripts/policy_analyzer.py
