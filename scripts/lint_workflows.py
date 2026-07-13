@@ -16,6 +16,7 @@ was supposed to be watching.
 
 Run by `dbx-config-validate.yml` (the credential-free job) and attacked by `scripts/gate_proof.py`.
 """
+
 from __future__ import annotations
 
 import glob

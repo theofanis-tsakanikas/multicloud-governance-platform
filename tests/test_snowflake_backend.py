@@ -13,7 +13,6 @@ from pathlib import Path
 
 from governance_model import GovernanceModel, Grant, build_model
 from snowflake_backend import (
-    engine_limitation,
     ADMIN,
     READ,
     WRITE,
@@ -21,6 +20,7 @@ from snowflake_backend import (
     cross_backend_issues,
     effective_access_snowflake,
     effective_access_uc,
+    engine_limitation,
     load_privilege_map,
     render_snowflake_grants,
     snowflake_capabilities,

@@ -15,6 +15,8 @@ on:
       - "infra/**"
       - "environments/**"
       - "terragrunt.hcl"
+      - ".checkov.yml"
+      - ".pre-commit-config.yaml"
       - ".github/workflows/dbx-validate.yml"
 
   pull_request:
@@ -22,6 +24,8 @@ on:
       - "infra/**"
       - "environments/**"
       - "terragrunt.hcl"
+      - ".checkov.yml"
+      - ".pre-commit-config.yaml"
       - ".github/workflows/dbx-validate.yml"
 
   # workflow_dispatch refreshes the badge without opening a PR you do not need.
@@ -168,7 +172,6 @@ jobs:
           echo "::error::terragrunt validate found a real problem in ${{ matrix.cloud }}"
           tail -40 /tmp/tg.err
           exit 1
-          soft_fail: false
 
   infracost:
     name: Cost estimate
