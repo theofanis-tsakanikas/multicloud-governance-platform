@@ -27,6 +27,7 @@ _VENV = REPO / ".venv" / "bin"
 PY = str(_VENV / "python") if (_VENV / "python").exists() else sys.executable
 CHECKOV = str(_VENV / "checkov") if (_VENV / "checkov").exists() else shutil.which("checkov")
 CONFTEST = shutil.which("conftest") or (str(REPO / ".bin" / "conftest") if (REPO / ".bin" / "conftest").exists() else None)
+TFSEC = shutil.which("tfsec") or (str(REPO / ".bin" / "tfsec") if (REPO / ".bin" / "tfsec").exists() else None)
 TERRAFORM = shutil.which("terraform")
 
 
@@ -50,11 +51,22 @@ def _opa_ok() -> bool:
     return r.returncode == 0
 
 
+def _tfsec_ok() -> bool:
+    r = subprocess.run(
+        [TFSEC, "infra", "--config-file", ".tfsec.yml", "--no-color"],
+        cwd=REPO,
+        capture_output=True,
+        text=True,
+    )
+    return r.returncode == 0
+
+
 # (label, callable → bool, or None to skip with a reason). A plain command list is run and judged by
 # its exit code; a callable lets a check define its own "green".
 CHECKS: list = [
     ("Terraform formatting", ([TERRAFORM, "fmt", "-check", "-recursive", "infra/"] if TERRAFORM else "terraform not installed")),
     ("Security scan · Checkov", (_checkov_ok if CHECKOV else "checkov not installed")),
+    ("Security scan · tfsec", (_tfsec_ok if TFSEC else "tfsec not installed")),
     ("Every workflow file is readable", [PY, "scripts/lint_workflows.py"]),
     ("Domain config · structure + schema", [PY, "scripts/validate_domains.py"]),
     ("Access policy · least-privilege / PII", [PY, "scripts/policy_analyzer.py"]),

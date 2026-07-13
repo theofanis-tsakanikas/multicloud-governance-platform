@@ -1,0 +1,49 @@
+---
+# tfsec — and the deviations from it, written down.
+#
+# tfsec is the SECOND infrastructure scanner in the gate (dbx-validate.yml), independent of Checkov
+# and with its own rule set. The first time the gate ran correctly it reported 67 passing checks and
+# 20 potential problems. One was a real, cheap fix and is fixed in code:
+#
+#   azure-storage-use-secure-tls-policy   The ADLS account accepted downgraded TLS. It now pins
+#                                         min_tls_version = "TLS1_2" (infra/.../adls_account/main.tf).
+#
+# The rest are the SAME deliberate trade-offs already documented, rule-by-rule, in .checkov.yml —
+# tfsec simply names them differently. They are excluded here rather than silenced in code, and each
+# points at the Checkov sibling that carries the full reasoning. This is a skip-LIST, not an
+# allow-list: a new tfsec rule, or an existing one firing on new code, still fails the build.
+
+exclude:
+  # ── Would break the platform ──────────────────────────────────────────────────────────────────
+  - aws-ec2-no-public-egress-sgr              # = CKV_AWS_382. The Fargate transit gateways need
+                                              #   outbound (ECR pull, CloudWatch, the VPN); their
+                                              #   VPCs have no internet gateway, so 0.0.0.0/0 egress
+                                              #   reaches a NAT or nothing.
+
+  # ── Deliberate public-mode exposure (documented in SECURITY.md) ───────────────────────────────
+  - aws-ec2-no-public-ingress-sgr             # The public-mode RDS opens 5432 (public connectivity
+                                              #   is the demo default; private mode removes it). Real
+                                              #   deployments run private. See SECURITY.md.
+
+  # ── Encryption present, but AWS/GCP-managed keys rather than customer-managed (cost) ──────────
+  - aws-s3-encryption-customer-key            # = CKV_AWS_145. Encrypted with AES256, not a CMK.
+  - google-storage-bucket-encryption-customer-key  # = CKV_GCP_81. Same trade-off on GCS.
+
+  # ── Costs money / audit volume a torn-down demo does not carry (production MUST enable these) ──
+  - aws-s3-enable-bucket-logging              # = CKV_AWS_18.
+  - aws-ec2-require-vpc-flow-logs-for-all-vpcs  # = CKV2_AWS_11. Flow logs: real audit value, real cost.
+  - google-compute-enable-vpc-flow-logs       # = CKV_GCP_26. Same on GCP.
+
+  # ── IAM breadth the deploy/access roles need (OIDC-only, no long-lived keys) ──────────────────
+  - aws-iam-no-policy-wildcards               # = CKV_AWS_111/356/355. The Terraform role creates and
+                                              #   destroys the platform; assumed via OIDC from this
+                                              #   repo only.
+  - google-iam-no-privileged-service-accounts # The GCP platform SA is privileged by necessity
+                                              #   (it provisions the metastore/workspace).
+
+  # ── Azure/GCP production hardening a demo does not carry (= CKV_AZURE_* skips) ─────────────────
+  - azure-keyvault-ensure-secret-expiry       # = CKV_AZURE_41.
+  - azure-keyvault-content-type-for-secret
+  - azure-keyvault-specify-network-acl        # = CKV_AZURE_109. A default-deny ACL would lock the
+                                              #   CI runner out of the vault it must read.
+  - azure-keyvault-no-purge                   # = CKV_AZURE_42/110.

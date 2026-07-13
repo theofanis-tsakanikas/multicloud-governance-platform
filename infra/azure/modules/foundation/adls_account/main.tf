@@ -8,6 +8,9 @@ resource "azurerm_storage_account" "adls_sa_uc" {
   # Geo-Redundant Storage (GRS) provides durability across multiple regions
   account_replication_type = "GRS"
   account_kind             = "StorageV2"
+  # Refuse anything below TLS 1.2 (tfsec azure-storage-use-secure-tls-policy). Cheap and correct —
+  # no reason a data-lake account should accept a downgraded handshake.
+  min_tls_version = "TLS1_2"
   # This is the "magic switch" that turns standard Blob storage into ADLS Gen2
   is_hns_enabled = true
   # Refuse public access at the ACCOUNT level, so no container can opt itself into anonymous access

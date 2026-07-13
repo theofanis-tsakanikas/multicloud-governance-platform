@@ -107,10 +107,13 @@ jobs:
           soft_fail: false
           output_format: github_failed_only
 
+      # tfsec is the second, independent infra scanner. .tfsec.yml is a documented SKIP-list (the same
+      # deliberate trade-offs as .checkov.yml, under tfsec's own rule names); a new finding still fails.
       - name: Security scan — tfsec
         uses: aquasecurity/tfsec-action@v1.0.3
         with:
           working_directory: infra
+          additional_args: --config-file .tfsec.yml
 
   validate:
     name: Terragrunt validate (${{ matrix.cloud }})
