@@ -171,3 +171,37 @@ def test_gate_trips_on_injected_violation(tmp_path):
     (d / "x_grants.json").write_text(json.dumps(grants))
     result = run_analysis(tmp_path)
     assert any(f.rule == "PII_BROAD_READ" and not f.accepted for f in result.gating)
+
+
+def test_malformed_expiry_fails_closed():
+    # The hole this guards: a typo in an exception's `expires` used to be treated as "never
+    # expires", so it suppressed a gating HIGH forever, silently. A malformed date must fail CLOSED
+    # — treated as already expired, so the finding it covers re-surfaces and the gate goes red.
+    today = dt.date(2026, 7, 13)
+
+    def _exc(expires):
+        return Exception_("PII_BROAD_READ", "schema:c.s", "analysts", "j", "a", expires)
+
+    assert _exc("2025-01-01").is_expired(today)  # well-formed past date → expired
+    assert not _exc("2099-01-01").is_expired(today)  # well-formed future date → not expired
+    assert not _exc("").is_expired(today)  # no expiry declared → never expires
+    for bad in ("2025/12/31", "31-12-2025", "2025-13-01", "not-a-date"):
+        assert _exc(bad).is_expired(today), f"malformed {bad!r} must fail closed (be treated as expired)"
+
+
+def test_malformed_expiry_does_not_suppress_finding():
+    # End-to-end: an exception whose date is malformed must NOT downgrade its finding to accepted.
+    m = _model([_pii_schema("c.s")], [_grant("analysts", ["USE_SCHEMA", "SELECT"], fqn="c.s")])
+    rule, obj, principal = next(f for f in analyze(m) if f.rule == "PII_BROAD_READ").key()
+    today = dt.date(2026, 7, 13)
+
+    def _exc(expires):
+        return Exception_(rule, obj, principal, "j", "a", expires)
+
+    # Control: a well-formed FUTURE expiry does suppress — proves the exception key matches the
+    # finding, so the malformed case below fails for the right reason.
+    good = apply_exceptions(analyze(m), [_exc("2099-01-01")], today=today)
+    assert next(f for f in good if f.rule == "PII_BROAD_READ").accepted
+    # The fix: a malformed expiry must NOT suppress — it fails closed.
+    bad = apply_exceptions(analyze(m), [_exc("2025/12/31")], today=today)
+    assert not next(f for f in bad if f.rule == "PII_BROAD_READ").accepted

@@ -21,6 +21,7 @@ repository — the working tree is never touched, and you can run this on a dirt
 Exit code 0 means every attack was blocked. Exit 1 means the gate let something through, which is
 the only result here worth losing sleep over.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -46,13 +47,16 @@ GREEN, RED, DIM, BOLD, OFF = "\033[32m", "\033[31m", "\033[2m", "\033[1m", "\033
 @dataclass
 class Attack:
     name: str
-    what: str          # the sentence a human would say about what was done
-    expect: str        # the rule / check that must catch it
-    mutate: object     # (root: Path) -> None
-    gate: list[str]    # the command that must exit non-zero
+    what: str  # the sentence a human would say about what was done
+    expect: str  # the rule / check that must catch it
+    mutate: object  # (root: Path) -> None
+    gate: list[str]  # the command that must exit non-zero
+    marker: str  # a token that MUST appear in the gate's output — proof the RIGHT rule fired,
+    #                    not merely that the gate crashed for some unrelated reason
 
 
 # ── the mutations ───────────────────────────────────────────────────────────────────────────────
+
 
 def _grants(root: Path) -> tuple[Path, dict]:
     path = root / AWS_GRANTS
@@ -82,9 +86,7 @@ def grant_pii_write(root: Path) -> None:
 def grant_to_the_world(root: Path) -> None:
     """`account users` is every authenticated principal in the account. It is not a group."""
     path, doc = _grants(root)
-    doc["catalog_grants"][0]["grants"].append(
-        {"principal": "account users", "privileges": ["USE_CATALOG", "SELECT"]}
-    )
+    doc["catalog_grants"][0]["grants"].append({"principal": "account users", "privileges": ["USE_CATALOG", "SELECT"]})
     path.write_text(json.dumps(doc, indent=2) + "\n")
 
 
@@ -102,9 +104,7 @@ def grant_on_nothing(root: Path) -> None:
     """A grant against a schema that does not exist — a typo that would silently grant nobody
     anything, and look fine in a diff."""
     path, doc = _grants(root)
-    doc["schema_grants"].append(
-        {"schema": "sales_aws.gold_typo", "grants": [{"principal": "analysts", "privileges": ["SELECT"]}]}
-    )
+    doc["schema_grants"].append({"schema": "sales_aws.gold_typo", "grants": [{"principal": "analysts", "privileges": ["SELECT"]}]})
     path.write_text(json.dumps(doc, indent=2) + "\n")
 
 
@@ -127,6 +127,7 @@ ATTACKS = [
         expect="policy_analyzer → PII_BROAD_READ · HIGH",
         mutate=grant_pii_to_analysts,
         gate=[sys.executable, "scripts/policy_analyzer.py"],
+        marker="PII_BROAD_READ",
     ),
     Attack(
         name="PII, written by a non-admin",
@@ -134,6 +135,7 @@ ATTACKS = [
         expect="policy_analyzer → PII_WRITE · HIGH",
         mutate=grant_pii_write,
         gate=[sys.executable, "scripts/policy_analyzer.py"],
+        marker="PII_WRITE",
     ),
     Attack(
         name="A grant to everybody",
@@ -141,6 +143,7 @@ ATTACKS = [
         expect="policy_analyzer → PUBLIC_PRINCIPAL · HIGH",
         mutate=grant_to_the_world,
         gate=[sys.executable, "scripts/policy_analyzer.py"],
+        marker="PUBLIC_PRINCIPAL",
     ),
     Attack(
         name="An exception left to rot",
@@ -148,6 +151,7 @@ ATTACKS = [
         expect="policy_analyzer → the suppressed HIGH findings return",
         mutate=expire_the_exception,
         gate=[sys.executable, "scripts/policy_analyzer.py"],
+        marker="PII_BROAD_READ",
     ),
     Attack(
         name="A grant on a schema that does not exist",
@@ -155,6 +159,7 @@ ATTACKS = [
         expect="validate_domains → DANGLING_GRANT",
         mutate=grant_on_nothing,
         gate=[sys.executable, "scripts/validate_domains.py"],
+        marker="DANGLING_GRANT",
     ),
     Attack(
         name="A workflow GitHub cannot read",
@@ -162,6 +167,7 @@ ATTACKS = [
         expect="lint_workflows → unparseable, GitHub would run nothing",
         mutate=break_a_workflow,
         gate=[sys.executable, "scripts/lint_workflows.py"],
+        marker="dbx-genie.yml",
     ),
 ]
 
@@ -170,15 +176,28 @@ def run(attack: Attack, index: int, total: int) -> bool:
     with tempfile.TemporaryDirectory(prefix="gate-proof-") as tmp:
         root = Path(tmp) / "repo"
         shutil.copytree(
-            REPO, root,
+            REPO,
+            root,
             ignore=shutil.ignore_patterns(
-                ".git", ".terraform*", "*.terragrunt-cache*", "promo", "images",
-                "__pycache__", ".venv", "pipelines/data",
+                ".git",
+                ".terraform*",
+                "*.terragrunt-cache*",
+                "promo",
+                "images",
+                "__pycache__",
+                ".venv",
+                "pipelines/data",
             ),
         )
         attack.mutate(root)
         proc = subprocess.run(attack.gate, cwd=root, capture_output=True, text=True)
-        blocked = proc.returncode != 0
+        output = proc.stdout + proc.stderr
+        nonzero = proc.returncode != 0
+        right_reason = attack.marker in output
+        # A block only counts if the gate exited non-zero AND named the violation we planted. A
+        # non-zero exit on its own could be an import error or an unrelated crash — which would let
+        # a real regression hide behind a green "the gate is real". Both, or it does not count.
+        blocked = nonzero and right_reason
 
     print(f"  {BOLD}ATTACK {index}/{total}{OFF}  {attack.name}")
     print(f"            {DIM}{attack.what}{OFF}")
@@ -186,11 +205,14 @@ def run(attack: Attack, index: int, total: int) -> bool:
 
     if blocked:
         evidence = ""
-        for line in (proc.stdout + proc.stderr).splitlines():
-            if any(k in line for k in ("HIGH", "ERROR", "DANGLING", "RESULT", ".yml:")):
+        for line in output.splitlines():
+            if attack.marker in line:
                 evidence = line.strip()
                 break
-        print(f"            {GREEN}BLOCKED{OFF}  exit {proc.returncode}   {DIM}{evidence[:78]}{OFF}\n")
+        print(f"            {GREEN}BLOCKED{OFF}  exit {proc.returncode}  ·  matched {attack.marker}   {DIM}{evidence[:66]}{OFF}\n")
+    elif nonzero:
+        # exited non-zero, but not for the reason we planted — that is not a real block.
+        print(f"            {RED}*** WRONG REASON — exit {proc.returncode} but {attack.marker!r} never appeared ***{OFF}\n")
     else:
         print(f"            {RED}*** LET THROUGH — THE GATE DID NOT HOLD ***{OFF}  exit 0\n")
     return blocked

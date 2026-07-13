@@ -142,7 +142,12 @@ class Exception_:
         try:
             return _dt.date.fromisoformat(self.expires) < today
         except ValueError:
-            return False  # malformed expiry → treat as non-expiring, surfaced elsewhere
+            # Fail CLOSED. A malformed expiry ("2025/12/31", "31-12-2025", "2025-13-01") is not a
+            # licence to suppress a finding forever — that is exactly the "looks like it validates
+            # but doesn't" failure this platform exists to refuse. Treat an unparseable date as
+            # already expired, so the finding it covers re-surfaces and the gate goes red, forcing
+            # a human to fix the date rather than a typo silently un-gating a HIGH.
+            return True
 
 
 def load_exceptions(path: Path) -> list[Exception_]:
@@ -406,6 +411,10 @@ def expiring_exceptions(
         try:
             exp = _dt.date.fromisoformat(e.expires)
         except ValueError:
+            # A malformed date now fails closed in is_expired() (the finding re-surfaces and gates).
+            # Surface it here too, as already-lapsed (days_left = -1), so --warn-expiring names the
+            # bad value instead of silently skipping it.
+            out.append(ExpiringException(e.rule, e.object_ref, e.principal, e.expires, e.approved_by, -1))
             continue
         days_left = (exp - today).days
         if days_left <= within_days:

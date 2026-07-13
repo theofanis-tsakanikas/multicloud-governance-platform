@@ -247,5 +247,12 @@ module "git_repository" {
   schema               = "_GOVERNANCE"
   reader_roles         = values(module.roles.role_names)
 
+  # The whole go-public migration lives on this flag: the submodule gates the GIT REPOSITORY object
+  # (which CREATE-clones and fails against a still-private repo) on `github_repo_is_public`. It was
+  # declared and set on this wrapper but never threaded through to the submodule — so flipping it to
+  # true produced an empty plan and the documented one-line migration silently did nothing. Forward
+  # it, so the day the repo goes public the next apply actually brings the repository object up.
+  github_repo_is_public = var.github_repo_is_public
+
   depends_on = [module.roles, module.governance_policies]
 }
