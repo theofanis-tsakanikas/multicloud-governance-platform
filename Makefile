@@ -108,7 +108,7 @@ test:
 
 # ─── Governance copilot ──────────────────────────────────────────────────────
 
-.PHONY: policy-scan policy-sarif gate-proof governance-report genie-space genie-deploy metrics cost-estimate catalog-drift opa demo \
+.PHONY: policy-scan policy-sarif gate-proof gate-attack gate-green governance-report genie-space genie-deploy metrics cost-estimate catalog-drift opa demo \
         snowflake-check snowflake-validate snowflake-render
 
 policy-scan:
@@ -118,6 +118,12 @@ policy-scan:
 gate-proof:  ## attack the gate and prove it holds — six deliberate violations, all refused
 	@echo "$(GREEN)▶ attacking the gate (mutations land in a throwaway copy)$(RESET)"
 	python3 scripts/gate_proof.py
+
+gate-attack:  ## narrated, paused walkthrough of the gate REFUSING violations — for a screen recording
+	python3 scripts/gate_demo.py
+
+gate-green:  ## run the whole offline gate and show every check turn green — for a screen recording
+	python3 scripts/gate_green.py
 
 lint-workflows:  ## assert GitHub can read every workflow file
 	python3 scripts/lint_workflows.py

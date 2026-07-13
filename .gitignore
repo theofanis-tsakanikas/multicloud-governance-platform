@@ -20,6 +20,9 @@ terraform.tfvars
 secrets.hcl
 provider_key.json
 
+# Local tool binaries (e.g. conftest for the OPA demo) — downloaded, not source
+.bin/
+
 # Python
 __pycache__/
 *.py[cod]
