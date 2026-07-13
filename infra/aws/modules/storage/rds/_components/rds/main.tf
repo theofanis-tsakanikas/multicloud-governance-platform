@@ -18,6 +18,13 @@ resource "aws_db_instance" "sales_db" {
   # Set to true for easier automated cleanup (use false for Production)
   skip_final_snapshot = true
 
+  # Checkov CKV_AWS_16. This instance holds the `crm` schema, which the domain config classifies
+  # `pii` — so its storage must be encrypted at rest, full stop. Left to the AWS default this is
+  # `false`, and the platform would be shipping unencrypted PII while claiming otherwise. Uses the
+  # AWS-managed `aws/rds` key (no per-key cost); a production deployment can point `kms_key_id` at a
+  # customer-managed key. This is enforced, not skipped: CKV_AWS_16 is off the .checkov.yml list.
+  storage_encrypted = true
+
   # Checkov CKV2_AWS_60. A snapshot without the instance's tags is a snapshot nobody can attribute:
   # it survives the instance, it costs money, and six months later it is an orphan that no owner tag
   # points at. (This repo has already deleted one such 20 GB snapshot by hand.) One line, no cost.

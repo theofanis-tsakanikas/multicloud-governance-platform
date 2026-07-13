@@ -86,7 +86,8 @@ skip-check:
   - CKV_AWS_145   # S3 default encryption should use KMS. It uses AES256.
   - CKV_AWS_136   # ECR repositories should use KMS. They use AES256.
   - CKV_AWS_158   # CloudWatch log groups should be KMS-encrypted.
-  - CKV_AWS_16    # RDS storage encryption — enabled, but with the AWS-managed RDS key.
+  # CKV_AWS_16 (RDS encryption at rest) is deliberately NOT skipped — it is enforced. The instance
+  # holds a `pii` schema; `storage_encrypted = true` is set in the module and this check must pass.
   - CKV_AWS_149   # Secrets Manager should use a customer-managed key.
   - CKV_AWS_111   # IAM write access without constraints — the Terraform deploy role is broad by
                   # necessity; it creates and destroys the platform. It is assumed via OIDC only,
