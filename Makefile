@@ -108,12 +108,19 @@ test:
 
 # ─── Governance copilot ──────────────────────────────────────────────────────
 
-.PHONY: policy-scan policy-sarif governance-report genie-space genie-deploy metrics cost-estimate catalog-drift opa demo \
+.PHONY: policy-scan policy-sarif gate-proof governance-report genie-space genie-deploy metrics cost-estimate catalog-drift opa demo \
         snowflake-check snowflake-validate snowflake-render
 
 policy-scan:
 	@echo "$(GREEN)▶ access-policy analysis (deterministic, CI gate)$(RESET)"
 	python3 scripts/policy_analyzer.py --warn-expiring 30
+
+gate-proof:  ## attack the gate and prove it holds — six deliberate violations, all refused
+	@echo "$(GREEN)▶ attacking the gate (mutations land in a throwaway copy)$(RESET)"
+	python3 scripts/gate_proof.py
+
+lint-workflows:  ## assert GitHub can read every workflow file
+	python3 scripts/lint_workflows.py
 
 policy-sarif:
 	@echo "$(GREEN)▶ writing policy.sarif (GitHub code scanning)$(RESET)"

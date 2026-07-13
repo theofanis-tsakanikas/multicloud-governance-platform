@@ -63,29 +63,8 @@ jobs:
       #
       # A gate you think you have and do not is worse than no gate, because you stop looking. So the
       # credential-free job now parses every workflow file before anything else runs.
-      - name: Every workflow file is valid YAML
-        run: |
-          python - <<'PY'
-          import glob, sys, yaml
-
-          bad = []
-          for path in sorted(glob.glob(".github/workflows/*.yml")):
-              try:
-                  spec = yaml.safe_load(open(path))
-              except yaml.YAMLError as exc:
-                  bad.append((path, str(exc).splitlines()[0]))
-                  continue
-              if not isinstance(spec, dict) or "jobs" not in spec:
-                  bad.append((path, "parsed, but declares no jobs"))
-                  continue
-              print(f"  ok  {path}  ({spec.get('name', '<unnamed>')})")
-
-          if bad:
-              print("\n::error::workflow files that GitHub will not be able to run:")
-              for path, why in bad:
-                  print(f"::error file={path}::{why}")
-              sys.exit(1)
-          PY
+      - name: Every workflow file is one GitHub can read
+        run: python scripts/lint_workflows.py
 
       - name: Install conftest (OPA cross-check)
         run: |
@@ -105,6 +84,23 @@ jobs:
 
       - name: Access-policy analysis (deterministic gate — fails on unacknowledged HIGH)
         run: python scripts/policy_analyzer.py --warn-expiring 30
+
+      # ── Proving the gate, rather than trusting it ────────────────────────────────────────────
+      #
+      # The step above passing means the committed config is clean. It does NOT mean the gate would
+      # have caught a config that wasn't — and this repository has already learned, expensively, what
+      # a gate that runs but does not work looks like: dbx-validate.yml shipped unparseable and
+      # recorded twenty green-looking failures while Checkov, tfsec and terraform fmt never executed
+      # once.
+      #
+      # So: six deliberate violations, each one something the platform claims to refuse — PII read by
+      # a broad group, PII written by a non-admin, a grant to `account users`, an exception left to
+      # expire, a grant on a schema that does not exist, and a workflow file GitHub cannot parse. The
+      # real gate runs against each. If any of them gets through, this fails.
+      #
+      # Every mutation happens in a throwaway copy. It takes two seconds.
+      - name: Attack the gate — six violations, all of which must be refused
+        run: python scripts/gate_proof.py
 
       - name: Cross-backend consistency (Unity Catalog ≡ Snowflake, engine-agnostic proof)
         run: python scripts/snowflake_backend.py --check
