@@ -27,6 +27,10 @@ admin_principals := {"metastore_admins"}
 
 read_privileges := {"SELECT", "READ_VOLUME", "READ_FILES"}
 
+# Write == any privilege that can change PII, plus ALL_PRIVILEGES (which subsumes them). Mirrors
+# WRITE_PRIVILEGES in scripts/governance_model.py so the two engines classify writes identically.
+write_privileges := {"MODIFY", "WRITE_VOLUME", "WRITE_FILES", "CREATE_TABLE", "CREATE_EXTERNAL_TABLE", "CREATE_EXTERNAL_VOLUME", "ALL_PRIVILEGES"}
+
 sensitive_classes := {"confidential", "pii"}
 
 # owner[catalog_name] = owner principal, for the objects that declare one.
@@ -70,6 +74,17 @@ deny contains msg if {
 	read_privileges[privilege]
 	not accepted("PII_BROAD_READ", access)
 	msg := sprintf("PII_BROAD_READ: [%s] %s:%s readable by non-admin %q", [access.cloud, access.object_type, access.object, access.principal])
+}
+
+# ---- PII_WRITE ------------------------------------------------------------- #
+deny contains msg if {
+	some access in input.access_matrix
+	access.classification == "pii"
+	not is_admin(access.principal)
+	some privilege in access.privileges
+	write_privileges[privilege]
+	not accepted("PII_WRITE", access)
+	msg := sprintf("PII_WRITE: [%s] %s:%s writable by non-admin %q", [access.cloud, access.object_type, access.object, access.principal])
 }
 
 # ---- SENSITIVE_ALL_PRIVILEGES ---------------------------------------------- #

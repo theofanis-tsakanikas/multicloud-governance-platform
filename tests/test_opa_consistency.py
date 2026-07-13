@@ -1,5 +1,5 @@
 """Offline cross-check that the Rego policy (policy/opa/governance.rego) and the
-Python analyzer agree. The three gating rules are re-implemented here in Python
+Python analyzer agree. All four gating rules are re-implemented here in Python
 and run over the same grounding pack the Rego policy consumes; this proves the
 two engines would reach the same verdict even when the `conftest` binary is not
 installed (CI runs the real conftest as well)."""
@@ -16,6 +16,7 @@ VIOLATION = REPO_ROOT / "policy" / "opa" / "examples" / "violation_input.json"
 PUBLIC = {"users", "account users", "all account users", "all users", "public", "*"}
 ADMINS = {"metastore_admins"}
 READ = {"SELECT", "READ_VOLUME", "READ_FILES"}
+WRITE = {"MODIFY", "WRITE_VOLUME", "WRITE_FILES", "CREATE_TABLE", "CREATE_EXTERNAL_TABLE", "CREATE_EXTERNAL_VOLUME", "ALL_PRIVILEGES"}
 SENSITIVE = {"confidential", "pii"}
 
 
@@ -42,6 +43,8 @@ def rego_denials(ctx: dict) -> set[str]:
             denials.add(f"PUBLIC_PRINCIPAL:{ref}")
         if a.get("classification") == "pii" and a["principal"] not in ADMINS and (privs & READ) and not _accepted(ctx, "PII_BROAD_READ", a):
             denials.add(f"PII_BROAD_READ:{ref}")
+        if a.get("classification") == "pii" and a["principal"] not in ADMINS and (privs & WRITE) and not _accepted(ctx, "PII_WRITE", a):
+            denials.add(f"PII_WRITE:{ref}")
         catalog = a["object"].split(".")[0]
         is_owner = owners.get(catalog) == a["principal"]
         if (
@@ -67,7 +70,7 @@ def test_clean_context_matches_analyzer():
     assert run_analysis(REPO_ROOT).gating == []
 
 
-def test_violation_fixture_trips_all_three_rules():
+def test_violation_fixture_trips_all_four_rules():
     ctx = json.loads(VIOLATION.read_text(encoding="utf-8"))
     denied_rules = {d.split(":", 1)[0] for d in rego_denials(ctx)}
-    assert denied_rules == {"PUBLIC_PRINCIPAL", "PII_BROAD_READ", "SENSITIVE_ALL_PRIVILEGES"}
+    assert denied_rules == {"PUBLIC_PRINCIPAL", "PII_BROAD_READ", "PII_WRITE", "SENSITIVE_ALL_PRIVILEGES"}

@@ -426,9 +426,10 @@ A portfolio that only lists what works is a sales page. This is the rest of it.
   ([ADR-0010](docs/adr/0010-environments-as-file-mirrors.md)) and its `config.hcl` is a placeholder —
   `aws_account_id = "111111111111"`. The architecture supports promotion by config diff. Nobody has
   done it.
-- **The OPA cross-check is not fully independent.** It re-implements **3 of the 4** gating rules
-  (`PII_WRITE` is missing) and consumes the analyzer's own output as its input — so it re-derives the
-  *logic* independently, not the *facts*.
+- **The OPA cross-check re-implements all 4 gating rules** in Rego — a second engine (run in CI)
+  that reaches the same verdict as the analyzer. It re-derives the *logic* independently, but reads
+  the analyzer's own output (`governance_context.json`) as its *facts*, so it is a rule-logic
+  cross-check, not a from-scratch second pipeline.
 - **The gate does not fail on MEDIUM.** Six `ALL_PRIVILEGES_NONADMIN` findings are open today and CI
   is green. `--strict` would fail them; CI does not pass `--strict`. A deliberate posture, stated
   rather than hidden.

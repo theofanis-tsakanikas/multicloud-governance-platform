@@ -34,7 +34,7 @@ every caption, the music, the sound-design cue sheet, and the exact CapCut build
 | Second engine | **Snowflake** — reads the *same* S3 gold file, **zero copies** |
 | The contract | **6 domain JSON files** — infra + grants + classification, per domain |
 | The gate | `policy_analyzer.py` — **9 rules**, 4 of them HIGH; **fails the PR on any unacknowledged HIGH** |
-| Cross-check | **OPA / Rego** re-implements **3 of the 4** gating rules and is run against the analyzer's output in CI. Do not call it a fully independent second engine — it consumes the analyzer's own report as its input. |
+| Cross-check | **OPA / Rego** re-implements **all 4** gating rules in a second engine, run against the analyzer's output in CI — both reach the same verdict. It reads the analyzer's own report as input, so it's a rule-logic cross-check, not a from-scratch second pipeline. |
 | Exceptions | **time-bound**. An expired exception stops suppressing its finding and **fails CI again** |
 | Live exceptions | 2 — `sales_rds_fed.crm` (expires **2026-12-31**), `marketing_bq_fed.web` (**2026-09-30**) |
 | Offline | the whole gate runs with **no cloud and no credentials** |

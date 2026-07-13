@@ -33,7 +33,7 @@ Full architecture detail and dependency graphs are in [ARCHITECTURE.md](ARCHITEC
 │   ├── profile_data.py         #   observed PII vs declared classification → docs/governance/data_profile.json
 │   └── databricks/             #   the live medallion (Databricks SQL asset bundle) — deployed and run by dbx-pipeline.yml
 ├── schema/                     # Versioned JSON Schema (Draft 2020-12) for domain config + IDE autocomplete
-├── policy/opa/                 # OPA/Rego re-implementation of 3 of the 4 gating rules; run against the analyzer's own output in CI
+├── policy/opa/                 # OPA/Rego re-implementation of all 4 gating rules; run against the analyzer's own output in CI
 ├── docs/adr/                   # Architecture Decision Records (the decision ledger)
 ├── docs/governance/            # Generated: REPORT.md + governance_context.json + metrics.json + COST.md + data_profile.json + dashboard/ + genie/
 └── infra/

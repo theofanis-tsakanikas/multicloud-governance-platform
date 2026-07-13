@@ -70,8 +70,9 @@ Stated plainly, because a security file that only lists strengths is marketing:
 - **The gate does not fail on MEDIUM findings.** Six `ALL_PRIVILEGES_NONADMIN` findings are open and
   CI is green. `--strict` would fail them. This is a deliberate posture for a demo repo, not an
   oversight — but if you deploy this, decide it for yourself.
-- **The OPA cross-check re-implements 3 of the 4 gating rules** (`PII_WRITE` is missing) and consumes
-  the analyzer's own output as its input. It is a cross-check, not an independent second engine.
+- **The OPA cross-check re-implements all 4 gating rules** in Rego (a second engine, run in CI) and
+  reaches the same verdict as the analyzer. It reads the analyzer's own output as its input, so it
+  cross-checks the rule *logic* in a different engine — it is not a second, independent data pipeline.
 - **A malformed `expires` date in `policy_exceptions.json` now fails closed.** An unparseable date
   is treated as already expired, so the finding it covers re-surfaces and the gate goes red (rather
   than the exception silently becoming permanent). There is still no JSON Schema on that file, so the
