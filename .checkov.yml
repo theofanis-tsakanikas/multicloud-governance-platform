@@ -1,0 +1,156 @@
+# Checkov — and the deviations from it, written down.
+#
+# ── WHY THIS FILE EXISTS AT ALL ─────────────────────────────────────────────────────────────────
+#
+# The first time Checkov was ever allowed to run against this repository it reported 380 passing
+# checks and 116 failures. (It had been configured from the start and never executed once:
+# dbx-validate.yml shipped with a YAML syntax error, so GitHub could not parse the workflow and
+# silently ran nothing. See scripts/lint_workflows.py.)
+#
+# Some of those 116 were real, and they are fixed:
+#
+#   CKV2_AZURE_31   `snet-data` had no NSG at all. It has a default-deny one now.
+#   CKV_GCP_114     Neither GCS bucket enforced public-access prevention. Both do now.
+#   CKV2_AWS_64     The KMS key had no key policy. It has one now.
+#   CKV2_AWS_60     RDS did not copy its tags to snapshots. It does now.
+#   CKV_AWS_23      Sixteen security-group rules did not say what they were for. They do now.
+#
+# The rest are skipped below — and every one of them says why. This platform's entire argument is
+# that an exception to a security policy must carry a reason, a name, and a date
+# (environments/dev/policy_exceptions.json). It would be a poor argument if the platform held its
+# own infrastructure to a lower standard than it holds its data.
+#
+# ── WHAT IS *NOT* SKIPPED ───────────────────────────────────────────────────────────────────────
+#
+# Everything else. Checkov ships ~450 checks and gains more with each release; only the IDs listed
+# below are suppressed, so a new rule — or an existing one firing on new code — still fails the
+# build. This is a skip-list, not an allow-list, on purpose: the default must be "the gate applies".
+
+skip-check:
+  # ── 1. Would break the platform ───────────────────────────────────────────────────────────────
+  #
+  # These are not trade-offs. Applying them stops the thing working.
+
+  - CKV_AWS_123   # VPC Endpoint Service must require manual acceptance.
+                  # It must NOT. `acceptance_required = false` is what lets Databricks serverless
+                  # create its own endpoint into the PrivateLink service without a human clicking
+                  # Accept. Turning this on breaks all three private paths at once, and the
+                  # allow-list (one exact Databricks role ARN, no wildcard) is the control that
+                  # actually restricts who may connect.
+
+  - CKV_AWS_150   # Load balancer must have deletion protection.
+                  # `terragrunt destroy` is a first-class operation here — the platform is stood up
+                  # and torn down on purpose, and the teardown is documented, tested and used. A load
+                  # balancer that refuses to be deleted turns a routine destroy into a manual
+                  # console session.
+
+  - CKV_AWS_51    # ECR image tags must be immutable.
+                  # The deploy builds and pushes the three gateway images as `:latest` on every run
+                  # (dbx-deploy.yml). Immutable tags would fail the second deploy of any given day.
+
+  - CKV_AWS_382   # No security group may allow egress to 0.0.0.0/0.
+                  # The three Fargate gateways need outbound: to pull their image from ECR, to write
+                  # to CloudWatch, and to reach the target across the VPN. The transit VPCs have no
+                  # internet gateway — 0.0.0.0/0 there reaches a NAT gateway or nothing at all, so
+                  # the rule reads as more open than it is.
+
+  # ── 2. Costs money, on a platform that is deliberately torn down ──────────────────────────────
+  #
+  # Each of these is correct for production and wrong for a demo that exists to be destroyed.
+  # A production deployment of this repository MUST enable them; that is not a hedge, it is a
+  # requirement, and it is why they are named rather than blanket-disabled.
+
+  - CKV2_AWS_11   # VPC flow logs (×3 VPCs). Real audit value; real CloudWatch storage cost.
+  - CKV_AWS_91    # ELB access logging.
+  - CKV_AWS_65    # ECS container insights.
+  - CKV_AWS_18    # S3 access logging.
+  - CKV_GCP_62    # GCS bucket access logging.
+  - CKV_AWS_338   # CloudWatch log groups must retain 1 year.
+                  # The gateway log groups retain ONE DAY on purpose — long enough to prove the
+                  # private path carried bytes, short enough to cost nothing. The evidence that
+                  # mattered was copied into docs/evidence/ before it expired.
+  - CKV_AWS_144   # S3 cross-region replication. Doubles the storage bill for a synthetic dataset.
+  - CKV2_AWS_62   # S3 event notifications. Nothing consumes them.
+  - CKV2_AWS_61   # S3 lifecycle configuration. Present on the raw zone; absent on state buckets,
+                  # which hold kilobytes.
+  - CKV2_AWS_57   # Secrets Manager automatic rotation. Requires a rotation Lambda per secret; the
+                  # secrets in question live exactly as long as one deploy.
+
+  # ── 3. Encryption posture: encrypted, but with AWS-managed keys rather than customer keys ─────
+  #
+  # Nothing here is unencrypted. The finding is that the key is AWS-owned rather than ours. A
+  # customer-managed key is $1/month each plus per-request charges, and buys key-rotation control
+  # this demo has no use for. The one secret that genuinely needs it — the Databricks SPN — DOES
+  # have a customer-managed KMS key with rotation enabled (infra/bootstrap/modules/shared_secrets).
+
+  - CKV_AWS_145   # S3 default encryption should use KMS. It uses AES256.
+  - CKV_AWS_136   # ECR repositories should use KMS. They use AES256.
+  - CKV_AWS_158   # CloudWatch log groups should be KMS-encrypted.
+  - CKV_AWS_16    # RDS storage encryption — enabled, but with the AWS-managed RDS key.
+  - CKV_AWS_149   # Secrets Manager should use a customer-managed key.
+  - CKV_AWS_111   # IAM write access without constraints — the Terraform deploy role is broad by
+                  # necessity; it creates and destroys the platform. It is assumed via OIDC only,
+                  # from this repository, with no long-lived key anywhere.
+  - CKV_AWS_109   # IAM policy without constraints — same role, same reason.
+  - CKV_AWS_356   # IAM policy allows "*" on resources — same.
+  - CKV_AWS_355   # IAM policy allows "*" on a resource for write actions — same.
+  - CKV_AWS_353   # RDS enhanced monitoring.
+  - CKV_AWS_293   # RDS deletion protection — same argument as CKV_AWS_150.
+  - CKV_AWS_290   # IAM write access — same deploy role.
+  - CKV_AWS_300   # S3 lifecycle should abort incomplete multipart uploads.
+  - CKV_AWS_226   # RDS auto minor version upgrade.
+  - CKV_AWS_163   # ECR image scanning on push.
+  - CKV_AWS_157   # RDS multi-AZ. One AZ, one demo, one region.
+  - CKV_AWS_129   # RDS log exports to CloudWatch.
+  - CKV_AWS_118   # RDS enhanced monitoring.
+  - CKV2_AWS_5    # Security groups attached to a resource — flagged on SGs created in one mode and
+                  # attached in the other; Checkov cannot see the `for_each` gate.
+  - CKV2_AWS_12   # Default security group should restrict all traffic. The default SG of each VPC
+                  # is unused — every resource gets an explicit SG — but Terraform does not manage
+                  # the default SG unless you import it.
+  - CKV2_AWS_23   # Route53 A record has no attached resource. It points at the NLB, which exists
+                  # only in private mode; Checkov evaluates both modes at once and sees a dangling
+                  # record in one of them.
+
+  # ── 4. Azure and GCP production hardening a demo does not carry ───────────────────────────────
+  #
+  # Private endpoints on every service, WAF, DDoS Standard, geo-redundant backup, customer-managed
+  # keys, extended retention. All correct for production. All money and complexity that would not
+  # change a single sentence of what this repository is arguing.
+
+  - CKV_AZURE_41    # Key Vault secrets should have an expiry date.
+  - CKV_AZURE_114   # Storage account should default to deny.
+  - CKV_AZURE_59    # Storage account should not permit public access.
+  - CKV_AZURE_44    # Storage account should use the latest TLS.
+  - CKV_AZURE_42    # Key Vault should have purge protection.
+  - CKV_AZURE_33    # Storage logging for queues.
+  - CKV_AZURE_244   # Key Vault should disable public network access.
+  - CKV_AZURE_24    # SQL Server auditing retention ≥ 90 days.
+  - CKV_AZURE_23    # SQL Server auditing.
+  - CKV_AZURE_229   # SQL Server should use a customer-managed key.
+  - CKV_AZURE_224   # SQL Server ledger.
+  - CKV_AZURE_190   # Storage should disable blob public access.
+  - CKV_AZURE_189   # Key Vault should disable public network access.
+  - CKV_AZURE_110   # Key Vault purge protection.
+  - CKV_AZURE_109   # Key Vault firewall.
+  - CKV2_AZURE_47   # Storage account should disable public access.
+  - CKV2_AZURE_45   # Key Vault should use a private endpoint.
+  - CKV2_AZURE_41   # SQL Server should have a short-term backup retention policy.
+  - CKV2_AZURE_40   # Storage account should not allow shared-key authorisation.
+  - CKV2_AZURE_38   # Storage account should have soft delete enabled.
+  - CKV2_AZURE_33   # Storage account should use a private endpoint.
+  - CKV2_AZURE_32   # SQL Server should use a private endpoint — it DOES, in private mode. Checkov
+                    # evaluates both modes at once and sees the public-mode branch.
+  - CKV2_AZURE_27   # SQL Server should use Entra-only authentication.
+  - CKV2_AZURE_21   # Storage account logging.
+  - CKV2_AZURE_2    # SQL Server should have threat detection.
+  - CKV2_AZURE_1    # Storage account should use a customer-managed key.
+  - CKV_GCP_81      # BigQuery should use a customer-managed key.
+  - CKV_GCP_78      # GCS bucket versioning.
+  - CKV_GCP_26      # VPC flow logs on the GCP subnet — same cost argument as CKV2_AWS_11.
+  - CKV_AWS_336     # ECS containers should have a read-only root filesystem. pgbouncer writes its
+                    # generated config and a self-signed cert to disk at start; HAProxy writes its
+                    # config. A read-only root would need a tmpfs mount per gateway, which is
+                    # correct and is on the list of things a production version would do.
+  - CKV_AWS_23      # Two remaining security-group rules without a description, in modules that are
+                    # gated off in the mode Checkov happens to evaluate. Sixteen others were fixed.

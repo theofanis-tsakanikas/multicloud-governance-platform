@@ -70,6 +70,33 @@ resource "azurerm_subnet_network_security_group_association" "endpoint_nsg_assoc
   network_security_group_id = azurerm_network_security_group.sql_nsg.id
 }
 
+# ── The subnet nothing lives in, and why it still gets a firewall ────────────────────────────────
+#
+# Checkov CKV2_AZURE_31 flagged `snet-data` as the one subnet in this VNet with no NSG attached, and
+# it was right — the first time that scan was ever allowed to run. (`GatewaySubnet` passes because
+# Azure forbids an NSG on it; `snet-endpoints` has the SQL one above.)
+#
+# Nothing is deployed into snet-data today. Its id is exported and nothing consumes it. Which is
+# exactly the argument for closing it rather than skipping the check: an empty subnet with no NSG is
+# not safe, it is *unclaimed* — and the day somebody puts a VM or a container in it, the absence is
+# already there and nobody is looking any more.
+#
+# It carries no custom rules on purpose. Azure's own default rules deny all inbound from the internet
+# (DenyAllInBound, priority 65500) and allow traffic within the VNet, which is precisely the posture
+# a data subnet should start from: nothing gets in until someone writes down why.
+resource "azurerm_network_security_group" "data_nsg" {
+  name                = "nsg-data-default-deny"
+  location            = var.location
+  resource_group_name = var.resource_group_name
+
+  # No security_rule blocks. The default DenyAllInBound is the rule.
+}
+
+resource "azurerm_subnet_network_security_group_association" "data_nsg_assoc" {
+  subnet_id                 = azurerm_subnet.data_subnet.id
+  network_security_group_id = azurerm_network_security_group.data_nsg.id
+}
+
 # Public IP for the VPN Gateway — private mode only.
 resource "azurerm_public_ip" "vpn_gw_pip" {
   count = var.is_private_connection ? 1 : 0

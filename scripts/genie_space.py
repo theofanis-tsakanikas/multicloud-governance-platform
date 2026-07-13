@@ -302,7 +302,9 @@ def _split_statements(text: str) -> list[str]:
 
     statements = []
     for chunk in out:
-        body = "\n".join(l for l in chunk.splitlines() if not l.lstrip().startswith("--")).strip()
+        body = "\n".join(
+            line for line in chunk.splitlines() if not line.lstrip().startswith("--")
+        ).strip()
         if body:
             statements.append(body)
     return statements

@@ -38,14 +38,16 @@ resource "aws_security_group" "databricks_sg" {
 
   # Allow all internal traffic (Inbound) between nodes in the same group
   ingress {
-    from_port = 0
-    to_port   = 0
-    protocol  = "-1" # Represents "All Protocols" (TCP, UDP, etc.)
-    self      = true
+    description = "All protocols from the group to itself. Admits nothing from outside it"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1" # Represents "All Protocols" (TCP, UDP, etc.)
+    self        = true
   }
 
   # Allow all outbound traffic to the internet/other services
   egress {
+    description = "All outbound: the NAT gateway is the only way out and there is no IGW"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"

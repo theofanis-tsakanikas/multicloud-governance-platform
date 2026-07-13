@@ -19,7 +19,6 @@ Run by `dbx-config-validate.yml` (the credential-free job) and attacked by `scri
 from __future__ import annotations
 
 import glob
-import sys
 
 import yaml
 

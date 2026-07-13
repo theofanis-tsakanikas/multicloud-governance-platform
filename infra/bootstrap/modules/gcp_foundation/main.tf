@@ -5,6 +5,12 @@ resource "google_storage_bucket" "unity_metastore" {
   force_destroy = true
   # Uniform bucket-level access is a standard requirement for Unity Catalog
   uniform_bucket_level_access = true
+
+  # Checkov CKV_GCP_114. Uniform access decides how permissions are expressed; it does not stop
+  # somebody binding `allUsers` and making the metastore root world-readable. This does — the API
+  # refuses the binding, whoever asks. On the bucket that backs every managed table in the GCP
+  # metastore, the ability to make it public is not a capability worth keeping.
+  public_access_prevention = "enforced"
 }
 
 # The Databricks "Identity" Service Account in GCP

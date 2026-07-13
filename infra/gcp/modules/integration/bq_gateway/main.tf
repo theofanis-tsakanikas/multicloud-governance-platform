@@ -30,6 +30,7 @@ resource "aws_security_group" "gateway" {
   # 8443, not 443: HAProxy runs unprivileged and cannot bind below 1024. The NLB listens on 443
   # and forwards here, so the client still speaks 443 and nothing runs as root.
   ingress {
+    description = "8443 from the transit VPC. Not 443: HAProxy runs unprivileged and cannot bind below 1024, so the NLB listens on 443 and forwards here"
     from_port   = 8443
     to_port     = 8443
     protocol    = "tcp"
@@ -37,6 +38,7 @@ resource "aws_security_group" "gateway" {
   }
 
   egress {
+    description = "Outbound to Google's private API VIP across the IPsec tunnel, and to ECR/CloudWatch"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"

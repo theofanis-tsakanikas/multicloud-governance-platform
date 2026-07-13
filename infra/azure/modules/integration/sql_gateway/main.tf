@@ -28,6 +28,7 @@ resource "aws_security_group" "gateway" {
   vpc_id      = var.vpc_id
 
   ingress {
+    description = "1433 from the transit VPC: the NLB's health checks and the PrivateLink traffic behind them"
     from_port   = 1433
     to_port     = 1433
     protocol    = "tcp"
@@ -35,6 +36,7 @@ resource "aws_security_group" "gateway" {
   }
 
   egress {
+    description = "Outbound to Azure SQL across the IPsec tunnel, and to ECR/CloudWatch for the image and its logs"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"

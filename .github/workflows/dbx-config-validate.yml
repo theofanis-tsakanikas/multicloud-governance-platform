@@ -9,6 +9,32 @@ name: DBX Config — Validate (offline)
 # fast, free feedback on the config that drives the whole platform.
 
 on:
+  # Both, deliberately.
+  #
+  # `pull_request` is where the gate BLOCKS — that is the merge it refuses. `push` to main is where
+  # the gate STAYS HONEST: without it the README badge reports the last pull request rather than the
+  # current state of main, and any commit that lands directly (which, in a repository developed on
+  # main, is most of them) is never checked at all.
+  #
+  # The gate was inert for 122 commits before this push trigger existed.
+  push:
+    branches: [main]
+    paths:
+      - "environments/dev/domains/**"
+      - "environments/dev/policy_exceptions.json"
+      - "environments/dev/cost_assumptions.json"
+      - "environments/dev/**/data_platform/dbx_governance/terragrunt.hcl"
+      - "environments/dev/**/data_platform/snowflake_governance/terragrunt.hcl"
+      - "infra/snowflake/**"
+      - "scripts/**"
+      - "schema/**"
+      - "policy/**"
+      - "docs/governance/**"
+      - "tests/**"
+      - "requirements-dev.txt"
+      - "pyproject.toml"
+      - ".github/workflows/dbx-config-validate.yml"
+
   pull_request:
     paths:
       - "environments/dev/domains/**"

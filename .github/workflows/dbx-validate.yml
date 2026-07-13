@@ -1,6 +1,22 @@
 name: DBX Platform — Validate
 
 on:
+  # Both, deliberately.
+  #
+  # `pull_request` is where the gate BLOCKS — that is the merge it refuses. `push` to main is where
+  # the gate STAYS HONEST: without it the README badge reports the last pull request rather than the
+  # current state of main, and any commit that lands directly (which, in a repository developed on
+  # main, is most of them) is never checked at all.
+  #
+  # The gate was inert for 122 commits before this push trigger existed.
+  push:
+    branches: [main]
+    paths:
+      - "infra/**"
+      - "environments/**"
+      - "terragrunt.hcl"
+      - ".github/workflows/dbx-validate.yml"
+
   pull_request:
     paths:
       - "infra/**"
@@ -8,10 +24,7 @@ on:
       - "terragrunt.hcl"
       - ".github/workflows/dbx-validate.yml"
 
-  # This workflow gates pull requests, so it only runs on one. That is correct — and it means the
-  # badge in the README shows whatever the last PR left behind, which for a repo developed on main
-  # can be nothing at all, or something months stale. workflow_dispatch is how you refresh it
-  # without opening a PR you do not need.
+  # workflow_dispatch refreshes the badge without opening a PR you do not need.
   workflow_dispatch:
 
 permissions:
@@ -77,11 +90,16 @@ jobs:
         run: terragrunt hclfmt --check --diff
 
       # These two are the gate. They run on every PR, they need nothing, and they fail the build.
+      #
+      # .checkov.yml is a SKIP-list, not an allow-list: only the IDs named in it are suppressed, and
+      # each one carries the reason it is. A new Checkov rule — or an existing one firing on new
+      # code — still fails this build. The default is that the gate applies.
       - name: Security scan — Checkov
         uses: bridgecrewio/checkov-action@v12
         with:
           directory: infra
           framework: terraform
+          config_file: .checkov.yml
           soft_fail: false
           output_format: github_failed_only
 
