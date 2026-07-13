@@ -19,14 +19,21 @@ on:
       - ".pre-commit-config.yaml"
       - ".github/workflows/dbx-validate.yml"
 
+  # NO `paths:` filter here — deliberately, and this one is a trap worth naming.
+  #
+  # `Static analysis` is a REQUIRED status check in the branch ruleset. A required check whose
+  # workflow is path-filtered can never satisfy a pull request that touches none of those paths: the
+  # workflow does not run, so the check never reports, so GitHub waits forever for a status that will
+  # never arrive. The pull request sits at "Expected — Waiting for status to be reported" and CANNOT
+  # BE MERGED — not blocked by a finding, blocked by silence.
+  #
+  # (This is not hypothetical. It stranded two pull requests in this repository: one whose net diff
+  # was empty after a revert, and one that only touched an Azure terragrunt file.)
+  #
+  # A required check must be able to report on EVERY pull request. So this runs on every pull
+  # request. It is credential-free and finishes in under a minute. `push` keeps its paths — nothing
+  # is required there.
   pull_request:
-    paths:
-      - "infra/**"
-      - "environments/**"
-      - "terragrunt.hcl"
-      - ".checkov.yml"
-      - ".pre-commit-config.yaml"
-      - ".github/workflows/dbx-validate.yml"
 
   # workflow_dispatch refreshes the badge without opening a PR you do not need.
   workflow_dispatch:
@@ -133,14 +140,26 @@ jobs:
       # All three, always: remote state is in S3, and the Azure and GCP seed credentials are read
       # from AWS Secrets Manager at parse time (CLAUDE.md gotcha #5). An AWS-only login is why the
       # azure and gcp legs used to die on `Please run 'az login'`.
+      # Both logins are `continue-on-error` on purpose: a missing token is a PRECONDITION we do not
+      # have, not a finding about the Terraform. The step after this one turns that into an explicit
+      # warning instead of a red X that says nothing about the code under review.
       - name: Configure AWS credentials (OIDC)
+        id: aws_auth
+        continue-on-error: true
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.DBX_DEPLOY_ROLE_ARN }}
           aws-region: eu-central-1
 
+      # Azure federated credentials match ONE subject exactly — there is no wildcard, unlike the AWS
+      # trust policy (`repo:owner/repo:*`) and the GCP workload-identity condition. So a credential
+      # registered for `ref:refs/heads/main` does NOT cover `pull_request`, and the token request
+      # fails with AADSTS700213 on every pull request until a `pull_request` entity is added in Entra.
+      # That is a registration that is missing, not a defect in this repository.
       - name: Configure Azure credentials
+        id: azure_auth
         if: matrix.cloud == 'azure'
+        continue-on-error: true
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -163,11 +182,25 @@ jobs:
         env:
           TERRAGRUNT_DOWNLOAD: /tmp/.terragrunt-cache
         run: |
+          # 1. No credentials is a PRECONDITION we lack, not a finding. Two ways it happens, both
+          #    legitimate: a pull request from a fork (OIDC secrets are withheld from forks, by
+          #    design), and an Azure federated credential that does not cover this event's subject.
+          #    Neither tells you anything about the Terraform, so neither earns a red X.
+          if [ "${{ steps.aws_auth.outcome }}" != "success" ]; then
+            echo "::warning::${{ matrix.cloud }}: no AWS token for this event (fork pull request, or the OIDC role does not trust this subject). terragrunt validate needs one — remote state lives in S3. Static analysis is the gate and it ran."
+            exit 0
+          fi
+          if [ "${{ matrix.cloud }}" = "azure" ] && [ "${{ steps.azure_auth.outcome }}" != "success" ]; then
+            echo "::warning::azure: no Entra token for this event. Azure federated credentials match one subject exactly (no wildcard, unlike AWS/GCP), so a credential for refs/heads/main does not cover pull_request — add a 'Pull request' federated credential in Entra to enable this leg. Static analysis is the gate and it ran."
+            exit 0
+          fi
+
+          # 2. Authenticated. Now the two outcomes that actually mean something.
           if terragrunt run-all validate --terragrunt-non-interactive 2>/tmp/tg.err; then
             echo "::notice::terragrunt validate passed for ${{ matrix.cloud }}"
             exit 0
           fi
-          # Tell the two apart, because they mean opposite things.
+          # The platform being absent is not the same as the config being wrong.
           if grep -qiE "GetSecretValue|ResourceNotFoundException|detected no outputs|az login|gcloud auth" /tmp/tg.err; then
             echo "::warning::${{ matrix.cloud }} is not deployed — validate cannot parse a config whose secrets the stack itself creates (ADR-0002). This is the absence of a platform, not a defect. Static analysis above is the gate."
             exit 0
