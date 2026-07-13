@@ -78,6 +78,7 @@
       "schema": "sales_rds_fed.crm",
       "grants": [
         { "principal": "crm_managers", "privileges": ["USE_SCHEMA", "SELECT"] },
+        { "principal": "analysts", "privileges": ["USE_SCHEMA", "SELECT"] },
         { "principal": "metastore_admins", "privileges": ["ALL_PRIVILEGES"] }
       ]
     }
