@@ -8,7 +8,7 @@
 [![Terraform](https://img.shields.io/badge/Terraform-1.9.x-7B42BC?logo=terraform&logoColor=white)](https://www.terraform.io/)
 [![Terragrunt](https://img.shields.io/badge/Terragrunt-%E2%89%A50.75-4CADE3)](https://terragrunt.gruntwork.io/)
 [![Databricks](https://img.shields.io/badge/Databricks-Unity%20Catalog-FF3621?logo=databricks&logoColor=white)](https://www.databricks.com/)
-[![Snowflake](https://img.shields.io/badge/Snowflake-zero--copy-29B5E8?logo=snowflake&logoColor=white)](#one-gold-file-two-engines-zero-copies)
+[![Snowflake](https://img.shields.io/badge/Snowflake-zero--copy-29B5E8?logo=snowflake&logoColor=white)](#-snowflake--the-same-contract-a-second-engine)
 
 **Data governance written once, in JSON, and enforced everywhere — across three clouds and two query
 engines — by a gate that fails the pull request before a single resource exists.**
@@ -24,8 +24,8 @@ engines — by a gate that fails the pull request before a single resource exist
 | **[What it looks like when it runs](#what-it-looks-like-when-it-runs)** | The catalogs, the lineage, the medallion, the dashboard — screenshots |
 | **[The PII claim](#the-pii-claim-and-why-it-holds)** | Identities never leave Postgres, and the check returns zero rows |
 | **[Private connectivity](#private-connectivity--three-clouds-no-public-path)** | Three transit hubs, zero public endpoints, proved at the packet level |
-| **[Zero-copy](#one-gold-file-two-engines-zero-copies)** | Snowflake reads the same S3 object Databricks wrote |
-| **[The AI](#the-ai-and-what-it-is-not-allowed-to-do)** | Genie answers from governance facts — and declines everything else |
+| **[❄️ Snowflake](#-snowflake--the-same-contract-a-second-engine)** | The same contract, a second engine — reading the same bytes, zero copies |
+| **[✨ Genie](#-genie--the-governance-copilot)** | It reasons, writes SQL, charts, cites — and declines what it may not know |
 | **[Run it](#run-it)** · **[Limits](#what-this-does-not-do)** · **[Decisions](#decisions)** | |
 
 ---
@@ -266,7 +266,14 @@ the log groups themselves expired a day later.)*
 
 ---
 
-## One gold file. Two engines. Zero copies.
+---
+
+# ❄️ Snowflake — the same contract, a second engine
+
+Everything above this line is **Databricks**. Everything below it is **Snowflake**, governed by the
+*same JSON*, reading the *same bytes* ([ADR-0011](docs/adr/0011-snowflake-enforcement-backend.md)).
+
+### One gold file. Two engines. Zero copies.
 
 ![Zero-copy: one gold layer, two engines](./images/prompts/prompt4.png)
 
@@ -275,38 +282,33 @@ Snowflake reads **that same object, in place**, through an external table over a
 
 ![Snowflake reading the same S3 object Databricks wrote](./images/snowflake/querry.png)
 
-`SELECT metadata$filename` returns the identical S3 key. No ingestion, no second copy, no divergence.
-The external location in Unity Catalog and the stage in Snowflake even share a name —
-`loc_sales_gold` — and that is not a coincidence: both are generated from the same contract
-([ADR-0011](docs/adr/0011-snowflake-enforcement-backend.md)).
+Same six markets. Same revenue. Same ROI. **A different engine, and not one byte copied.**
+`SELECT metadata$filename` returns the identical S3 key — the proof is in the notebook, not in this
+sentence.
 
-And because the same contract drives Snowflake's grants, the same governance mechanisms exist there —
-column masking, row access policies, resource monitors:
+The external location in Unity Catalog and the stage in Snowflake even **share a name** —
+`loc_sales_gold` — and that is not a coincidence. Both are generated from the same contract.
+
+### The governance travels with it
+
+Because the contract drives Snowflake's grants too, the mechanisms exist on that side as well —
+account roles, privilege grants, resource monitors, and **column masking**:
 
 ![Column-level masking in Snowflake](./images/snowflake/querry1.png)
 
-*(That demo schema creates its own synthetic PII on purpose. The **governed** catalogs have nothing to
-mask, because the PII never left Postgres — which is the point.)*
+`DEV_METASTORE_ADMINS` sees the email. `DEV_ANALYSTS` sees `***MASKED***`. Same query, same table,
+different role.
+
+*(That demo schema generates its own synthetic PII on purpose. The **governed** catalogs have nothing
+to mask, **because the PII never left Postgres** — which is exactly the point, and why the demo has
+to invent some.)*
 
 ---
 
-## The AI, and what it is *not* allowed to do
+# ✨ Genie — the governance copilot
 
-![Genie answers from the governance tables — and refuses everything else](./images/genie/question2.png)
-
-A Genie space sits over **four read-only tables** generated from the domain JSON: `objects`,
-`access_matrix`, `pii_map`, `policy_findings`. It answers questions about governance in English, with
-citations.
-
-Asked which datasets hold PII across three clouds, it names both, names their readers, and volunteers
-that **the third cloud has none** — rather than inventing one.
-
-Asked for the CEO's home address, it declines:
-
-> *"I have read-only access to metadata about data governance. I do not have access to the underlying
-> business data itself."*
-
-The ordering is the whole design:
+A Genie space over **four read-only tables** generated from the domain JSON. It is the *convenience*
+tier of the platform, and it is deliberately subordinate to the deterministic core:
 
 ```
 policy_analyzer.py   →  decides what is safe        (the trust — it fails the PR)
@@ -314,9 +316,64 @@ governance_report.py →  documents it                (accountability, on demand
 genie_space.py       →  lets a human ask in English (read-only convenience)
 ```
 
-**The analyzer decides. Genie only restates what the analyzer already proved.** It needs no cloud
-stack — its tables are facts read out of the JSON — so the copilot survives a full teardown of AWS,
-Azure and GCP. It describes the *governance*, not the infrastructure.
+**The analyzer decides. Genie only restates what the analyzer already proved.**
+
+### The cage: four tables, and nothing else
+
+![The Genie space's sources — four governance tables](./images/genie/sources.png)
+
+`objects` · `access_matrix` · `pii_map` · `policy_findings`. That is the entire world it can see.
+It holds no credential, reads no business data, and cannot grant anything.
+
+### It reasons, executes, and cites
+
+![Genie answering the PII question across three clouds](./images/genie/question1b.png)
+
+Asked *"which datasets hold PII, and who can read them across all three clouds?"* it plans two
+queries, runs them, and answers with a table and footnoted citations. Note the last line: **"Azure —
+No PII datasets are currently cataloged."** It did not invent one to fill the gap.
+
+### It writes the SQL, and it shows you
+
+![The SQL Genie generated, revealed by Show code](./images/genie/question3e.png)
+
+Every answer carries a **Show code** link. This is not a black box producing prose — it is SQL over
+governed tables, and you can read it, run it, and check it yourself.
+
+### It charts what it found
+
+<table>
+<tr>
+<td width="50%"><img src="./images/genie/question3b.png" alt="Policy findings by cloud"></td>
+<td width="50%"><img src="./images/genie/question3d.png" alt="Findings by rule type, and the accepted exceptions"></td>
+</tr>
+</table>
+
+Findings by cloud, findings by rule — and the **accepted exceptions read straight out of the ledger**,
+with their justifications and their DPIA references. The exception mechanism is not something the AI
+was told about; it is a row in a table it can query.
+
+### And it declines what it is not allowed to know
+
+![Genie refusing a question outside its scope](./images/genie/question2.png)
+
+> **Q:** *What is the CEO's home address?*
+>
+> **A:** *"I cannot provide that information. As the governance copilot, I have **read-only access to
+> metadata** about data governance — such as which datasets exist, their classifications, access
+> grants, and policy findings. I do not have access to the underlying business data itself."*
+
+**That refusal is the feature.** It is not that the AI answers; it is that it *knows what it is not
+allowed to know* — and the boundary is not a promise made in a prompt. Genie queries as the human
+asking, so Unity Catalog's own grants are the ceiling on anything it can return.
+
+It also needs **no cloud stack**: its tables are facts read out of the JSON, in a managed catalog on
+the metastore root. The copilot survived a full teardown of AWS, Azure and GCP. It describes the
+*governance*, not the infrastructure.
+
+```bash
+make genie-deploy      # idempotent; needs only the bootstrap workspace + a SQL warehouse
+```
 
 ---
 
