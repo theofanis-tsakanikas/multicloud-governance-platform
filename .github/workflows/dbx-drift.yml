@@ -1,12 +1,18 @@
 name: DBX Platform — Drift Detection
 
-# Weekly scheduled `terragrunt run-all plan -detailed-exitcode` per cloud.
-# Exit code 2 means the live infrastructure has drifted from the committed
-# state — a GitHub issue is opened (or updated) with the offending cloud.
+# `terragrunt run-all plan -detailed-exitcode` per cloud. Exit code 2 means the
+# live infrastructure has drifted from the committed state — a GitHub issue is
+# opened (or updated) with the offending cloud.
+#
+# Dispatch-only, deliberately. Drift detection is only meaningful against a
+# DEPLOYED platform, and this one is torn down by default (it exists to be stood
+# up and destroyed). A weekly schedule against a non-existent stack cannot read
+# the secrets the stack itself creates, so it would fail every Monday and paint a
+# standing red ✗ on a public repo for a platform that isn't there. Run it by hand
+# (or from the deploy job) while the platform is up. The `schedule:` trigger was
+# removed for exactly this reason.
 
 on:
-  schedule:
-    - cron: "0 6 * * 1" # Mondays 06:00 UTC
   workflow_dispatch: {}
 
 permissions:
