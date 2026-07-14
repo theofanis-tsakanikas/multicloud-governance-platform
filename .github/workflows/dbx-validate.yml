@@ -217,7 +217,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Setup Infracost
-        uses: infracost/actions/setup@v3
+        uses: infracost/actions/setup@v4
 
       - name: Generate cost estimate
         run: |
