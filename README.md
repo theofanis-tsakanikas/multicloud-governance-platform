@@ -8,7 +8,7 @@
 [![Terraform](https://img.shields.io/badge/Terraform-1.9.x-7B42BC?logo=terraform&logoColor=white)](https://www.terraform.io/)
 [![Terragrunt](https://img.shields.io/badge/Terragrunt-%E2%89%A50.75-4CADE3)](https://terragrunt.gruntwork.io/)
 [![Databricks](https://img.shields.io/badge/Databricks-Unity%20Catalog-FF3621?logo=databricks&logoColor=white)](https://www.databricks.com/)
-[![Snowflake](https://img.shields.io/badge/Snowflake-zero--copy-29B5E8?logo=snowflake&logoColor=white)](#-snowflake--the-same-contract-a-second-engine)
+[![Snowflake](https://img.shields.io/badge/Snowflake-zero--copy-29B5E8?logo=snowflake&logoColor=white)](#snowflake--the-same-contract-a-second-engine)
 
 **Data governance written once, in JSON, and enforced everywhere — across three clouds and two query
 engines — by a gate that fails the pull request before a single resource exists.**
@@ -21,12 +21,14 @@ engines — by a gate that fails the pull request before a single resource exist
 |---|---|
 | **[The gate](#governance-is-a-gate-not-a-report)** | A pull request that leaks PII fails the check before merge. It runs offline, in under a second |
 | **[The architecture](#the-architecture)** | One JSON contract → three clouds → two engines |
-| **[What it looks like when it runs](#what-it-looks-like-when-it-runs)** | The catalogs, the medallion, the lineage, three clouds side by side — screenshots |
+| **[What it looks like when it runs](#what-it-looks-like-when-it-runs)** | Catalogs, the medallion, automatic lineage, cross-cloud Delta Sharing, three clouds side by side |
 | **[The PII claim](#the-pii-claim-and-why-it-holds)** | Identities never leave Postgres, and the check returns zero rows |
 | **[Private connectivity](#private-connectivity--three-clouds-no-public-path)** | Three transit hubs, zero public endpoints, proved at the packet level |
-| **[❄️ Snowflake](#-snowflake--the-same-contract-a-second-engine)** | The same contract, a second engine — reading the same bytes, zero copies |
-| **[✨ Genie](#-genie--the-governance-copilot)** | It reasons, writes SQL, charts, cites — and declines what it may not know |
-| **[Run it](#run-it)** · **[Limits](#what-this-does-not-do)** · **[Decisions](#decisions)** | |
+| **[Snowflake](#snowflake--the-same-contract-a-second-engine)** | The same contract, a second engine — reading the same bytes, zero copies |
+| **[Genie](#genie--the-governance-copilot)** | It reasons, writes SQL, charts, cites — and declines what it may not know |
+| **[Kept honest by CI](#kept-honest-by-ci)** | OIDC, no long-lived keys, secrets at plan time, Checkov/tfsec, SBOM, 137 tests — every push |
+| **[Cost](#cost)** | Databricks, Snowflake, and three clouds priced into one figure and a carbon floor — offline |
+| **[Run it](#run-it)** · **[What it does not do](#what-this-does-not-do)** · **[Decisions](#decisions)** | The commands, the honest limits, and the 16 decisions behind them |
 
 ---
 
@@ -288,9 +290,9 @@ connection is coming in over the private path, not the internet:
 
 | | |
 |---|---|
-| 🟠 **AWS · RDS Postgres** | `publicly_accessible = false` — **the instance has no public address at all** |
-| 🔷 **Azure · Azure SQL** | `publicNetworkAccess = Disabled` — **the server refuses the internet** |
-| 🔵 **GCP · BigQuery** | reached through Google's private API VIP `199.36.153.8/30`, across an IPsec tunnel |
+| **AWS · RDS Postgres** | `publicly_accessible = false` — **the instance has no public address at all** |
+| **Azure · Azure SQL** | `publicNetworkAccess = Disabled` — **the server refuses the internet** |
+| **GCP · BigQuery** | reached through Google's private API VIP `199.36.153.8/30`, across an IPsec tunnel |
 
 ### Why it needed a transit hub
 
@@ -333,7 +335,7 @@ themselves expired a day later.)*
 
 ---
 
-# ❄️ Snowflake — the same contract, a second engine
+# Snowflake — the same contract, a second engine
 
 Everything above this line is **Databricks**. Everything below it is **Snowflake**, governed by the
 *same JSON*, reading the *same bytes* ([ADR-0011](docs/adr/0011-snowflake-enforcement-backend.md)). The
@@ -380,7 +382,7 @@ invent some.)*
 
 ---
 
-# ✨ Genie — the governance copilot
+# Genie — the governance copilot
 
 A Genie space over **four read-only tables** generated from the domain JSON. It is the *convenience*
 tier of the platform, and it is deliberately subordinate to the deterministic core:
@@ -441,6 +443,28 @@ make genie-deploy      # idempotent; needs only the bootstrap workspace + a SQL 
 
 ---
 
+## Kept honest by CI
+
+The demo is the easy part. What makes this a platform and not a script is everything around it — and
+all of it runs in CI, none of it holds a long-lived key.
+
+- **Two required checks gate every pull request.** The credential-free policy gate above, and a
+  static-analysis job — `terraform fmt`, `terragrunt hclfmt`, **Checkov**, **tfsec** — that fails the
+  build on an insecure module. Neither can be skipped by choosing not to deploy.
+- **OIDC everywhere, secrets nowhere.** Every cloud action authenticates with a short-lived OIDC token —
+  there is no long-lived cloud key in any secret. Every credential the stack needs is fetched at plan
+  time by shelling to the cloud's own CLI ([ADR-0002](docs/adr/0002-secrets-via-run-cmd-at-plan-time.md)),
+  and none is ever written to Terraform state.
+- **The supply chain is scanned, not assumed.** `gitleaks` reads the diff on every push and pull request
+  and the full history weekly; an SBOM (Syft) and a CVE scan (Grype) publish to the Security tab.
+- **137 tests gate every push** — infrastructure-free, so they run in seconds and need no cloud.
+- **The docs cannot drift.** `docs/governance/` is generated from the contract, and CI fails the build if
+  a committed byte is out of sync with the JSON.
+
+Eleven workflows in [`.github/workflows/`](.github/workflows/) — you can read them; none of this is a claim.
+
+---
+
 ## Run it
 
 ```bash
@@ -459,10 +483,6 @@ pytest -q               # 137 tests
 #   DBX Genie      → provision the governance copilot (needs no cloud stack)
 #   DBX Destroy    → reverse-order teardown; never touches bootstrap
 ```
-
-Everything that touches a cloud runs in CI, with OIDC. **No long-lived keys**, and no secret is stored
-in this repository — every credential is fetched at plan time by shelling out to the cloud's own CLI
-([ADR-0002](docs/adr/0002-secrets-via-run-cmd-at-plan-time.md)).
 
 ### Layout
 
