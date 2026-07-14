@@ -9,8 +9,16 @@ locals {
   # Locally this resolves the human running terragrunt. In CI the identity is a
   # service principal, which has no "signed-in user" — fall back to its own
   # object id. Both need to write secrets into the vault at apply time.
+  #
+  # The fallback asks the CLI who it is logged in as rather than trusting $ARM_CLIENT_ID:
+  # `azure/login` does not export that variable, so in the validate workflow it was EMPTY, and
+  # `az ad sp show --id ""` fails deep inside Microsoft Graph with a filter error that names a
+  # property nobody wrote — "Unsupported or invalid query filter clause specified for property
+  # 'servicePrincipalNames'" — which says nothing about the actual problem (an empty id).
+  # `az account show --query user.name` returns the appId of whatever identity is authenticated,
+  # service principal or not, so this needs no environment variable to be set by anyone.
   orch_object_id = run_cmd("--terragrunt-quiet", "bash", "-c",
-  "az ad signed-in-user show --query id -o tsv 2>/dev/null || az ad sp show --id \"$ARM_CLIENT_ID\" --query id -o tsv")
+  "az ad signed-in-user show --query id -o tsv 2>/dev/null || az ad sp show --id \"$(az account show --query user.name -o tsv)\" --query id -o tsv")
 }
 
 terraform {

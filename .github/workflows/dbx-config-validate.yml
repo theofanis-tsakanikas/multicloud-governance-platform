@@ -36,23 +36,13 @@ on:
       - "pyproject.toml"
       - ".github/workflows/dbx-config-validate.yml"
 
+  # NO `paths:` filter here — deliberately. `Validate domain config` is a REQUIRED status check, and a
+  # required check whose workflow is path-filtered can never report on a pull request that touches
+  # none of those paths: no run, no status, and GitHub waits forever for one that will never come.
+  # The pull request strands at "Expected — Waiting for status to be reported" and cannot be merged.
+  # A required check must be able to report on EVERY pull request. This one is credential-free and
+  # takes about a minute, so it simply always runs. `push` keeps its paths — nothing is required there.
   pull_request:
-    paths:
-      - "environments/dev/domains/**"
-      - "environments/dev/policy_exceptions.json"
-      - "environments/dev/cost_assumptions.json"
-      - "environments/dev/**/data_platform/dbx_governance/terragrunt.hcl"
-      - "environments/dev/**/data_platform/snowflake_governance/terragrunt.hcl"
-      - "infra/snowflake/**"
-      - "scripts/**"
-      - "pipelines/**"
-      - "schema/**"
-      - "policy/**"
-      - "docs/governance/**"
-      - "tests/**"
-      - "requirements-dev.txt"
-      - "pyproject.toml"
-      - ".github/workflows/dbx-config-validate.yml"
   workflow_dispatch:
 
 permissions:

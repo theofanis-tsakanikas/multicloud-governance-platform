@@ -55,20 +55,57 @@ GitHub Actions assumes an AWS IAM role via OIDC (no long-lived keys).
    → 🔑 paste the ARN into GitHub secret `DBX_DEPLOY_ROLE_ARN`.
 
 ## Step 3 · Azure federated identity → 🔑 `AZURE_CLIENT_ID` / `AZURE_TENANT_ID` / `AZURE_SUBSCRIPTION_ID`
+
+> **Azure matches the OIDC subject EXACTLY. There is no wildcard.** This is the one place Azure
+> differs from the other two, and it is the difference that bites: the AWS trust policy takes
+> `repo:owner/repo:*` and the GCP workload-identity condition takes `assertion.repository == …`, so
+> a single registration there covers every event. Azure does not. **You need one federated
+> credential per event subject** — and a workflow that runs on a subject you did not register fails
+> at login with `AADSTS700213: No matching federated identity record found`, which reads like a
+> broken workflow and is really a missing registration.
+>
+> This repository shipped with only the `main` credential below. Every pull request's Azure leg
+> failed for exactly that reason until the `pull_request` one was added.
+
 ```bash
 az login
 az account show --query id -o tsv                 # ← AZURE_SUBSCRIPTION_ID
 az account show --query tenantId -o tsv            # ← AZURE_TENANT_ID
 az ad app create --display-name dbx-github-oidc    # note the appId
 #   appId  ← AZURE_CLIENT_ID
-# add a federated credential for GitHub Actions on that app:
-az ad app federated-credential create --id <appId> --parameters '{
-  "name":"github","issuer":"https://token.actions.githubusercontent.com",
-  "subject":"repo:theofanis-tsakanikas/multicloud-governance-platform:ref:refs/heads/main",
-  "audiences":["api://AzureADTokenExchange"]}'
+
+REPO="repo:theofanis-tsakanikas/multicloud-governance-platform"
+ISSUER="https://token.actions.githubusercontent.com"
+
+# ALL THREE. One per subject the workflows actually present:
+#   1. push to main        → dbx-validate, and the badge
+az ad app federated-credential create --id <appId> --parameters "{
+  \"name\":\"gh-main\",\"issuer\":\"$ISSUER\",
+  \"subject\":\"$REPO:ref:refs/heads/main\",
+  \"audiences\":[\"api://AzureADTokenExchange\"]}"
+
+#   2. pull_request        → the validate leg on every PR (the one that was missing)
+az ad app federated-credential create --id <appId> --parameters "{
+  \"name\":\"gh-pull-request\",\"issuer\":\"$ISSUER\",
+  \"subject\":\"$REPO:pull_request\",
+  \"audiences\":[\"api://AzureADTokenExchange\"]}"
+
+#   3. environment:dev     → dbx-deploy / dbx-destroy (they target the `dev` GitHub Environment)
+az ad app federated-credential create --id <appId> --parameters "{
+  \"name\":\"gh-env-dev\",\"issuer\":\"$ISSUER\",
+  \"subject\":\"$REPO:environment:dev\",
+  \"audiences\":[\"api://AzureADTokenExchange\"]}"
+
+# check what is registered — if a workflow dies with AADSTS700213, its subject is not in this list:
+az ad app federated-credential list --id <appId> --query "[].{name:name,subject:subject}" -o table
+
 # give the app Contributor on your subscription:
 az role assignment create --assignee <appId> --role Contributor --scope /subscriptions/<SUBSCRIPTION_ID>
 ```
+
+*(A pull request **from a fork** gets no token at all, from any cloud — GitHub withholds OIDC and
+secrets from forks by design. `dbx-validate.yml` treats that as a precondition it lacks and says so,
+rather than reporting a red X about Terraform it never got to read.)*
 
 ## Step 4 · The three SEED credentials (in AWS Secrets Manager)
 These are the initial admin identities bootstrap uses before the platform's own
