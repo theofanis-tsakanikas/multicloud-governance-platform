@@ -55,8 +55,11 @@ jobs:
       PRIVATE_AWS: ${{ inputs.aws == 'private' }}
       # Snowflake governance (second enforcement backend) lives under the AWS tree,
       # so the AWS deploy provisions it too. org/account come from config.hcl in the
-      # generated provider; user/password/role are injected here (secrets-at-runtime).
+      # generated provider; user/private-key/role are injected here (secrets-at-runtime).
+      # The provider uses key-pair (JWT) auth — password is unused by Terraform, kept only
+      # for the pipeline's Python connector; the private key is the one that authenticates.
       SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+      SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
       SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
       SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
       # The account locator is NOT in the repo. Together org + account resolve to a working

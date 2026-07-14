@@ -86,6 +86,7 @@ jobs:
       # provider fails before it can drop the database, the roles or the resource
       # monitor — leaving them orphaned, and the monitor still counting credits.
       SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+      SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
       SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
       SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
       # The account locator is NOT in the repo. Together org + account resolve to a working
