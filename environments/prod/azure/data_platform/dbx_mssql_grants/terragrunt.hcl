@@ -41,10 +41,14 @@ dependency "bootstrap_config" {
 
 # Ordering-only: these layers expose no outputs, so they cannot be a
 # `dependency` block (Terragrunt requires outputs there). They must still
-# apply first — the federated catalog and the remote schemas must exist
-# before Databricks can resolve them when applying these grants.
+# apply first — the federated catalog and the remote schemas must exist,
+# and (in private mode) the `integration` layer must have built the
+# gateway + PrivateLink + VPN path, before the warm-up query here can reach
+# Azure SQL to resolve those schemas. Without the `integration` edge this
+# layer was a DAG leaf and `run-all` could warm the catalog before the path
+# existed (AWS/GCP wire the same edge via their connector layers).
 dependencies {
-  paths = ["../dbx_governance", "../../storage/mssql_schemas"]
+  paths = ["../dbx_governance", "../../storage/mssql_schemas", "../../integration"]
 }
 
 terraform {
