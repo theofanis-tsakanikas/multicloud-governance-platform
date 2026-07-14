@@ -75,6 +75,10 @@ resource "aws_security_group_rule" "public_orch_ingress" {
 }
 
 # General public access rule (Used for serverless access in public mode)
+#
+# The public-mode-only exposure carries an INLINE tfsec ignore on the offending line below — scoped to
+# this one rule, not excluded repo-wide in .tfsec.yml — so the scanner stays live for a 0.0.0.0/0
+# ingress on any OTHER port or security group.
 resource "aws_security_group_rule" "public_access_ingress" {
   for_each          = local.public_mode
   type              = "ingress"
@@ -82,7 +86,7 @@ resource "aws_security_group_rule" "public_access_ingress" {
   from_port         = 5432
   to_port           = 5432
   protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
+  cidr_blocks       = ["0.0.0.0/0"] #tfsec:ignore:aws-ec2-no-public-ingress-sgr documented public-mode RDS exposure; private mode removes this rule
   security_group_id = aws_security_group.rds_sg.id
 }
 

@@ -17,7 +17,7 @@ Full architecture detail and dependency graphs are in [ARCHITECTURE.md](ARCHITEC
 │   │   ├── config.hcl          # Single source of truth for every config value
 │   │   ├── policy_exceptions.json  # Documented, time-bound deviations for the access-policy analyzer
 │   │   └── domains/{aws,azure,gcp}/  # Domain JSON (infra + grants per domain; schemas carry classification/PII)
-│   └── prod/                   # prod environment — file-for-file mirror of dev (own config.hcl)
+│   └── prod/                   # prod environment — mirrors dev (own config.hcl; omits the Snowflake layer + its keys)
 ├── scripts/                    # Offline governance copilot (no cloud, no creds, CI-gated):
 │   ├── validate_domains.py     #   domain-config schema/consistency/wiring validator (+ optional JSON Schema)
 │   ├── governance_model.py     #   shared parser: domain JSON → objects + grants + classification
@@ -173,7 +173,7 @@ All eleven workflows live in `.github/workflows/`. The `bootstrap`, `deploy`, an
 
 **Validate** and **Config validate** are the two PR-gating workflows (`dbx-config-validate` is credential-free and also runs the access-policy gate). **Validate** runs in parallel across three jobs:
 - `validate (aws/azure/gcp)` matrix — `terraform fmt`, `terragrunt hclfmt`, `terragrunt validate`, Checkov, tfsec
-- `infracost` — cost estimate of `infra/aws/modules`, posts result as a PR comment
+- `infracost` — optional AWS-only cost cross-check. It needs `INFRACOST_API_KEY` (free, self-hosted); without the key the job says so and stops rather than soft-failing to a green "priced nothing". The real, key-free cost surface is `scripts/cost_estimate.py` (in Config validate), which prices the whole platform + a carbon floor
 
 **Deploy** exposes three inputs: `cloud` (aws/azure/gcp/combinations), `connectivity` (public/private), and optional `start_from_layer` (e.g. `security/iam`) for partial stack deploys.
 
@@ -238,9 +238,9 @@ If `make apply-azure` completes quickly with no `dbx_workspace` resources applie
 
 Consequence: you need active AWS credentials (or OIDC role) even when running a Terragrunt apply that only touches Azure or GCP resources.
 
-### 6. Infracost PR comments cover AWS infrastructure only
+### 6. Infracost is optional (needs an API key) and AWS-only
 
-The `infracost` job in `dbx-validate.yml` runs against `infra/aws/modules`. The PR comment covers AWS resource types that Infracost prices (RDS, ECS, EC2, KMS, S3, VPC endpoints). It does **not** estimate:
+The `infracost` job in `dbx-validate.yml` runs against `infra/aws/modules` **only if `INFRACOST_API_KEY` is set** (a free, self-hosted key). Without it the job prints a `::notice::` and exits 0 — it does not post a comment, and it does not pretend it priced anything. When enabled, the PR comment covers AWS resource types that Infracost prices (RDS, ECS, EC2, KMS, S3, VPC endpoints). It does **not** estimate:
 - Databricks costs (warehouses, compute) — Infracost has no Databricks provider support
 - Azure and GCP resources — limited Infracost coverage for those providers
 - Any resources created via `environments/dev/` Terragrunt wiring (no resource definitions there)

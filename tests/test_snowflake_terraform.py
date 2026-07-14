@@ -34,10 +34,31 @@ def test_terraform_fmt_check(target: Path):
     assert result.returncode == 0, f"terraform fmt drift under {target}:\n{result.stdout}{result.stderr}"
 
 
+# Signatures of a genuine offline provider-download failure — the ONLY reason this test may skip.
+# Anything else (a missing required argument, an unsupported argument, an HCL error) is a real
+# config defect and must FAIL, not be laundered into a green skip. That laundering once hid a
+# module-wiring bug: the harness omitted two required variables, so init failed on a config error
+# and the test skipped — pretending the Snowflake module was validated when it never compiled.
+_NETWORK_SKIP_SIGNS = (
+    "Failed to install provider",
+    "could not download",
+    "no available releases",
+    "Failed to query available provider packages",
+    "Could not retrieve the list of available versions",
+    "connection refused",
+    "no such host",
+    "timeout",
+    "dial tcp",
+    "TLS handshake",
+)
+
+
 @pytest.mark.skipif(shutil.which("terraform") is None, reason="terraform not installed")
 def test_snowflake_terraform_validates():
     init = _run(["terraform", "init", "-backend=false", "-no-color", "-input=false"], _HARNESS)
     if init.returncode != 0:
-        pytest.skip(f"terraform init (provider download) unavailable offline:\n{init.stderr[-500:]}")
+        if any(sign in init.stderr for sign in _NETWORK_SKIP_SIGNS):
+            pytest.skip(f"terraform init: provider download unavailable offline:\n{init.stderr[-500:]}")
+        raise AssertionError(f"terraform init failed with a CONFIG error (not a network issue):\n{init.stderr[-800:]}")
     result = _run(["terraform", "validate", "-no-color"], _HARNESS)
     assert result.returncode == 0, f"terraform validate failed:\n{result.stdout}{result.stderr}"

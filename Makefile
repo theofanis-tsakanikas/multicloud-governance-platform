@@ -15,6 +15,9 @@ GREEN  := \033[0;32m
 YELLOW := \033[0;33m
 RESET  := \033[0m
 
+# conftest: on PATH (CI installs it there) or the gitignored ./.bin vendored copy. Empty if neither.
+CONFTEST := $(shell command -v conftest 2>/dev/null || (test -x ./.bin/conftest && echo ./.bin/conftest))
+
 help:
 	@echo ""
 	@echo "  $(GREEN)Databricks Multicloud Data Platform v2$(RESET)"
@@ -172,10 +175,14 @@ catalog-drift:
 	python3 scripts/catalog_drift.py
 
 opa:
+	@if [ -z "$(CONFTEST)" ]; then \
+		echo "$(YELLOW)conftest not found (not on PATH, no ./.bin/conftest). Install it — or the offline mirror runs via: pytest tests/test_opa_consistency.py$(RESET)"; \
+		exit 0; \
+	fi
 	@echo "$(GREEN)▶ OPA/Conftest cross-check — clean config must pass$(RESET)"
-	conftest test docs/governance/governance_context.json --policy policy/opa
+	$(CONFTEST) test docs/governance/governance_context.json --policy policy/opa
 	@echo "$(GREEN)▶ OPA/Conftest cross-check — unsafe fixture must be denied$(RESET)"
-	@! conftest test policy/opa/examples/violation_input.json --policy policy/opa >/dev/null 2>&1 \
+	@! $(CONFTEST) test policy/opa/examples/violation_input.json --policy policy/opa >/dev/null 2>&1 \
 		&& echo "$(GREEN)✔ rego denied the unsafe fixture as expected$(RESET)" \
 		|| (echo "rego did NOT deny the unsafe fixture" && exit 1)
 

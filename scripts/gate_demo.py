@@ -30,9 +30,7 @@ GREEN, RED, DIM, BOLD, CYAN, OFF = "\033[32m", "\033[31m", "\033[2m", "\033[1m",
 PAUSE = float(os.environ.get("GATE_DEMO_PAUSE", "2.4"))
 
 # Do not copy these into the throwaway — big, irrelevant, or (for .bin) the conftest binary itself.
-_IGNORE = shutil.ignore_patterns(
-    ".git", ".terraform*", "*.terragrunt-cache*", "promo", "images", "__pycache__", ".venv", "pipelines/data", ".bin"
-)
+_IGNORE = shutil.ignore_patterns(".git", ".terraform*", "*.terragrunt-cache*", "promo", "images", "__pycache__", ".venv", "data", ".bin")
 
 
 def pause(mult: float = 1.0) -> None:

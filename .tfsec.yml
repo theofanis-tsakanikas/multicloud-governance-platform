@@ -20,10 +20,11 @@ exclude:
                                               #   VPCs have no internet gateway, so 0.0.0.0/0 egress
                                               #   reaches a NAT or nothing.
 
-  # ── Deliberate public-mode exposure (documented in SECURITY.md) ───────────────────────────────
-  - aws-ec2-no-public-ingress-sgr             # The public-mode RDS opens 5432 (public connectivity
-                                              #   is the demo default; private mode removes it). Real
-                                              #   deployments run private. See SECURITY.md.
+  # NOTE: aws-ec2-no-public-ingress-sgr is deliberately NOT excluded here. A repo-wide exclude would
+  # blind tfsec to a 0.0.0.0/0 ingress on ANY port/SG, and Checkov's public-ingress rules are
+  # port-specific (22/3389/80) so they would not compensate on 5432/1433/3306. The one legitimate
+  # public-mode RDS exposure carries an inline `#tfsec:ignore:` on that exact rule instead
+  # (infra/aws/modules/network/_components/rds_network/main.tf).
 
   # ── Encryption present, but AWS/GCP-managed keys rather than customer-managed (cost) ──────────
   - aws-s3-encryption-customer-key            # = CKV_AWS_145. Encrypted with AES256, not a CMK.

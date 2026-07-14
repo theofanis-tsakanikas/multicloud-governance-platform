@@ -1,8 +1,15 @@
 name: gitleaks
 
 on:
+  # push / pull_request scan the DIFF — that is the gate that blocks a secret entering a PR.
   push:
   pull_request:
+  # schedule / manual scan the WHOLE history (gitleaks-action does a full `detect` on non-diff
+  # events), which is what the job name promises. Weekly, so a secret that slipped in before this
+  # workflow existed still surfaces.
+  schedule:
+    - cron: "0 6 * * 1" # Mondays 06:00 UTC
+  workflow_dispatch:
 
 permissions:
   contents: read
