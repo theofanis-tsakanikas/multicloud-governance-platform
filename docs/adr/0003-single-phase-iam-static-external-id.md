@@ -14,12 +14,13 @@ layer stateful and error-prone.
 
 ## Decision
 
-Use the AWS Account ID — a constant known at design time — as the `external_id`.
-Set both trust principals in a single `terraform apply`. Delete the
-`is_initial_deployment` flag and the two-phase path entirely.
+Use the Databricks Account ID — a constant known at design time — as the `external_id`.
+It is the value Databricks presents when it assumes the role, and it exists before the
+first apply, so there is no ordering problem. Set both trust principals in a single
+`terraform apply`. Delete the `is_initial_deployment` flag and the two-phase path entirely.
 
 ```hcl
-external_id = var.aws_account_id  # known constant — no chicken-and-egg problem
+external_id = var.dbx_account_id  # Databricks account id: a known constant, no chicken-and-egg problem
 ```
 
 ## Consequences
@@ -28,7 +29,7 @@ external_id = var.aws_account_id  # known constant — no chicken-and-egg proble
   apply" mode to track or get wrong.
 - One fewer flag in `config.hcl` and one fewer branch in the IAM module.
 - The `external_id` is not secret (it never was — it's an anti-confused-deputy
-  nonce, and the account ID serves that role fine within our trust boundary).
+  nonce, and the Databricks account ID serves that role fine within our trust boundary).
 
 ## Alternatives considered
 
