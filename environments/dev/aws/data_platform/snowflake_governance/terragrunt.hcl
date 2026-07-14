@@ -29,10 +29,17 @@ generate "providers" {
   if_exists = "overwrite_terragrunt"
   contents  = <<-EOF
     provider "snowflake" {
-      # Authentication comes from a ~/.snowflake/config.toml profile or SNOWFLAKE_* env vars
-      # at plan/apply time — no secrets in code (the platform's secrets-at-runtime discipline).
+      # Authentication comes from SNOWFLAKE_* env vars at plan/apply time — no secrets in code
+      # (the platform's secrets-at-runtime discipline).
       organization_name = "${local.cfg.snowflake_organization}"
       account_name      = "${local.cfg.snowflake_account}"
+
+      # Key-pair (JWT) auth — the service-account-correct method, and the only one that survives
+      # the account enforcing MFA: password auth then demands an interactive TOTP, which a
+      # non-interactive apply cannot supply (394508: "MFA with TOTP is required"). The private
+      # half arrives as SNOWFLAKE_PRIVATE_KEY at plan time; the public half is registered on the
+      # Terraform user in Snowflake (ALTER USER ... SET RSA_PUBLIC_KEY). No password, no factor.
+      authenticator = "SNOWFLAKE_JWT"
 
       # snowflake_git_repository is still a preview resource; without this the plan fails with
       # an unknown-resource error rather than anything that hints at the cause (ADR-0015).
