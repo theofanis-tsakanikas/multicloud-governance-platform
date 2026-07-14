@@ -72,11 +72,14 @@ The JWT the driver signs with it is short-lived and per-request.
   `RSA_PUBLIC_KEY` on the very user it authenticates as, so the public key is applied by hand (or
   by an admin) the first time, like the Git-backed Workspace in [ADR-0015](0015-snowflake-reads-notebooks-from-git.md).
   It is a one-line `ALTER USER`, and the public key is not sensitive.
-- **The pipeline's Python connector still uses password.** `pipelines/snowflake/*` authenticate the
-  `snowflake-connector-python` client with `SNOWFLAKE_ACCOUNT` + password, not the provider's
-  key-pair. Under an MFA-enforcing account those steps need the same treatment (the connector
-  supports `private_key`); this ADR covers the Terraform provider, which is what stands the
-  governance objects up. The connector migration is tracked as follow-up, not silently assumed done.
+- **The Python connectors needed the same treatment — done where the teardown depends on it.**
+  `pipelines/snowflake/drop_demo.py` runs *inside the destroy* (it peels the demo external table off
+  Terraform's stage, gotcha #11), so under an MFA account it would fail exactly where a destroy
+  cannot afford to. It now prefers key-pair (`SNOWFLAKE_PRIVATE_KEY` → DER via `cryptography`) and
+  falls back to password for a non-MFA fork. The two remaining scripts — `deploy_notebook.py` (slated
+  for deletion once the repo is public, [ADR-0015](0015-snowflake-reads-notebooks-from-git.md)) and
+  the one-shot `git_workspace.py` — still use password; neither runs in the deploy or destroy path,
+  so they are honest follow-up, not a silent gap.
 - **`SNOWFLAKE_PASSWORD` is retained, unused by Terraform.** It is left in the deploy/destroy env
   for the Python connector above; the provider ignores it once `authenticator = "SNOWFLAKE_JWT"`.
 
