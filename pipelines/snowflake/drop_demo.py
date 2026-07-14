@@ -35,7 +35,8 @@ schema ever had one.
 
 Idempotent, and a no-op if the demo was never deployed, so re-running a failed destroy is safe.
 
-    SNOWFLAKE_ACCOUNT / SNOWFLAKE_USER / SNOWFLAKE_PASSWORD / SNOWFLAKE_ROLE
+    SNOWFLAKE_ACCOUNT / SNOWFLAKE_USER / SNOWFLAKE_ROLE, plus either SNOWFLAKE_PRIVATE_KEY
+    (key-pair, preferred — survives account MFA) or SNOWFLAKE_PASSWORD (fallback).
 """
 
 import os
@@ -80,15 +81,39 @@ def drop_externals(cur) -> None:
         print(f"[demo]   dropped external table {fqn}")
 
 
+def _connect():
+    """Prefer key-pair (JWT) auth; fall back to password.
+
+    The Terraform provider moved to key-pair because an MFA-enforcing account rejects password
+    auth in a non-interactive run (ADR-0016: 394508 "MFA with TOTP is required"). This connector
+    runs against the same account in the same teardown, so it needs the same key — SNOWFLAKE_
+    PASSWORD alone would fail exactly where the destroy cannot afford to. Password is kept as a
+    fallback for a forked account that does not enforce MFA.
+    """
+    common = dict(
+        account=os.environ["SNOWFLAKE_ACCOUNT"],
+        user=os.environ["SNOWFLAKE_USER"],
+        role=os.environ.get("SNOWFLAKE_ROLE", "ACCOUNTADMIN"),
+        login_timeout=30,
+    )
+    pem = os.environ.get("SNOWFLAKE_PRIVATE_KEY")
+    if pem:
+        # snowflake-connector-python wants the key as DER bytes, not PEM text.
+        from cryptography.hazmat.primitives import serialization
+
+        key = serialization.load_pem_private_key(pem.encode(), password=None)
+        der = key.private_bytes(
+            encoding=serialization.Encoding.DER,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption(),
+        )
+        return snowflake.connector.connect(private_key=der, **common)
+    return snowflake.connector.connect(password=os.environ["SNOWFLAKE_PASSWORD"], **common)
+
+
 def main() -> int:
     try:
-        con = snowflake.connector.connect(
-            account=os.environ["SNOWFLAKE_ACCOUNT"],
-            user=os.environ["SNOWFLAKE_USER"],
-            password=os.environ["SNOWFLAKE_PASSWORD"],
-            role=os.environ.get("SNOWFLAKE_ROLE", "ACCOUNTADMIN"),
-            login_timeout=30,
-        )
+        con = _connect()
     except KeyError as missing:
         sys.exit(f"drop_demo: missing required env var {missing}")
 
