@@ -91,8 +91,8 @@ jobs:
       # The account locator is NOT in the repo. Together org + account resolve to a working
       # snowflakecomputing.com login page, and a public repository should not hand anyone the one
       # thing they cannot guess: where to knock. config.hcl reads both from the environment.
-      SNOWFLAKE_ORGANIZATION: ${{ vars.SNOWFLAKE_ORGANIZATION }}
-      SNOWFLAKE_ACCOUNT_NAME: ${{ vars.SNOWFLAKE_ACCOUNT_NAME }}
+      SNOWFLAKE_ORGANIZATION: ${{ secrets.SNOWFLAKE_ORGANIZATION }}
+      SNOWFLAKE_ACCOUNT_NAME: ${{ secrets.SNOWFLAKE_ACCOUNT_NAME }}
 
     steps:
       - uses: actions/checkout@v4
@@ -241,7 +241,7 @@ jobs:
       - name: Drop the Snowflake demo scaffolding (AWS only — it sits on Terraform's stages)
         if: inputs.cloud == 'aws' && inputs.mode == 'destroy'
         env:
-          SNOWFLAKE_ACCOUNT: ${{ vars.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
         run: |
           set -euo pipefail
           python3 -m pip install --quiet snowflake-connector-python
