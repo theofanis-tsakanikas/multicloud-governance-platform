@@ -8,8 +8,8 @@ terraform {
       version = "~> 4.0"
     }
     aws    = { source = "hashicorp/aws" }
-    random = { source = "hashicorp/random" }
-    time   = { source = "hashicorp/time" }
+    random = { source = "hashicorp/random", version = "~> 3.0" }
+    time   = { source = "hashicorp/time", version = "~> 0.13" }
     databricks = {
       source                = "databricks/databricks"
       configuration_aliases = [databricks.account]
