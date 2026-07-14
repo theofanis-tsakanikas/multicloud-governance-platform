@@ -11,14 +11,19 @@ industry-standard policy language behind [Open Policy Agent](https://www.openpol
 The Python analyzer is the source of truth and the CI gate. This Rego policy
 double-checks it from the *outside*:
 
-- **Defence in depth** — two independent engines must agree the access model is
-  clean. A bug in one is unlikely to be mirrored in the other.
+- **Defence in depth on the RULE LOGIC** — two independently-written engines must
+  agree. A bug in the *analyzer's rule logic* is unlikely to be mirrored in the
+  Rego rules. But be precise about the limit: **both read the analyzer's own
+  output** (`docs/governance/governance_context.json`), so a bug in the shared
+  fact-extraction upstream (`governance_model.py`) would feed both identically and
+  neither would catch it. This is a rule-logic cross-check, not a second,
+  independent data pipeline — the same caveat stated in README.md and SECURITY.md.
 - **Portability proof** — the rules are not trapped in bespoke Python; they are
   expressible in the same OPA most platform teams already run, so they could be
   enforced at admission-control or gateway time too.
 
-Both consume the analyzer's own output, `docs/governance/governance_context.json`,
-so there is no separate input to maintain.
+Both consume the analyzer's own output, so there is no separate input to maintain
+(which is exactly why the caveat above matters).
 
 ## Run it
 

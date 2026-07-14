@@ -97,7 +97,7 @@ across three clouds, and into Snowflake grants alongside them.
 | Grants | **70**, across **8** groups |
 | PII schemas | **2** — `sales_rds_fed.crm`, `marketing_bq_fed.web`. *(Azure holds none.)* |
 | Terraform modules | **87** · Workflows **11** · Decision records **15** |
-| Tests | **135**, infra-free, gating every push |
+| Tests | **137**, infra-free, gating every push |
 
 ---
 
@@ -387,7 +387,7 @@ make policy-scan        # the gate: exit 1 on any unacknowledged HIGH
 make opa                # the same rules, cross-checked in Rego
 make governance-report  # regenerate docs/governance/ (CI asserts it stays in sync)
 make demo               # all of the above, end to end
-pytest -q               # 135 tests
+pytest -q               # 137 tests
 
 # Cloud — through GitHub Actions, not the CLI.
 #   DBX Bootstrap  → metastore, serverless workspace, SPN, KMS, NCC  (once per account)
@@ -422,10 +422,11 @@ docs/governance/                           ← GENERATED. CI fails if it drifts 
 
 A portfolio that only lists what works is a sales page. This is the rest of it.
 
-- **`prod/` has never been applied.** It is a file-for-file mirror of `dev/`
-  ([ADR-0010](docs/adr/0010-environments-as-file-mirrors.md)) and its `config.hcl` is a placeholder —
-  `aws_account_id = "111111111111"`. The architecture supports promotion by config diff. Nobody has
-  done it.
+- **`prod/` has never been applied.** It mirrors `dev/`
+  ([ADR-0010](docs/adr/0010-environments-as-file-mirrors.md)) — file-for-file, save for its own
+  `config.hcl` (a placeholder, `aws_account_id = "111111111111"`), a couple of documented safety
+  deltas (no `force_destroy`, no `drop_cascade`), and the Snowflake layer, which is dev-only. The
+  architecture supports promotion by config diff. Nobody has done it.
 - **The OPA cross-check re-implements all 4 gating rules** in Rego — a second engine (run in CI)
   that reaches the same verdict as the analyzer. It re-derives the *logic* independently, but reads
   the analyzer's own output (`governance_context.json`) as its *facts*, so it is a rule-logic

@@ -226,9 +226,13 @@ Prefer the web consoles? Every step above has a point-and-click equivalent.
   **Microsoft Entra ID** → *Overview* → copy **Tenant ID**.
 - **App:** Entra ID → **App registrations** → *New registration* → name
   `dbx-github-oidc` → *Register* → copy **Application (client) ID**.
-- **Federated credential:** the app → *Certificates & secrets* → **Federated
-  credentials** → *Add credential* → scenario **GitHub Actions deploying…** →
-  fill org/repo, branch `main` → *Add*.
+- **Federated credentials — ALL THREE** (Azure matches the subject exactly, no wildcard, so one
+  per event the workflows present; see the CLI section above for why a missing one throws
+  `AADSTS700213`): the app → *Certificates & secrets* → **Federated credentials** → *Add credential*,
+  three times:
+  1. scenario **GitHub Actions deploying Azure resources** → org/repo → entity **Branch** `main`
+  2. same → entity **Pull request**  *(the validate leg on every PR)*
+  3. same → entity **Environment** `dev`  *(dbx-deploy / dbx-destroy / dbx-pipeline)*
 - **Role:** Portal → **Subscriptions** → your sub → **Access control (IAM)** → *Add
   role assignment* → **Contributor** → assign to the `dbx-github-oidc` app → *Save*.
 
