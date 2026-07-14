@@ -38,7 +38,7 @@ resource "aws_security_group" "gateway" {
   }
 
   egress {
-    description = "Outbound to Google's private API VIP across the IPsec tunnel, and to ECR/CloudWatch"
+    description = "Outbound to Googles private API VIP across the IPsec tunnel, and to ECR/CloudWatch"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"

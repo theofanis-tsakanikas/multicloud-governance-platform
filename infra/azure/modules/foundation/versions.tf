@@ -7,7 +7,7 @@ terraform {
       # would hand a fresh public clone whatever azurerm ships that day. ~> 4.0 = any 4.x, never 5.0.
       version = "~> 4.0"
     }
-    azuread = { source = "hashicorp/azuread" }
-    random  = { source = "hashicorp/random" }
+    azuread = { source = "hashicorp/azuread", version = "~> 3.0" }
+    random  = { source = "hashicorp/random", version = "~> 3.0" }
   }
 }

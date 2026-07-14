@@ -39,7 +39,7 @@ resource "aws_security_group" "databricks_sg" {
 
   # Allow all internal traffic (Inbound from self)
   ingress {
-    description = "All protocols from the group to itself. Admits nothing from outside it — which is why the gateway needs its own SG, and why NLB health checks (which originate from the load balancer's ENIs) never reach a target in this one"
+    description = "All protocols from the group to itself. Admits nothing from outside it - which is why the gateway needs its own SG, and why NLB health checks (which originate from the load balancers ENIs) never reach a target in this one"
     from_port   = 0
     to_port     = 0
     protocol    = "-1" # Represents "All protocols" (TCP, UDP, etc.)

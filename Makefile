@@ -20,7 +20,7 @@ CONFTEST := $(shell command -v conftest 2>/dev/null || (test -x ./.bin/conftest 
 
 help:
 	@echo ""
-	@echo "  $(GREEN)Databricks Multicloud Data Platform v2$(RESET)"
+	@echo "  $(GREEN)Multi-Cloud Governance Platform$(RESET)"
 	@echo "  ─────────────────────────────────────────"
 	@echo "  $(YELLOW)Validation$(RESET)"
 	@echo "    make validate        — terraform fmt + terragrunt hclfmt + checkov + tfsec"
@@ -38,6 +38,9 @@ help:
 	@echo "    make cost-estimate    — regenerate the cost + carbon floor (docs/governance/COST.md)"
 	@echo "    make catalog-drift    — reconcile declared grants vs the live UC (deferred)"
 	@echo "    make opa              — cross-check the gate with the Rego policy (needs conftest)"
+	@echo "    make gate-proof       — attack the gate: six violations, all must be refused"
+	@echo "    make gate-attack      — narrated, paused walkthrough of the gate refusing (for recording)"
+	@echo "    make gate-green       — run the whole offline gate and show every check turn green"
 	@echo ""
 	@echo "  $(YELLOW)Snowflake — second enforcement backend (engine-agnostic)$(RESET)"
 	@echo "    make snowflake-check    — prove UC ≡ Snowflake access-equivalence (offline)"

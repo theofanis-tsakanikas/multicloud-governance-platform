@@ -28,7 +28,7 @@ resource "aws_security_group" "gateway" {
   vpc_id      = var.vpc_id
 
   ingress {
-    description = "1433 from the transit VPC: the NLB's health checks and the PrivateLink traffic behind them"
+    description = "1433 from the transit VPC: the NLBs health checks and the PrivateLink traffic behind them"
     from_port   = 1433
     to_port     = 1433
     protocol    = "tcp"

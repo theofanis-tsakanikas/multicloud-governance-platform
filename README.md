@@ -147,6 +147,10 @@ The sources are seeded **deliberately dirty**, because a source that arrives cle
 cleansing stage theatre. Silver removes 220 of 6,040 bronze rows — and it *reports* what it removed,
 rather than dropping them silently.
 
+*(These figures are from the **live** Databricks medallion over the seeded RDS/Azure SQL/BigQuery
+sources. The offline `make data` runs a simpler sqlite medallion for the PII-in-gold proof and does
+not reproduce this rejects table — see [pipelines/README.md](pipelines/README.md).)*
+
 ![The rejects table — what the quality gate refused](./images/aws/silver/silver_data_rejected.png)
 
 | Source | Tables | Deliberate defects |
@@ -424,9 +428,10 @@ A portfolio that only lists what works is a sales page. This is the rest of it.
 
 - **`prod/` has never been applied.** It mirrors `dev/`
   ([ADR-0010](docs/adr/0010-environments-as-file-mirrors.md)) — file-for-file, save for its own
-  `config.hcl` (a placeholder, `aws_account_id = "111111111111"`), a couple of documented safety
-  deltas (no `force_destroy`, no `drop_cascade`), and the Snowflake layer, which is dev-only. The
-  architecture supports promotion by config diff. Nobody has done it.
+  `config.hcl` (placeholders, `aws_account_id = "111111111111"`), a couple of documented safety
+  deltas (no `force_destroy`, no `drop_cascade`), the dev-only Snowflake layer, and the dev-only
+  offline-tooling inputs (`policy_exceptions.json`, `cost_assumptions.json`). The architecture
+  supports promotion by config diff. Nobody has done it.
 - **The OPA cross-check re-implements all 4 gating rules** in Rego — a second engine (run in CI)
   that reaches the same verdict as the analyzer. It re-derives the *logic* independently, but reads
   the analyzer's own output (`governance_context.json`) as its *facts*, so it is a rule-logic

@@ -66,7 +66,7 @@ resource "aws_security_group_rule" "rds_egress" {
 resource "aws_security_group_rule" "public_orch_ingress" {
   for_each          = length(var.orch_ip) > 0 ? local.public_mode : {}
   type              = "ingress"
-  description       = "PUBLIC MODE ONLY: 5432 from the CI runner's own IP, so Terraform can create the schemas"
+  description       = "PUBLIC MODE ONLY: 5432 from the CI runners own IP, so Terraform can create the schemas"
   from_port         = 5432
   to_port           = 5432
   protocol          = "tcp"
@@ -82,7 +82,7 @@ resource "aws_security_group_rule" "public_orch_ingress" {
 resource "aws_security_group_rule" "public_access_ingress" {
   for_each          = local.public_mode
   type              = "ingress"
-  description       = "PUBLIC MODE ONLY: 5432 from anywhere. Databricks serverless has no fixed egress IPs, so public mode has no narrower option — which is the entire argument for private mode, where this rule does not exist"
+  description       = "PUBLIC MODE ONLY: 5432 from anywhere. Databricks serverless has no fixed egress IPs, so public mode has no narrower option - which is the entire argument for private mode, where this rule does not exist"
   from_port         = 5432
   to_port           = 5432
   protocol          = "tcp"
@@ -122,7 +122,7 @@ resource "aws_route_table_association" "rta" {
 resource "aws_security_group_rule" "rds_ingress_from_ecs" {
   for_each                 = local.private_mode
   type                     = "ingress"
-  description              = "PRIVATE MODE: 5432 from the pgbouncer gateway's security group. The only door into the database"
+  description              = "PRIVATE MODE: 5432 from the pgbouncer gateways security group. The only door into the database"
   from_port                = 5432
   to_port                  = 5432
   protocol                 = "tcp"
@@ -168,7 +168,7 @@ resource "aws_security_group_rule" "ecs_ingress" {
 resource "aws_security_group_rule" "ecs_https_ingress" {
   for_each          = local.private_mode
   type              = "ingress"
-  description       = "PRIVATE MODE: 443 for the interface VPC endpoints (ECR, Secrets Manager, CloudWatch Logs) — the gateway pulls its image and reads its password without an internet route"
+  description       = "PRIVATE MODE: 443 for the interface VPC endpoints (ECR, Secrets Manager, CloudWatch Logs) - the gateway pulls its image and reads its password without an internet route"
   from_port         = 443
   to_port           = 443
   protocol          = "tcp"
@@ -180,7 +180,7 @@ resource "aws_security_group_rule" "ecs_https_ingress" {
 resource "aws_security_group_rule" "ecs_egress" {
   for_each          = local.private_mode
   type              = "egress"
-  description       = "PRIVATE MODE: the gateway's outbound to RDS Proxy and the VPC endpoints. There is no IGW on this VPC, so 0.0.0.0/0 here reaches nothing but the VPC itself"
+  description       = "PRIVATE MODE: the gateways outbound to RDS Proxy and the VPC endpoints. There is no IGW on this VPC, so 0.0.0.0/0 here reaches nothing but the VPC itself"
   from_port         = 0
   to_port           = 0
   protocol          = "-1"

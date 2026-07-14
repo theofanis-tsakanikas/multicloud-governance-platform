@@ -171,8 +171,9 @@ All eleven workflows live in `.github/workflows/`. The `bootstrap`, `deploy`, an
 | Publish dashboard | `pages.yml` | Push to main — rebuilds + publishes the static governance dashboard to GitHub Pages | — |
 | Genie copilot | `dbx-genie.yml` | Manual — provisions the Genie governance space. **Needs no cloud stack**: its tables are facts from the domain JSON, so it survives a teardown of all three clouds. Idempotent. | `DBX_DEPLOY_ROLE_ARN` (+ optional `GENIE_GRANT_USER` var) |
 
-**Validate** and **Config validate** are the two PR-gating workflows (`dbx-config-validate` is credential-free and also runs the access-policy gate). **Validate** runs in parallel across three jobs:
-- `validate (aws/azure/gcp)` matrix — `terraform fmt`, `terragrunt hclfmt`, `terragrunt validate`, Checkov, tfsec
+**Validate** and **Config validate** are the two PR-gating workflows (`dbx-config-validate` is credential-free and also runs the access-policy gate). **Validate** runs three jobs:
+- `static` (**the gate** — no credentials) — `terraform fmt`, `terragrunt hclfmt`, Checkov, tfsec. It fails the build. This is a required status check.
+- `validate (aws/azure/gcp)` matrix — `terragrunt validate` only, `continue-on-error: true` (**best-effort, does not gate**): it can't parse a config whose secrets the torn-down stack creates, so it reports a warning rather than a red badge. (The single-matrix layout that folded the scanners in here was split precisely because a validate failure used to skip Checkov/tfsec — see the header comment in the workflow.)
 - `infracost` — optional AWS-only cost cross-check. It needs `INFRACOST_API_KEY` (free, self-hosted); without the key the job says so and stops rather than soft-failing to a green "priced nothing". The real, key-free cost surface is `scripts/cost_estimate.py` (in Config validate), which prices the whole platform + a carbon floor
 
 **Deploy** exposes three inputs: `cloud` (aws/azure/gcp/combinations), `connectivity` (public/private), and optional `start_from_layer` (e.g. `security/iam`) for partial stack deploys.
