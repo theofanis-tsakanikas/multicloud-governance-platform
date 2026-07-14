@@ -122,7 +122,6 @@ skip-check:
   - CKV_AZURE_41    # Key Vault secrets should have an expiry date.
   - CKV_AZURE_114   # Storage account should default to deny.
   - CKV_AZURE_59    # Storage account should not permit public access.
-  - CKV_AZURE_44    # Storage account should use the latest TLS.
   - CKV_AZURE_42    # Key Vault should have purge protection.
   - CKV_AZURE_33    # Storage logging for queues.
   - CKV_AZURE_244   # Key Vault should disable public network access.
