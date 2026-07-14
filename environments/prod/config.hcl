@@ -108,8 +108,8 @@ locals {
   azure_storage_credential_name = "azure_federation_creds"
 
   # ─── GCP ─────────────────────────────────────────────────────────────────
-  gcp_project_id         = "databricks-multicloud-platform"
-  gcp_project_number     = "810048527282"
+  gcp_project_id         = "your-prod-gcp-project" # TODO: production GCP project (dev value removed)
+  gcp_project_number     = "000000000000"          # TODO: production GCP project number
   gcp_location           = "europe-west3"
   gcp_bucket_prefix_name = "databricks-gcp-bucket"
   gcp_vpc_cidr           = ["10.30.0.0/16", "199.36.153.8/30"]
@@ -131,13 +131,13 @@ locals {
   gcp_private_api_vip_ips  = ["199.36.153.8", "199.36.153.9", "199.36.153.10", "199.36.153.11"]
   network_name             = "gcp-dbx-vpc"
   subnetwork_name          = "gcp-dbx-subnet"
-  terraform_sa_account     = "terraform-deployer@databricks-multicloud-platform.iam.gserviceaccount.com"
-  dbx_system_sa_gcp        = "dabc-d7f3c69a3d414b638430c29ab7771451@gcp-sa-databricks.iam.gserviceaccount.com"
-  gcp_dbx_account_id       = "d7f3c69a-3d41-4b63-8430-c29ab7771451"
+  terraform_sa_account     = "terraform-deployer@your-prod-gcp-project.iam.gserviceaccount.com"                # TODO
+  dbx_system_sa_gcp        = "dabc-00000000000000000000000000000000@gcp-sa-databricks.iam.gserviceaccount.com" # TODO: derived from prod Databricks GCP account id
+  gcp_dbx_account_id       = "00000000-0000-0000-0000-000000000000"                                            # TODO: production Databricks GCP account
   gcp_databricks_host      = "https://accounts.gcp.databricks.com"
   gcp_workspace_name       = "gcp-serverless-workspace-prod"
   gcp_metastore_name       = "primary-metastore-europe-west3"
-  gcp_metastore_bucket     = "dbx-metastore-bucket"
+  gcp_metastore_bucket     = "dbx-metastore-bucket-prod" # globally-unique: must differ from dev
   gcp_delta_sharing_name   = "gcp_delta_share"
   # Delta Sharing between two Databricks accounts: the GCP metastore creates a
   # recipient for the AWS metastore, and the AWS side then sees a provider of
@@ -145,7 +145,7 @@ locals {
   aws_db_recipient             = "aws_metastore_recipient"
   gcp_provider_name            = "gcp_delta_provider"
   dbx_sa_name                  = "dbx-sa"
-  gcp_dbx_account_creds_secret = "projects/810048527282/secrets/seed_credentials"
+  gcp_dbx_account_creds_secret = "projects/000000000000/secrets/seed_credentials" # TODO
   gcp_sa_secret_id             = "bq_key"
   gcp_wif_pool_id              = "wif-db-pool"
   gcp_provider_id              = "databricks-oidc-provider"
