@@ -32,13 +32,16 @@ TERRAFORM = shutil.which("terraform")
 
 
 def _checkov_ok() -> bool:
+    # Checkov exits non-zero on any failed check (no soft-fail here), so the exit code IS the verdict
+    # — same as _tfsec_ok / _opa_ok beside it. (Grepping the summary line worked, but a crash with no
+    # summary would then read as "not passed" for the wrong reason; the return code is unambiguous.)
     r = subprocess.run(
         [CHECKOV, "-d", "infra", "--framework", "terraform", "--config-file", ".checkov.yml", "--compact", "--quiet"],
         cwd=REPO,
         capture_output=True,
         text=True,
     )
-    return "Failed checks: 0" in r.stdout
+    return r.returncode == 0
 
 
 def _opa_ok() -> bool:

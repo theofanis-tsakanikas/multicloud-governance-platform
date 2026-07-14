@@ -172,47 +172,53 @@ ATTACKS = [
 ]
 
 
-def run(attack: Attack, index: int, total: int) -> bool:
-    with tempfile.TemporaryDirectory(prefix="gate-proof-") as tmp:
-        root = Path(tmp) / "repo"
-        shutil.copytree(
-            REPO,
-            root,
-            ignore=shutil.ignore_patterns(
-                ".git",
-                ".terraform*",
-                "*.terragrunt-cache*",
-                "promo",
-                "images",
-                "__pycache__",
-                ".venv",
-                "pipelines/data",
-            ),
-        )
-        attack.mutate(root)
-        proc = subprocess.run(attack.gate, cwd=root, capture_output=True, text=True)
-        output = proc.stdout + proc.stderr
-        nonzero = proc.returncode != 0
-        right_reason = attack.marker in output
-        # A block only counts if the gate exited non-zero AND named the violation we planted. A
-        # non-zero exit on its own could be an import error or an unrelated crash — which would let
-        # a real regression hide behind a green "the gate is real". Both, or it does not count.
-        blocked = nonzero and right_reason
+# fnmatch matches BASENAMES, so "pipelines/data" never fires — use the basename "data". `.bin`
+# holds the vendored conftest/tfsec binaries (~tens of MB); no gate reads them, so don't copy them.
+_IGNORE = shutil.ignore_patterns(".git", ".terraform*", "*.terragrunt-cache*", "promo", "images", "__pycache__", ".venv", "data", ".bin")
 
+
+def _marker_on_finding_line(output: str, marker: str) -> str | None:
+    """Return the first line where the marker appears AS A REAL finding — not a baseline `ACCEPTED`
+    exception line or a lint `ok` success line, both of which print the same tokens on a CLEAN run.
+    Without this, attacks whose marker is a rule name (PII_BROAD_READ) could be scored `BLOCKED` off
+    the analyzer's accepted-exception output even if the planted violation never gated."""
+    for line in output.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("ACCEPTED") or stripped.startswith("ok "):
+            continue
+        if marker in line:
+            return stripped
+    return None
+
+
+def run(attack: Attack, index: int, total: int) -> bool:
     print(f"  {BOLD}ATTACK {index}/{total}{OFF}  {attack.name}")
     print(f"            {DIM}{attack.what}{OFF}")
     print(f"            expect: {attack.expect}")
 
+    with tempfile.TemporaryDirectory(prefix="gate-proof-") as tmp:
+        root = Path(tmp) / "repo"
+        shutil.copytree(REPO, root, ignore=_IGNORE)
+        try:
+            attack.mutate(root)
+        except Exception as exc:  # e.g. the attacked file was renamed — the attack can't be planted
+            print(f"            {RED}*** COULD NOT PLANT THE ATTACK — {type(exc).__name__}: {exc} ***{OFF}\n")
+            return False
+        proc = subprocess.run(attack.gate, cwd=root, capture_output=True, text=True)
+        output = proc.stdout + proc.stderr
+
+    nonzero = proc.returncode != 0
+    evidence = _marker_on_finding_line(output, attack.marker)
+    # A block counts only if the gate exited non-zero AND named the violation we planted, on a real
+    # finding line. A bare non-zero exit could be a crash; a marker on an ACCEPTED line proves nothing.
+    blocked = nonzero and evidence is not None
+
     if blocked:
-        evidence = ""
-        for line in output.splitlines():
-            if attack.marker in line:
-                evidence = line.strip()
-                break
         print(f"            {GREEN}BLOCKED{OFF}  exit {proc.returncode}  ·  matched {attack.marker}   {DIM}{evidence[:66]}{OFF}\n")
     elif nonzero:
-        # exited non-zero, but not for the reason we planted — that is not a real block.
-        print(f"            {RED}*** WRONG REASON — exit {proc.returncode} but {attack.marker!r} never appeared ***{OFF}\n")
+        print(
+            f"            {RED}*** WRONG REASON — exit {proc.returncode} but {attack.marker!r} never appeared on a finding line ***{OFF}\n"
+        )
     else:
         print(f"            {RED}*** LET THROUGH — THE GATE DID NOT HOLD ***{OFF}  exit 0\n")
     return blocked
