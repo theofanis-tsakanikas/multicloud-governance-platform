@@ -54,6 +54,13 @@ module "snowflake_governance" {
   storage_bucket           = "example-data-bucket"
   storage_integration_name = "DEV_STORAGE_INTEGRATION"
 
+  # Required by the module (the git-backed notebook repository). Mock https URLs — nothing is
+  # fetched during `validate`; github_repo_is_public defaults false, so the GIT REPOSITORY object is
+  # gated off. These were missing, which made `terraform init` fail on a required-argument error
+  # that the test then laundered into a green skip.
+  github_owner_url = "https://github.com/example-org"
+  github_repo_url  = "https://github.com/example-org/example-repo"
+
   catalogs_json              = jsonencode(local.managed)
   external_locations_json    = jsonencode(local.infra.external_locations)
   catalog_grants_json        = jsonencode(local.grants.catalog_grants)
