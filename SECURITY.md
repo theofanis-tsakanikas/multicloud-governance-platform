@@ -24,7 +24,7 @@ data. What is worth reporting is anything that would harm somebody who deployed 
   finding and is not. The gate exists to fail a PR that hands someone access to PII; a way past it is
   the most valuable bug in this repo.
 - **A CI workflow that leaks a secret or lets a fork run privileged actions.**
-- **A committed credential.** (Every push is scanned by `gitleaks` over the full history, and the
+- **A committed credential.** (`gitleaks` scans the diff on every push and PR, and the full history on a weekly schedule, and the
   history is clean as of the last audit — but if I missed one, tell me.)
 - **Anything in `docs/` that would mislead someone into an insecure deployment.**
 
@@ -55,7 +55,7 @@ Not a claim — the workflows are in `.github/workflows/` and you can read them:
 
 | | |
 |---|---|
-| **Secret scanning** | `gitleaks.yml` — every push and PR, over the **full git history** |
+| **Secret scanning** | `gitleaks.yml` — the **diff** on every push and PR; the **full git history** weekly |
 | **Supply chain** | `sbom.yml` — SPDX SBOM (Syft) + CVE scan (Grype) → the Security tab, weekly |
 | **IaC scanning** | `dbx-validate.yml` — Checkov + tfsec on every PR touching `infra/` |
 | **The policy gate** | `dbx-config-validate.yml` — fails the PR on any unacknowledged HIGH finding, with **no cloud credentials at all** |

@@ -36,7 +36,7 @@ them. Lead with the decision, then the *why*, then the alternative you rejected.
 
 ### 6. Cross-cloud Delta Sharing + CI guardrails (2:35–3:20)
 - **Screen:** the dual Databricks provider aliases sharing GCP → AWS; the PR with Infracost + Checkov/tfsec.
-- **VO points:** the GCP marketing catalog is shared into the AWS metastore using **dual provider aliases and native HCL** — real cross-cloud governance, no export/copy. And every PR is gated: **Infracost** prices the AWS change, **Checkov + tfsec** scan `infra/`, and pre-commit enforces the same locally. Cost and security are part of code review, not an afterthought.
+- **VO points:** the GCP marketing catalog is shared into the AWS metastore using **dual provider aliases and native HCL** — real cross-cloud governance, no export/copy. And every PR is scanned: **Checkov + tfsec** gate `infra/` (and **Infracost** prices the AWS change when a key is set — optional, non-gating), and pre-commit enforces the same locally. Security is part of code review, not an afterthought.
 
 ### 7. Close (3:20–3:50)
 - **Screen:** end card + your name / GitHub.
