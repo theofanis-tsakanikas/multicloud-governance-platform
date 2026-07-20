@@ -40,7 +40,7 @@ jobs:
 
       - name: Scan dependencies for known vulnerabilities (Grype)
         id: grype
-        uses: anchore/scan-action@v4
+        uses: anchore/scan-action@v7
         with:
           sbom: sbom.spdx.json
           fail-build: false # report, don't block — review in the Security tab
