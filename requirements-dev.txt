@@ -5,7 +5,7 @@
 # and a surprise major release can't silently break the gate. Dependabot
 # (.github/dependabot.yml, pip ecosystem) proposes bumps as reviewable PRs.
 pytest>=7.4,<9
-ruff>=0.15.21,<0.16
+ruff>=0.15.22,<0.16
 # jsonschema powers the optional, versioned schema validation in
 # scripts/validate_domains.py (schema/). Absent → that layer degrades gracefully.
 jsonschema>=4.21,<5
