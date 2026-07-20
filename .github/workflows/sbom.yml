@@ -50,7 +50,7 @@ jobs:
       - name: Upload vulnerability report to the Security tab
         if: always()
         continue-on-error: true # needs code-scanning (GHAS) which private repos may lack; SBOM/scan artifacts are still produced
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: grype.sarif
           category: grype-sbom
