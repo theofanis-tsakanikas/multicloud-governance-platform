@@ -59,7 +59,7 @@ jobs:
 
       - name: Configure AWS credentials (OIDC)
         if: ${{ !inputs.dry_run }}
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ secrets.DBX_DEPLOY_ROLE_ARN }}
           aws-region: eu-central-1
