@@ -1,7 +1,8 @@
 version: 2
 
 updates:
-  # Keep GitHub Actions pinned to current major versions
+  # Keep GitHub Actions pinned to current major versions.
+  # Grouped: all action bumps arrive as ONE pull request per week, not one each.
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -10,8 +11,13 @@ updates:
     labels:
       - "dependencies"
       - "ci"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
 
-  # Dev/test Python tooling (the offline governance copilot + validator)
+  # Dev/test Python tooling (the offline governance copilot + validator).
+  # Grouped the same way: one pull request per week for all pip bumps.
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
@@ -22,3 +28,7 @@ updates:
       - "python"
     commit-message:
       prefix: "deps"
+    groups:
+      python:
+        patterns:
+          - "*"
