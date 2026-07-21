@@ -4,11 +4,11 @@
 # Pinned with a lower bound + a known-good upper bound so a CI run is reproducible
 # and a surprise major release can't silently break the gate. Dependabot
 # (.github/dependabot.yml, pip ecosystem) proposes bumps as reviewable PRs.
-pytest>=7.4,<9
+pytest>=9.1.1,<10
 ruff>=0.15.22,<0.16
 # jsonschema powers the optional, versioned schema validation in
 # scripts/validate_domains.py (schema/). Absent → that layer degrades gracefully.
-jsonschema>=4.21,<5
+jsonschema>=4.26.0,<5
 # PyYAML parses .github/workflows/*.yml in the "Every workflow file is valid YAML" step. That check
 # exists because dbx-validate.yml shipped with a syntax error and GitHub's only signal was a red
 # badge and twenty runs that executed nothing — a gate you believe in and do not have.
