@@ -97,7 +97,7 @@ jobs:
       SNOWFLAKE_ACCOUNT_NAME: ${{ secrets.SNOWFLAKE_ACCOUNT_NAME }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Required for every cloud, not just AWS: remote state lives in S3, and the
       # Azure and GCP seed credentials are read from AWS Secrets Manager at parse
@@ -110,7 +110,7 @@ jobs:
 
       - name: Configure Azure credentials (Azure only)
         if: inputs.cloud == 'azure'
-        uses: azure/login@v2
+        uses: azure/login@v3
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
