@@ -57,7 +57,7 @@ jobs:
       security-events: write # upload the policy SARIF to the Security tab
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup Python
         uses: actions/setup-python@v7
