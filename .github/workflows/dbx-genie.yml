@@ -49,7 +49,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: dev
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # The artifacts are generated from the domain JSON with no cloud and no credentials. If they
       # have drifted from it, the deploy would ship stale governance facts — so fail here, before
