@@ -81,7 +81,7 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v4
@@ -135,7 +135,7 @@ jobs:
         cloud: [aws, azure, gcp]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # All three, always: remote state is in S3, and the Azure and GCP seed credentials are read
       # from AWS Secrets Manager at parse time (CLAUDE.md gotcha #5). An AWS-only login is why the
@@ -160,7 +160,7 @@ jobs:
         id: azure_auth
         if: matrix.cloud == 'azure'
         continue-on-error: true
-        uses: azure/login@v2
+        uses: azure/login@v3
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
@@ -214,7 +214,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup Infracost
         uses: infracost/actions/setup@v4

@@ -43,7 +43,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: dev
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v6
@@ -145,7 +145,7 @@ jobs:
       # Scoped to this step and the next so no other step ever sees ARM_*.
       - name: Azure login (to reach the SQL server and Key Vault)
         if: ${{ inputs.cloud == 'aws' && inputs.seed_sources }}
-        uses: azure/login@v2
+        uses: azure/login@v3
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
