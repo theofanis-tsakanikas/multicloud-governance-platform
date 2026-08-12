@@ -1,28 +1,42 @@
+# Dependabot — deliberately configured for a pinned reference implementation.
+#
+# `open-pull-requests-limit: 0` switches OFF *version-update* pull requests (the routine
+# "bump X from 1.2 to 1.3" noise). That is intentional, not neglect: this repository is a
+# reference implementation pinned to versions the 137-test suite and the two required PR
+# checks were validated against, not a library under active maintenance. Left on, the bumps
+# pile up unreviewed — which reads far worse than a clean tree.
+#
+# What stays ON is the part that matters: **Dependabot security updates and alerts** (a
+# separate repository setting) still raise a pull request when a dependency carries an actual
+# advisory. Real vulnerabilities get a PR; cosmetic bumps do not. The SBOM and Grype scan in
+# `sbom.yml` publish to the Security tab weekly, independently of this file.
+#
+# To resume routine updates, raise the limit (5 is a sane value), keep `interval: monthly`
+# with the `groups:` below so an ecosystem arrives as one reviewable PR, and remember that a
+# Terraform provider major is a migration rather than a bump — the six provider ecosystems
+# below span three clouds, Databricks, the bootstrap and Snowflake.
 version: 2
 
 updates:
-  # Keep GitHub Actions pinned to current major versions.
-  # Grouped: all action bumps arrive as ONE pull request per week, not one each.
+  # --- GitHub Actions, across all eleven workflows ---
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: "monthly"
+    open-pull-requests-limit: 0
     labels:
       - "dependencies"
       - "ci"
     groups:
       github-actions:
-        patterns:
-          - "*"
+        patterns: ["*"]
 
-  # Dev/test Python tooling (the offline governance copilot + validator).
-  # Grouped the same way: one pull request per week for all pip bumps.
+  # --- Python: the offline governance layer (analyzer, report, metrics, cost, Genie) ---
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: "monthly"
+    open-pull-requests-limit: 0
     labels:
       - "dependencies"
       - "python"
@@ -30,5 +44,47 @@ updates:
       prefix: "deps"
     groups:
       python:
-        patterns:
-          - "*"
+        patterns: ["*"]
+
+  # --- Terraform providers, per cloud + the bootstrap and Snowflake backends ---
+  - package-ecosystem: "terraform"
+    directory: "/infra/aws/modules"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 0
+    labels: ["dependencies", "terraform"]
+
+  - package-ecosystem: "terraform"
+    directory: "/infra/azure/modules"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 0
+    labels: ["dependencies", "terraform"]
+
+  - package-ecosystem: "terraform"
+    directory: "/infra/gcp/modules"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 0
+    labels: ["dependencies", "terraform"]
+
+  - package-ecosystem: "terraform"
+    directory: "/infra/databricks/modules"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 0
+    labels: ["dependencies", "terraform"]
+
+  - package-ecosystem: "terraform"
+    directory: "/infra/bootstrap/modules"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 0
+    labels: ["dependencies", "terraform"]
+
+  - package-ecosystem: "terraform"
+    directory: "/infra/snowflake/modules"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 0
+    labels: ["dependencies", "terraform"]
