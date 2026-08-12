@@ -621,20 +621,44 @@ A portfolio that only lists what works is a sales page. This is the rest of it.
 
 ## Cost
 
-`scripts/cost_estimate.py` prices the whole platform (Databricks compute, Snowflake credits, and all
-three clouds) into one figure and a carbon floor, **offline, before a single resource exists**:
+**Nothing is standing today**, and the governance layer never needed to be: the gate, the report, the
+metrics, the cost model and the Genie copilot's tables are facts read out of the JSON, so they run
+offline at zero cost. What follows is what the *cloud* side would cost while it stands.
+
+This project prices itself. `scripts/cost_estimate.py` produces the figure **offline, before a single
+resource exists**, from the declared assumptions in `environments/dev/cost_assumptions.json`:
 
 ```
 ~$2,646 / month   ·   ~79 kg CO₂e / month        →  docs/governance/COST.md
 ```
 
-Every price is an illustrative placeholder, declared as such in
-`environments/dev/cost_assumptions.json`. It is a floor for awareness, not a quote.
+The arithmetic behind it:
 
-The number that matters more is the one it replaces: nothing about this platform requires standing
-infrastructure to *demonstrate*. The governance layer — the gate, the report, the metrics, the cost
-model, and the Genie copilot's tables — runs entirely offline, and `DBX Destroy` returns the cloud side
-to zero without touching the bootstrap.
+| Resource | Spec | Rate | Monthly |
+|---|---|---|---:|
+| Databricks SQL warehouse | serverless `Small` = 12 DBU/hr, modelled at 10 h/day × 22 d = 220 hr | $0.70/DBU | **$1,848.00** |
+| Snowflake | resource-monitor quota, 100 credits | $3.00/credit | $300.00 |
+| AWS — RDS Postgres | the federated `sales` source | declared floor | $145.00 |
+| AWS — networking | VPC, transit hub, PrivateLink | declared floor | $35.00 |
+| AWS — KMS + Secrets Manager | — | declared floor | $6.00 |
+| Azure — SQL Database | the federated `supply_chain` source | declared floor | $160.00 |
+| Azure — networking | VNet, private endpoint, VPN | declared floor | $30.00 |
+| Azure — Key Vault | — | declared floor | $4.00 |
+| GCP — BigQuery baseline | the federated `marketing` source | declared floor | $90.00 |
+| GCP — networking | VPC, IPsec tunnel, private VIP | declared floor | $25.00 |
+| GCP — Secret Manager | — | declared floor | $3.00 |
+| **Total** | | | **$2,646.00 / month** |
+
+**Seventy percent of that is one line.** The warehouse dominates because the assumptions file models
+it at 220 hours a month; its `auto_stop_mins` is 10, so at demo usage the real figure is a fraction of
+it. That overstatement is deliberate — a floor for awareness is more useful than a flattering number,
+and every price is an illustrative placeholder declared as such in the assumptions file rather than
+buried in a script.
+
+**In private connectivity mode**, add three ECS Fargate transit gateways, an internal NLB and two
+IPsec tunnels — roughly **+$120/month** that the assumptions file does not itemise.
+
+`DBX Destroy` returns the cloud side to zero in reverse order and never touches bootstrap.
 
 ---
 
