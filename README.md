@@ -655,6 +655,16 @@ it. That overstatement is deliberate — a floor for awareness is more useful th
 and every price is an illustrative placeholder declared as such in the assumptions file rather than
 buried in a script.
 
+> **One assumption is now known to be low.** The file declares `usd_per_dbu: 0.70`, which is the
+> **US** serverless SQL rate. This platform deploys to `eu-central-1` and `West Europe`, where the
+> published EU rate is **$0.91/DBU** — so the warehouse line would be **$2,402.40** and the total
+> **≈ $3,200/month**.
+>
+> The assumptions file is deliberately left unchanged: CI regenerates `docs/governance/COST.md` from
+> it and asserts the two match, so editing it changes the platform's own output rather than its
+> documentation. Setting `usd_per_dbu` to `0.91` and running `make governance-report` is a one-line
+> decision that belongs to whoever owns the model. *(Rates verified 2026-08-12.)*
+
 **In private connectivity mode**, add three ECS Fargate transit gateways, an internal NLB and two
 IPsec tunnels — roughly **+$120/month** that the assumptions file does not itemise.
 
