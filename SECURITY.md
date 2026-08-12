@@ -84,3 +84,20 @@ Stated plainly, because a security file that only lists strengths is marketing:
   ternary it cannot resolve). Deploy in private mode, or restrict the ingress, for anything real.
 - **Drift detection against a live metastore is not wired into CI.** A grant changed by hand in the
   Databricks UI will not be caught.
+
+## Pre-publish checklist
+
+Before making the repository public, and after any change to the governance, connectivity or
+Snowflake layers:
+
+- [ ] `gitleaks` is green on the **full history**, not just the diff
+- [ ] `git ls-files` lists no `.tfstate`, `*.tfvars`, `.env`, `*.p8`/`*.pem` or key material
+- [ ] No real AWS account id, Azure subscription id, GCP project id, workspace URL or Snowflake
+      account identifier is legible in a committed screenshot
+- [ ] `make demo` passes — the gate, the Rego cross-check and the generated docs all in sync
+- [ ] `make policy-scan` reads `0 high`, and every `accepted` finding has an unexpired, signed
+      exception in `environments/dev/policy_exceptions.json`
+- [ ] No exception in that ledger has passed its `expires` date
+- [ ] Checkov and tfsec findings are either fixed or carry a scoped, commented skip
+- [ ] If the stack is standing in **public** connectivity mode, the RDS ingress has been reviewed —
+      Checkov cannot see it (see Known limitations)

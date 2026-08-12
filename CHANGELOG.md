@@ -9,6 +9,28 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+- **README rewritten to the portfolio README standard.** No screenshot was removed — all 42 image
+  references are intact and all still resolve. A visible caption on every one of the 38 embedded
+  screenshots (from none), so each image now says what to look at instead of relying on alt text the
+  reader never sees. Two stray `#` headings mid-document (`Snowflake`, `Genie`) were demoted to `##`:
+  they broke the heading hierarchy and rendered at page-title size.
+- **The architecture section gained a Mermaid diagram** alongside the rendered one. The rendered
+  image stays; Mermaid diffs in git, renders in both themes and is searchable, and this was the only
+  repository in the portfolio with none.
+- **New `Status`, `Testing` and `Docs` sections.** `Status` states what was built, on what and at
+  what scale, in one block. `Testing` gives the suite its own heading — 137 tests, `133 passed, 4
+  skipped`, credential-free — and says what it does not cover. `Docs` indexes the 18 ADRs, the
+  runbooks, `docs/evidence/` and `docs/governance/`, none of which were discoverable from the README.
+- **Dependabot version updates switched off** (`open-pull-requests-limit: 0`), matching the rest of
+  the portfolio, with the six Terraform provider ecosystems now declared alongside pip and Actions.
+  Security updates, the SBOM and the Grype scan are unaffected.
+
+### Added
+- **A pre-publish checklist in `SECURITY.md`**, covering the exception ledger's expiry dates and the
+  public-mode RDS ingress that Checkov cannot see.
+
+
 ### Added
 - **Snowflake — second enforcement backend (engine-agnostic governance).** The same domain JSON contract now compiles to Snowflake as well as Unity Catalog, proving the governance model is engine-agnostic (see [ADR-0011](docs/adr/0011-snowflake-enforcement-backend.md)):
   - `infra/snowflake/privilege_map.json` — a single shared translation contract (abstract/UC privilege → Snowflake privilege + scope), read by **both** the Snowflake Terraform and the Python consistency check
