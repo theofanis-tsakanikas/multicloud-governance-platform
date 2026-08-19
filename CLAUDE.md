@@ -156,7 +156,7 @@ Domain governance is defined in JSON, loaded natively by Terragrunt, and passed 
 
 ## GitHub Actions workflows
 
-All eleven workflows live in `.github/workflows/`. The `bootstrap`, `deploy`, and `destroy` workflows target the `dev` GitHub Environment (configure manual approval gates there if needed).
+All twelve workflows live in `.github/workflows/`. The `bootstrap`, `deploy`, and `destroy` workflows target the `dev` GitHub Environment (configure manual approval gates there if needed).
 
 | Workflow | File | Trigger | Required secrets |
 |---|---|---|---|
@@ -166,10 +166,12 @@ All eleven workflows live in `.github/workflows/`. The `bootstrap`, `deploy`, an
 | Bootstrap | `dbx-bootstrap.yml` | Manual (`workflow_dispatch`) | `DBX_DEPLOY_ROLE_ARN` |
 | Deploy | `dbx-deploy.yml` | Manual (`workflow_dispatch`) | `DBX_DEPLOY_ROLE_ARN`, `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID` |
 | Destroy | `dbx-destroy.yml` | Manual — requires typing `DESTROY` to confirm | Same as Deploy |
+| Pipeline | `dbx-pipeline.yml` | Manual — deploys the Databricks SQL bundle and runs the medallion. Workspace URL + `warehouse_id` are read from the **bootstrap Terraform outputs**, and auth is the bootstrap service principal over M2M OAuth — no PAT, no hand-copied `DATABRICKS_*` secrets. Optional `seed_sources` seeds the simulated sources ([ADR-0014](docs/adr/0014-simulated-source-systems.md)). Requires the platform to be deployed. | `DBX_DEPLOY_ROLE_ARN` (+ `AZURE_*` when seeding — the AWS medallion joins the Azure source; + `SNOWFLAKE_*` for the non-fatal notebook step, see gotcha #10) |
 | Secret scan | `gitleaks.yml` | PR + push — scans the diff for committed credentials/keys | — |
 | SBOM & supply-chain | `sbom.yml` | Push to main / PR (deps) / weekly — SPDX SBOM (Syft) + CVE scan (Grype) → Security tab | — |
 | Publish dashboard | `pages.yml` | Push to main — rebuilds + publishes the static governance dashboard to GitHub Pages | — |
 | Genie copilot | `dbx-genie.yml` | Manual — provisions the Genie governance space. **Needs no cloud stack**: its tables are facts from the domain JSON, so it survives a teardown of all three clouds. Idempotent. | `DBX_DEPLOY_ROLE_ARN` (+ optional `GENIE_GRANT_USER` var) |
+| Dependabot auto-merge | `dependabot-auto-merge.yml` | `pull_request_target` from `dependabot[bot]` — enables auto-merge on **patch and minor** bumps only; **major bumps stay open** for a human. `--auto` does not bypass branch protection: GitHub still waits for the two required checks. | — (built-in `GITHUB_TOKEN`) |
 
 **Validate** and **Config validate** are the two PR-gating workflows (`dbx-config-validate` is credential-free and also runs the access-policy gate). **Validate** runs three jobs:
 - `static` (**the gate** — no credentials) — `terraform fmt`, `terragrunt hclfmt`, Checkov, tfsec. It fails the build. This is a required status check.

@@ -116,7 +116,7 @@ Azure and GCP — from a single JSON contract, and then torn down. The screensho
 | Securables | **30**: 7 external locations, 6 catalogs, 13 schemas, 4 volumes |
 | Grants | **70**, across **8** groups |
 | PII schemas | **2**: `sales_rds_fed.crm`, `marketing_bq_fed.web`. *(Azure holds none.)* |
-| Terraform modules | **87** · Workflows **11** · Decision records **18** |
+| Terraform modules | **87** · Workflows **12** · Decision records **16** |
 | Tests | **137**, infrastructure-free, gating every push |
 
 The governance layer itself needs **no cloud at all**: the analyzer, the report, the metrics, the cost
@@ -525,7 +525,7 @@ of it runs in CI, none of it holds a long-lived key.
 - **The docs cannot drift.** `docs/governance/` is generated from the contract, and CI fails the build if
   a committed byte is out of sync with the JSON.
 
-Eleven workflows in [`.github/workflows/`](.github/workflows/): you can read them; none of this is a claim.
+Twelve workflows in [`.github/workflows/`](.github/workflows/): you can read them; none of this is a claim.
 
 ## Testing
 
@@ -580,7 +580,7 @@ schema/                                    ← JSON Schema for the contract (Dra
 infra/{aws,azure,gcp,databricks,bootstrap,snowflake}/modules/    ← 87 modules
 environments/{dev,prod}/                   ← Terragrunt wiring; prod is a file-for-file mirror
 pipelines/                                 ← the medallion (Databricks SQL) + the simulated sources
-docs/adr/                                  ← 18 decision records
+docs/adr/                                  ← 16 decision records
 docs/governance/                           ← GENERATED. CI fails if it drifts from the contract.
 ```
 
@@ -674,7 +674,7 @@ IPsec tunnels — roughly **+$120/month** that the assumptions file does not ite
 
 ## Decisions
 
-Eighteen ADRs in [`docs/adr/`](docs/adr/) record what was chosen and, more usefully, what was rejected,
+Sixteen ADRs in [`docs/adr/`](docs/adr/) record what was chosen and, more usefully, what was rejected,
 and one records what building it proved **wrong** ([ADR-0008](docs/adr/0008-single-connectivity-toggle.md)
 said one connectivity toggle; there are three).
 
@@ -695,7 +695,7 @@ Full index: [`docs/adr/README.md`](docs/adr/README.md).
 
 ## Docs
 
-[docs/adr/](docs/adr/) — 18 decision records ·
+[docs/adr/](docs/adr/) — 16 decision records ·
 [docs/TESTING.md](docs/TESTING.md) — testing philosophy and coverage ·
 [docs/SETUP_LIVE.md](docs/SETUP_LIVE.md) — standing the cloud side up ·
 [docs/LIVE_RUN_RUNBOOK.md](docs/LIVE_RUN_RUNBOOK.md) — running it end to end ·

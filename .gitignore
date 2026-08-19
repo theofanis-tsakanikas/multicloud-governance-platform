@@ -73,3 +73,6 @@ promo/*
 # The plans are documents, not assets. They cite numbers that must stay in step with the repo, and
 # they are worth reviewing in a diff.
 !promo/*.md
+
+# LinkedIn promo assets — local only
+LinkedIn/
