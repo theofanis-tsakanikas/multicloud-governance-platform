@@ -10,14 +10,16 @@ every caption, the music, the sound-design cue sheet, and the exact CapCut build
 - **Audience:** data/platform engineers + engineering leaders + hiring managers
 - **The story (one line):** a pull request tries to hand the analytics team a schema full of
   customer names, emails and phone numbers. **The platform refuses it — before anything is
-  deployed.** We rewind and watch what said no: one JSON contract that becomes infrastructure
+  deployed.** Then we watch what said no: one JSON contract that becomes infrastructure
   across **three clouds**, catalogs, grants, **three private paths with no public endpoint
   anywhere**, a medallion, a second engine reading the same gold file, and an AI that is allowed
   to describe governance but never to decide it. Then we land back on that same PR — now **green**,
   because someone wrote down a **reason** and a **date it expires**.
-- **The shape — cold open + rewind + full circle:** open on the **red PR** (the stakes, instantly),
-  **rewind** to the contract, walk **every stage**, then return to **that same PR, now green with a
-  documented, expiring exception**. That callback is the whole thesis in one cut.
+- **The shape — a brand sting, then cold open + a black punchline + full circle:** open on a **~1.5s shield sting**
+  (the amber shield takes a red PII attack head-on and it shatters against it — the shield holds), then
+  hard-cut to the **red PR** (the stakes, made concrete). A **black punchline card**, then the contract, and walk **every
+  stage**, then return to **that same PR, now green with a documented, expiring exception**. That
+  callback is the whole thesis in one cut.
 
 > **The hook is free.** The gate runs offline — no cloud, no credentials. Both the cold open and
 > the payoff can be recorded **today**, on a torn-down stack, for **$0**.
@@ -67,7 +69,7 @@ every caption, the music, the sound-design cue sheet, and the exact CapCut build
 | Codec | MP4 / H.264 |
 | Length | **~90s** (hard ceiling 90s) |
 | Layout | Screen capture **upper ~70%** (rounded corners + soft shadow), **caption band lower ~30%** |
-| First frame | **The red PR.** A GitHub check failing: `PII_BROAD_READ · HIGH`. Red ❌ |
+| First frame | **The shield sting** (~1.5s): a red attack shatters against the amber shield; it holds. Then hard-cut to **the red PR** — a GitHub check failing, `PII_BROAD_READ · HIGH`, red ❌ |
 | Captions | Burned in. Repo link goes in the **first comment**, not the post body |
 
 ---
@@ -83,7 +85,8 @@ on each end**. ✅ = already have it · 🎥 = to record · 💤 = needs no infr
 
 | File | Source | What it must show | Length | Zoom / framing |
 | --- | --- | --- | --- | --- |
-| `01-pr-blocked` 🎥💤 | **GitHub PR** — add a grant of `SELECT` on `sales_rds_fed.crm` to `analysts` | the check turning **RED**: `PII_BROAD_READ · HIGH · schema:sales_rds_fed.crm`. Show the diff line that caused it | ~7s | tight on the red ❌ and the rule name |
+| `00-shield-break` ✅💤 | **Kling** image-to-video from `promo/images/shield.png` | the amber shield; a red beam strikes it and shatters into red shards; the shield stays whole | ~1.5s (trim from the ~4s render) | centred; hard-cut out on the shatter |
+| `01-pr-blocked` 🎥💤 | **GitHub PR** — add a grant of `SELECT` on `sales_rds_fed.crm` to `analysts` | the check turning **RED**: `PII_BROAD_READ · HIGH · schema:sales_rds_fed.crm`. Show the diff line that caused it | ~5.5s | tight on the red ❌ and the rule name |
 | `02-the-contract` 🎥💤 | `environments/dev/domains/aws/sales_infra.json` + `sales_grants.json` | the JSON: catalogs, schemas, **`"classification": "pii"`**, and the grants block | ~6s | scroll from `classification` → the grant |
 | `03-the-gate` 🎥💤 | terminal — `make policy-scan`, then `make opa` | the analyzer printing findings; then **OPA/Rego agreeing**. Say: *no cloud, no credentials* | ~7s | the HIGH line; then the OPA ✓ |
 | `04-tests` 🎥💤 | terminal — `pytest -q` | **137 passed** | ~3s | the pass line |
@@ -107,56 +110,72 @@ Terragrunt destroy ("…and one button tears it all down — $0"), the transit-h
 
 ## PART 3 — The master timeline (~90s, the heart of the edit)
 
-Each row = one beat. Cut every clip on the music beat. **Total ≈ 90s.**
-Note the arc: **beat 1 and beat 11 are the same pull request.**
+Each row = one beat. Cut every clip on the music beat. **Total ≈ 90s** (the ~1.5s sting eats into the
+old 7s opening, so the runtime is unchanged).
+Note the arc: beat 0 is the brand sting; **beats 1 and 13 are the same pull request** — the full circle.
+There is **no rewind**. Beat 2 is a **black punchline card** ("A report comes too late. A gate doesn't."),
+and that is where the **music enters** and the explanation begins.
 
 | # | Time | Clip | On-screen | Caption (burn-in) | Motion / effect | Sound |
 |--|--|--|--|--|--|--|
-| 1 | 0:00–0:07 | `01-pr-blocked` | GitHub check **RED**, `PII_BROAD_READ · HIGH` | **Someone just gave analytics the customer PII.** → **The platform said no.** | punch-in on the red ❌; red flash | **BASS IMPACT** on the ❌ |
-| 2 | 0:07–0:11 | rewind transition | the PR rewinds; JSON flows in | **It never reached a cloud.** → **It couldn't. Let's rewind.** | reverse-motion / rewind wipe | **rewind whoosh** |
-| 3 | 0:11–0:18 | `02-the-contract` | the domain JSON | **One contract. Per domain.** → **Storage, grants, classification.** | scroll to `"classification": "pii"` | low rumble |
-| 4 | 0:18–0:26 | `03-the-gate` + `04-tests` | analyzer → OPA → 137 passed | **A gate, not a report.** → **No cloud. No credentials.** → **And a second engine checks the first.** | snap on HIGH; snap on OPA ✓ | tick · tick · **ding** on 137 |
-| 5 | 0:26–0:34 | `05-deploy` | the deploy inputs, then the green DAG | **One button. Three clouds.** → **Terraform · Terragrunt.** | speed-ramp the DAG greens | ding on ✅; rising ticks |
-| 6 | 0:34–0:40 | `06-catalogs` | catalogs across 3 clouds | **Three clouds. One catalog.** | pan the tree | soft whoosh |
-| 7 | 0:40–0:50 | `07-ncc-established` + `08-no-public-door` | 3× `ESTABLISHED` → RDS **No** → Azure **Disabled** | **Then we closed the front door.** → **No public address. Anywhere.** | 🥇 hold the 3 greens; box each toggle | **riser starts** |
-| 8 | 0:50–0:58 | `09-one-query` | the three-cloud SQL + results | **One query. Three clouds.** → **Not one public endpoint in it.** | reveal the CTEs, then snap the grid | **riser resolves — impact** |
-| 9 | 0:58–1:05 | `10-rejects` | the reject reasons | **The connection brings the truth.** → **Governance decides which of it is *true*.** | count-up to **220** | snap on 220 |
-| 10 | 1:05–1:12 | `11-snowflake` + `12-genie` | Snowflake on the same file → Genie refusing | **One gold file. Two engines. Zero copies.** → **And an AI that knows what it isn't allowed to know.** | match-cut; 🥇 hold the refusal | whoosh; soft "no" tick |
-| 11 | 1:12–1:24 | `13-pr-exception` (**payoff**) | the **same** PR — the exception, the **expiry**, then **GREEN** ✅ | **That PR?** → **It ships — with a reason, and a date it expires.** → **Governance isn't "no". It's "not without a reason, and not forever."** | callback: same shot as beat 1, now earned; box the `expires` field | **the payoff — resolve + ✅ ding** |
-| 12 | 1:24–1:30 | `14-endcard` | title + handle | **Multi-Cloud Governance Platform** → **One contract. Three clouds. Two engines. Zero public endpoints.** → **Link in comments ↓** | logo settles, hold 3s | music resolves / outro |
+| 0 | 0:00–0:015 | `00-shield-break` | the amber shield; a red attack shatters against it; it holds | *(no caption — let the break and the hit land)* | whoosh → shatter → shield flare | **whoosh + BASS IMPACT + glass shatter** (no "laser") |
+| 1 | 0:015–0:06 | `01-pr-blocked` (`21.PR_red`) | GitHub check **RED**, `PII_BROAD_READ · HIGH` | **A grant exposed customer PII.** → **The platform said no.** | hard cut; punch-in on the red ❌ | low sub-hit on the cut |
+| 2 | 0:06–0:11 | **BLACK CARD** (built in CapCut) | pure black | **A report comes too late.** → **A gate doesn't.** | text pop-in; hold ~2s on black | **music ENTERS here** (the swell) |
+| 3 | 0:11–0:17 | contract JSON → catalog tree → Databricks+Snowflake | one file → three clouds → two engines | **One contract.** → **Three clouds.** → **Two engines.** | 3 quick frames, one per word | rising architectural pulse |
+| 4 | 0:17–0:23 | `21.gate-attack` | the analyzer + OPA agreeing + 137 passed | **No cloud. No creds.** → **Cross-checked.** → **137 tests.** | snap on each | tick · tick · **ding** on 137 |
+| 5 | 0:23–0:29 | `04.aws_deploy_final` | the deploy inputs, then the green DAG | **One button.** → **Terraform · Terragrunt.** | speed-ramp the DAG greens | ding on ✅; rising ticks |
+| 6 | 0:29–0:35 | `09.databricks_querries` (catalog tree) | catalogs across 3 clouds, one metastore | **Managed. Federated. Shared.** | pan the tree | soft whoosh |
+| 7 | 0:35–0:42 | `08.lineage_cross_cloud` | the auto cross-cloud lineage graph | **Nobody drew this.** → **It drew itself.** | reveal the graph | swell |
+| 8 | 0:42–0:48 | `09.databricks_querries` (executive query) | the three-cloud SQL + result grid | **One query.** → **Three clouds fused.** | reveal the CTEs, then snap the grid | impact |
+| 9 | 0:48–0:54 | `09.databricks_querries` (governance proof) + rejects | scan gold for PII → 0 rows; the rejects table | **PII in the gold?** → **Zero rows.** → **220 rows refused.** | snap to 0 rows; count-up to **220** | snap on 220 |
+| 10 | 0:54–1:02 | `19.databricks_private` + `19.aws_private_connection` + `19.azure_private` (+ `19.cloudwatch_private`) | 3× `ESTABLISHED` · RDS **No** · Azure **Disabled** · private-IP packets | **The door? Shut.** → **Zero public endpoints.** | 🥇 hold the 3 greens; box each toggle | **riser resolves — impact** |
+| 11 | 1:02–1:09 | `14.snowflake_queries` | `metadata$filename` (same S3 key) → masking by role | **Same file. Two engines.** → **Zero copies.** → **Masked by role.** | match-cut; admin email → analyst `***MASKED***` | whoosh |
+| 12 | 1:09–1:15 | `20.genie` | Genie refusing the CEO-address question | **An AI copilot.** → **It knows its limits.** | 🥇 hold on the refusal text | soft "no" tick |
+| 13 | 1:15–1:25 | `21.gate-green` (**payoff**) | the **same** PR — the exception, the **`expires`**, then **GREEN** ✅ | **That same PR?** → **Now it ships.** → **A reason. An expiry.** | callback: same crop/zoom as beat 1; box the `expires` field | **the payoff — resolve + ✅ ding** |
+| 14 | 1:25–1:30 | `14-endcard` (built in CapCut) | title + tagline | **Governance isn't "no". "Not without a reason. Not forever."** → **Multi-Cloud Governance Platform** → **Link in comments ↓** | logo settles, hold 3s | music resolves / outro |
 
 ---
 
 ## PART 4 — Every caption (copy-paste) + styling
 
+_Beat 0 (the shield sting) carries **no caption** — the visual break and the bass hit are the hook. The
+numbered captions below start at the red PR._
+
 ```
-1.  Someone just gave analytics the customer PII.
+1.  A grant exposed customer PII.
 2.  The platform said no.
-3.  It never reached a cloud.
-4.  It couldn't. Let's rewind.
-5.  One contract. Per domain.
-6.  Storage, grants, classification.
-7.  A gate, not a report.
-8.  No cloud. No credentials.
-9.  And a second engine checks the first.
-10. One button. Three clouds.
-11. Terraform · Terragrunt.
-12. Three clouds. One catalog.
-13. Then we closed the front door.
-14. No public address. Anywhere.
-15. One query. Three clouds.
-16. Not one public endpoint in it.
-17. The connection brings the truth.
-18. Governance decides which of it is true.
-19. One gold file. Two engines. Zero copies.
-20. And an AI that knows what it isn't allowed to know.
-21. That PR?
-22. It ships — with a reason, and a date it expires.
-23. Governance isn't "no".
-24. It's "not without a reason, and not forever."
-25. Multi-Cloud Governance Platform
-26. One contract. Three clouds. Two engines. Zero public endpoints.
-27. Link in comments ↓
+3.  A report comes too late.
+4.  A gate doesn't.
+5.  One contract.
+6.  Three clouds.
+7.  Two engines.
+8.  No cloud. No creds.
+9.  Cross-checked.
+10. 137 tests.
+11. One button.
+12. Terraform · Terragrunt.
+13. Managed. Federated. Shared.
+14. Nobody drew this.
+15. It drew itself.
+16. One query.
+17. Three clouds fused.
+18. PII in the gold?
+19. Zero rows.
+20. 220 rows refused.
+21. The door? Shut.
+22. Zero public endpoints.
+23. Same file. Two engines.
+24. Zero copies.
+25. Masked by role.
+26. An AI copilot.
+27. It knows its limits.
+28. That same PR?
+29. Now it ships.
+30. A reason. An expiry.
+31. Governance isn't "no".
+32. "Not without a reason. Not forever."
+33. Multi-Cloud Governance Platform
+34. Link in comments ↓
 ```
 
 **Styling — near-black + amber (match the banner):**
@@ -180,8 +199,9 @@ payoff.
 
 **Sync map:**
 
-- **0:00 — a single hard stab under the red ❌.** No build-up. The refusal *is* the impact.
-- 0:07 — a **rewind sweep** as time pulls back.
+- **0:00 — a single hard stab under the shield shatter (~0:015).** No build-up. The break *is* the
+  impact. The hard-cut to the red PR lands a beat later on a low sub-hit.
+- **0:06 — the music enters on the black punchline card** (the swell). The breath before the explanation.
 - 0:11–0:40 — a steady, architectural pulse. Restrained. Let the visuals speak.
 - **0:40 — a riser starts** under the private-path beat (three greens, two closed doors).
 - **0:58 — the riser resolves** on the three-cloud query. This is the crest of the film.
@@ -202,7 +222,7 @@ confidence," ~95–115 BPM. **No lyrics.** Sources: **Uppbeat** · **YouTube Aud
 
 - ✅ **Sound design** — the biggest multiplier (cue sheet below).
 - ✅ **Hard cuts on the beat** — the strongest "effect" there is.
-- ✅ **The rewind** at 0:07 — the one signature transition.
+- ✅ **The black punchline card** at 0:06 — the breath where the music enters, before the explanation.
 - ✅ **Speed ramps** — the Terragrunt DAG going green; any scroll.
 - ✅ **Kinetic numbers** — count-up / snap on **137 tests**, **220 rejected rows**, and nothing else.
 - ✅ **Spotlight / box / arrow** — the red ❌, the three `ESTABLISHED` rows, `Publicly accessible: No`,
@@ -213,7 +233,7 @@ confidence," ~95–115 BPM. **No lyrics.** Sources: **Uppbeat** · **YouTube Aud
 ### Avoid (cheapens it)
 
 - ❌ Glitch / VHS / shake everywhere.
-- ❌ Heavy transitions (spin, cube, page-curl) — the ONE rewind is the exception.
+- ❌ Heavy transitions (spin, cube, page-curl). Hard cuts only.
 - ❌ Emojis / stickers / meme text, light leaks, lens flares, many fonts.
 - ❌ **Claiming BigQuery has no public endpoint.** It does. Say *the connection* is private. The
   moment you overclaim, a technical viewer discounts everything else you said.
@@ -222,8 +242,9 @@ confidence," ~95–115 BPM. **No lyrics.** Sources: **Uppbeat** · **YouTube Aud
 
 | Time | SFX | On what |
 |--|--|--|
-| **0:00** | **Bass impact / boom** | the red ❌ — the refusal |
-| 0:07 | **Reverse whoosh / rewind** | the time-rewind transition |
+| **0:00** | **whoosh → bass impact → glass shatter** (no "laser") | the shield shatter — the red attack breaking against the shield |
+| 0:015 | Low sub-hit | the hard cut to the red PR |
+| 0:06 | **Soft swell (music in)** | the black punchline card |
 | 0:18 / 0:22 | Faint "tick" ×2 | the analyzer HIGH; the OPA ✓ |
 | 0:24 | **Ding** | **137 passed** |
 | 0:26 | Ding + rising ticks | the deploy ✅; the DAG going green |
@@ -234,7 +255,7 @@ confidence," ~95–115 BPM. **No lyrics.** Sources: **Uppbeat** · **YouTube Aud
 | **1:12** | **Resolve + ✅ ding** | the payoff — the PR goes green |
 | 1:24 | Soft outro swell | CTA / logo settle |
 
-> Search terms in CapCut SFX: "whoosh", "reverse", "rewind", "pop", "click", "impact", "boom",
+> Search terms in CapCut SFX: "whoosh", "energy surge", "glass shatter", "pop", "click", "impact", "boom",
 > "riser", "ding", "notification", "alert".
 
 ---
@@ -242,22 +263,23 @@ confidence," ~95–115 BPM. **No lyrics.** Sources: **Uppbeat** · **YouTube Aud
 ## PART 7 — CapCut build order
 
 1. **New project → canvas 1080×1440 (3:4).** Background: near-black `#0B0F14` (matches the banner).
-2. **Import the `01`–`14` clips.** Remember `01-pr-blocked` and `13-pr-exception` are the **same
-   screen in two states** — they must be framed identically.
+2. **Import the `00`–`14` clips.** `00-shield-break` is the opening sting. Remember `01-pr-blocked` and
+   `13-pr-exception` are the **same screen in two states** — they must be framed identically.
 3. **Rough cut:** trim each to its beat length from Part 3. Spine first — no captions yet. Lay the
-   PR clip in **both** the opening and the payoff slot.
-4. **Add the music.** Line the **stab up with the red ❌ (0:00)** and the **riser resolve with the
-   three-cloud query (0:58)**. Nudge every cut onto a beat.
-5. **The rewind (0:07):** reverse-motion transition into the contract.
+   **shield sting first (~1.5s)**, hard-cut to the red PR, and lay the PR clip in **both** the opening
+   and the payoff slot.
+4. **Add the music.** Line the **stab up with the shield shatter (~0:015)** and the **riser resolve with
+   the three-cloud query (0:58)**. Nudge every cut onto a beat.
+5. **The black punchline card (0:06):** hold ~2s on black, the music enters, then hard-cut to the contract.
 6. **Speed ramps:** curve-speed the Terragrunt DAG greens.
 7. **Framing:** scale each capture into the **upper 70%**, rounded corners + shadow, slight grade.
 8. **Captions:** the 27 lines from Part 4, lower band, ≥1.2s, pop-in. Recolour the keywords.
 9. **Kinetic numbers:** **137** and **220** snap or count up. Nothing else does.
 10. **Highlights:** box the red ❌, the three `ESTABLISHED` rows, both `No`/`Disabled` toggles, the
     Genie refusal, and — most importantly — the **`expires`** field in the payoff.
-11. **Sound design:** per the cue sheet. The bass impact, the rewind, and the payoff ding are what
+11. **Sound design:** per the cue sheet. The bass impact, the music entry on the black card, and the payoff ding are what
     sell it.
-12. **Transitions:** hard cuts everywhere; the ONE rewind at 0:07. Nothing else.
+12. **Transitions:** hard cuts everywhere. Nothing fancy.
 13. **End card:** title + handle, held 3s.
 14. **Watch it muted, full size.** If a caption is unreadable at thumbnail, fix it.
     **Poster/thumbnail = the red ❌ with `PII_BROAD_READ · HIGH`.**
@@ -274,7 +296,7 @@ confidence," ~95–115 BPM. **No lyrics.** Sources: **Uppbeat** · **YouTube Aud
 - [ ] Every number real: **137** tests, **220** rejected rows (not 249 — see the facts table), **3** NCC rules, **131** gateway sessions.
 - [ ] **You did not claim BigQuery has no public endpoint.** Say *the connection* is private.
 - [ ] Captions readable at thumbnail; burned in.
-- [ ] **Poster/thumbnail = the red ❌.**
+- [ ] **Poster/thumbnail = the red ❌** (the shield mid-shatter is a striking alternative, but the red ❌ with `PII_BROAD_READ · HIGH` is the more specific hook).
 - [ ] Music royalty-free; no lyrics; stab on the ❌, resolve on the ✅.
 - [ ] Length **≤ 90s**.
 - [ ] Repo link in the **FIRST COMMENT**, not the body.
@@ -287,24 +309,26 @@ Keep the cold open + payoff. Drop the catalogs, the rejects, and Snowflake.
 
 | # | Time | Clip | Caption |
 |--|--|--|--|
-| 1 | 0:00–0:07 | `01-pr-blocked` | **Someone just gave analytics the customer PII.** → **The platform said no.** |
-| 2 | 0:07–0:11 | rewind | **It never reached a cloud. Let's rewind.** |
+| 0 | 0:00–0:015 | `00-shield-break` | *(no caption — the break + the bass hit)* |
+| 1 | 0:015–0:07 | `01-pr-blocked` | **A grant exposed customer PII.** → **The platform said no.** |
+| 2 | 0:06–0:11 | BLACK CARD | **A report comes too late. A gate doesn't.** |
 | 3 | 0:11–0:19 | `02-the-contract` + `03-the-gate` | **One contract.** → **A gate, not a report — no cloud, no credentials.** |
 | 4 | 0:19–0:26 | `05-deploy` | **One button. Three clouds.** |
 | 5 | 0:26–0:36 | `07-ncc-established` + `08-no-public-door` | **No public address. Anywhere.** |
-| 6 | 0:36–0:44 | `09-one-query` | **One query. Three clouds. Not one public endpoint in it.** |
-| 7 | 0:44–0:50 | `12-genie` | **An AI that knows what it isn't allowed to know.** |
-| 8 | 0:50–0:56 | `13-pr-exception` (payoff) | **That PR ships — with a reason, and a date it expires.** |
+| 6 | 0:36–0:44 | `09-one-query` | **One query. Three clouds. Zero public endpoints.** |
+| 7 | 0:44–0:50 | `12-genie` | **An AI that knows its limits.** |
+| 8 | 0:50–0:56 | `13-pr-exception` (payoff) | **That PR ships — with a reason that expires.** |
 | 9 | 0:56–1:00 | `14-endcard` | **One contract. Three clouds. Two engines. Zero public endpoints. Link ↓** |
 
 ## Variant B — 30-second teaser
 
 | # | Time | Clip | Caption |
 |--|--|--|--|
-| 1 | 0:00–0:06 | `01-pr-blocked` | **Someone gave analytics the customer PII. The platform said no — before it reached a cloud.** |
-| 2 | 0:06–0:14 | `07-ncc-established` + `09-one-query` | **Three clouds. One query. Not one public endpoint in it.** |
+| 0 | 0:00–0:015 | `00-shield-break` | *(no caption — the break + the bass hit)* |
+| 1 | 0:015–0:06 | `01-pr-blocked` | **A grant exposed customer PII. Blocked before it hit a cloud.** |
+| 2 | 0:06–0:14 | `07-ncc-established` + `09-one-query` | **Three clouds. One query. Zero public endpoints.** |
 | 3 | 0:14–0:20 | `12-genie` | **An AI that describes the governance — and is never allowed to decide it.** |
-| 4 | 0:20–0:26 | `13-pr-exception` (payoff) | **Governance isn't "no". It's "not without a reason — and not forever."** |
+| 4 | 0:20–0:26 | `13-pr-exception` (payoff) | **Governance isn't "no". Not without a reason. Not forever.** |
 | 5 | 0:26–0:30 | `14-endcard` | **Multi-Cloud Governance Platform — breakdown in the comments ↓** |
 
 ---
