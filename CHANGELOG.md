@@ -20,7 +20,7 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   repository in the portfolio with none.
 - **New `Status`, `Testing` and `Docs` sections.** `Status` states what was built, on what and at
   what scale, in one block. `Testing` gives the suite its own heading — 137 tests, `133 passed, 4
-  skipped`, credential-free — and says what it does not cover. `Docs` indexes the 18 ADRs, the
+  skipped`, credential-free — and says what it does not cover. `Docs` indexes the 16 ADRs, the
   runbooks, `docs/evidence/` and `docs/governance/`, none of which were discoverable from the README.
 - **Dependabot version updates switched off** (`open-pull-requests-limit: 0`), matching the rest of
   the portfolio, with the six Terraform provider ecosystems now declared alongside pip and Actions.
@@ -29,6 +29,16 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 - **A pre-publish checklist in `SECURITY.md`**, covering the exception ledger's expiry dates and the
   public-mode RDS ingress that Checkov cannot see.
+
+### Fixed
+- **Counts in the docs now match the repo.** The ADR count was reported as **18** in five places
+  (README `Status`, the layout tree, `Decisions`, `Docs`, and this changelog) — that is
+  `ls docs/adr | wc -l`, which counts `0000-template.md` and the folder's own `README.md`. There are
+  **16** numbered ADRs, as the index in `docs/adr/README.md` has always said.
+- **The workflow count was reported as 11; there are 12.** Worse, `CLAUDE.md`'s workflow table listed
+  only **10** — `dbx-pipeline.yml` and `dependabot-auto-merge.yml` were undocumented. Both now have
+  rows, and `dbx-pipeline.yml`'s entry records the secrets it actually needs (`AZURE_*` when seeding,
+  `SNOWFLAKE_*` for the non-fatal notebook step), not the shorter list its own header comment claims.
 
 
 ### Added

@@ -13,7 +13,7 @@ The previous version shipped a 913-line Python orchestrator that manually manage
 | 2-phase IAM (`is_initial_deployment`) | Single-phase with static `external_id` |
 | `platform_bootstrap/ + gcp_platform_bootstrap/` | `bootstrap/aws/ + bootstrap/gcp/` |
 | Local `.tfstate` files | Remote S3 + DynamoDB locking |
-| No CI/CD | 11 GitHub Actions workflows |
+| No CI/CD | 12 GitHub Actions workflows |
 | No pre-commit hooks | Checkov + tfsec + fmt on every PR |
 
 ---
