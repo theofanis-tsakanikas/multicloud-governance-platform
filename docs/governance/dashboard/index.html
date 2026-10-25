@@ -33,7 +33,7 @@
 <p class='sub'>2 documented exceptions · 0 expire ≤30d · 0 ≤60d · 1 ≤90d · 0 expired</p>
 <table><tr><th>Rule</th><th>Object</th><th>Principal</th><th>Justification</th></tr>
 <tr><td>PII_BROAD_READ</td><td><code>schema:sales_rds_fed.crm</code></td><td>crm_managers</td><td>CRM operations team requires read access to customer records to service accounts. Access is read-only (SELECT), scoped to the crm_managers group, and covered by DPIA-2026-014.</td></tr>
-<tr><td>PII_BROAD_READ</td><td><code>schema:marketing_bq_fed.web</code></td><td>data_scientists</td><td>Web analytics PII is pseudonymised at source; data scientists use it for aggregate modelling only. Accepted risk pending the migration to a fully anonymised feature view (tracked in DPIA-2026-021).</td></tr>
+<tr><td>PII_BROAD_READ</td><td><code>schema:marketing_bq_fed.web</code></td><td>data_scientists</td><td>Web analytics PII is pseudonymised at source; data scientists use it for aggregate modelling only. Accepted risk pending the migration to a fully anonymised feature view (tracked in DPIA-2026-021). Renewed 2026-10-25 after lapsing on 2026-09-30: the anonymised feature view has not shipped, so the reason stands.</td></tr>
 </table>
 </div>
 <h2>Cost &amp; carbon floor</h2><div class='grid'>
