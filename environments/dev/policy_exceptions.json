@@ -20,9 +20,9 @@
       "rule": "PII_BROAD_READ",
       "object": "schema:marketing_bq_fed.web",
       "principal": "data_scientists",
-      "justification": "Web analytics PII is pseudonymised at source; data scientists use it for aggregate modelling only. Accepted risk pending the migration to a fully anonymised feature view (tracked in DPIA-2026-021).",
+      "justification": "Web analytics PII is pseudonymised at source; data scientists use it for aggregate modelling only. Accepted risk pending the migration to a fully anonymised feature view (tracked in DPIA-2026-021). Renewed 2026-10-25 after lapsing on 2026-09-30: the anonymised feature view has not shipped, so the reason stands.",
       "approved_by": "data-protection-officer",
-      "expires": "2026-09-30"
+      "expires": "2027-03-31"
     }
   ]
 }

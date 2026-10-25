@@ -154,3 +154,15 @@ skip-check:
                     # correct and is on the list of things a production version would do.
   - CKV_AWS_23      # Two remaining security-group rules without a description, in modules that are
                     # gated off in the mode Checkov happens to evaluate. Sixteen others were fixed.
+
+  # ── 5. A rule newer than the code it fires on ─────────────────────────────────────────────────
+  #
+  # Added 2026-10-25. Checkov 3.3.19 (2026-09-17) shipped this rule; the Terraform it fires on has
+  # not changed since 2026-08-19. Adopting it means changing which zones a fresh apply selects in
+  # three network modules, which is an infrastructure change and belongs in its own PR — not in
+  # one whose purpose is to renew a dated exception. Remove this entry in that PR.
+
+  - CKV_AWS_394     # aws_availability_zones should pin zone identity (×3: rds_network, and the
+                    # aws_network module under azure/ and gcp/). Each takes zones by index from the
+                    # region's current list; the estate is torn down between runs, so a new zone
+                    # can only change what the *next* apply builds, never what is standing.

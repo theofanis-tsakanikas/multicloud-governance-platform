@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-10",
+  "generated_at": "2026-10-25",
   "summary": {
     "clouds": [
       "AWS",
@@ -1216,7 +1216,7 @@
       "message": "PII is readable by a non-admin principal not on the PII allowlist",
       "dimension": "Data quality & lineage",
       "accepted": true,
-      "justification": "Web analytics PII is pseudonymised at source; data scientists use it for aggregate modelling only. Accepted risk pending the migration to a fully anonymised feature view (tracked in DPIA-2026-021)."
+      "justification": "Web analytics PII is pseudonymised at source; data scientists use it for aggregate modelling only. Accepted risk pending the migration to a fully anonymised feature view (tracked in DPIA-2026-021). Renewed 2026-10-25 after lapsing on 2026-09-30: the anonymised feature view has not shipped, so the reason stands."
     },
     {
       "rule": "ALL_PRIVILEGES_NONADMIN",
