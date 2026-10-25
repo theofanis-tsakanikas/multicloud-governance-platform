@@ -38,7 +38,7 @@ every caption, the music, the sound-design cue sheet, and the exact CapCut build
 | The gate | `policy_analyzer.py` — **9 rules**, 4 of them HIGH; **fails the PR on any unacknowledged HIGH** |
 | Cross-check | **OPA / Rego** re-implements **all 4** gating rules in a second engine, run against the analyzer's output in CI — both reach the same verdict. It reads the analyzer's own report as input, so it's a rule-logic cross-check, not a from-scratch second pipeline. |
 | Exceptions | **time-bound**. An expired exception stops suppressing its finding and **fails CI again** |
-| Live exceptions | 2 — `sales_rds_fed.crm` (expires **2026-12-31**), `marketing_bq_fed.web` (**2026-09-30**) |
+| Live exceptions | 2 — `sales_rds_fed.crm` (expires **2026-12-31**), `marketing_bq_fed.web` (**2027-03-31**, renewed 2026-10-25) |
 | Offline | the whole gate runs with **no cloud and no credentials** |
 | Tests | **137**, infra-free, gating every push |
 | Infra | **Terraform via Terragrunt** — **87 modules**, **11 workflows**, one-button deploy / run / destroy |
